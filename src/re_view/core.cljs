@@ -1,48 +1,20 @@
 (ns re-view.core
   (:require-macros [re-view.core :refer [defview]])
-  (:require [re-db.core :as d]
-            [goog.object :as gobj]))
+  (:require [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
 
 (defn mounted? [c]
   (.isMounted c))
 
-(defn register-cell-mount [db eid]
-  (when-let [html-node (d/get @db eid :cell/html-node)]
-    (when-let [f (d/get @db eid :cell/on-mount)]
-      (f html-node))))
-
 (defn children [this]
   (some-> this .-props .-children))
 
+;; from om
 (defn react-ref
   "Returns the component associated with a component's React ref."
   [component name]
   (some-> (.-refs component) (gobj/get name)))
-
-(defn components-by-view-id [db id]
-  (when id
-    (->> (d/entities @db [:view/id id])
-         (map :view/component)
-         (filter mounted?))))
-
-(defn components-by-e [db e]
-  (when e (components-by-view-id db (d/get @db e :id))))
-
-(defn register-view
-  "Keep index to components based on id"
-  ([db this indexes]
-   (d/transact! db [(merge indexes
-                        {:db/id          -1
-                         :view/component this})])))
-
-(defn deregister-view
-  "Discard index"
-  [db this]
-  (js/setTimeout
-    #(do
-      (d/transact! db [[:db/retract-entity (:db/id (d/entity @db [:view/component this]))]])) 0))
 
 (def render-count (atom 0))
 
