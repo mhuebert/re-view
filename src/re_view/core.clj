@@ -54,20 +54,21 @@
      `(~'componentDidUpdate [this# prev-props# prev-state#]
         (~f this# (~prev-props this#) (~prev-state this#))))})
 
-(defn reshape [parsed-methods]
+(defn wrap-lifecycle-methods [parsed-methods]
+  ;; always wrap 'shouldComponentUpdate and 'componentWillUpdate, even if they aren't provided,
+  ;; because this is where we advance state
   (for [name (into #{'shouldComponentUpdate 'componentWillUpdate} (keys parsed-methods))
-        :let [{:keys [fn form]} (get parsed-methods name)
-              reshape-f (get lifecycle-wrap-fns name)]]
-    (if reshape-f (reshape-f fn) form)))
+        :let [{:keys [fn form]} (get parsed-methods name)]]
+    (if-let [wrap-f (get lifecycle-wrap-fns name)] (wrap-f fn) form)))
 
-(defn defui* [name forms]
-  (let [reshaped-forms (doall (->> forms
-                                   parse-lifecycle-methods
-                                   reshape))]
+(defn defui* [name lifecycle-methods]
+  (let [wrapped-methods (-> lifecycle-methods
+                            parse-lifecycle-methods
+                            wrap-lifecycle-methods)]
     `(def ~name
        (~'-> (specify! (~'clj->js {:getInitialState (fn [] (~'clj->js {}))
                                    :displayName     ~(str name)}) ~'Object
-               ~@reshaped-forms)
+               ~@wrapped-methods)
          (~'js/React.createClass)
          (~'re-view.core/factory)))))
 
