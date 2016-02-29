@@ -66,19 +66,10 @@
   "Force render a single component with supplied props"
   ([component] (render-component component nil))
   ([component props]
-   (try
-     (when props
-       (set! (.. component -state -cljs$forcedProps) #js {:render$count (swap! render-count inc)
-                                                          :cljs$props   props}))
-     (.forceUpdate component (fn []))
-     (catch js/Error e
-       ;; occasional weird ReferenceError here, maybe related to figwheel reloading?
-       ;; stacktrace: https://gist.github.com/mhuebert/63f7e61293bd6001800f
-       (.debug js/console #_(cells.meta/cell->label (:id props))
-               "React .forceUpdate error, re-rendering whole page" e)
-       #_(aset js/window "e" e)
-       #_(.error js/console e)
-       #_(render-all)))))
+   (when props
+     (set! (.. component -state -cljs$forcedProps) #js {:render$count (swap! render-count inc)
+                                                        :cljs$props   props}))
+   (.forceUpdate component (fn []))))
 
 (defn parse-props [props]
   (.-cljs$props props))
