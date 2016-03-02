@@ -42,36 +42,14 @@
           :else (do
                   (throw (js/Error (str "Not a valid id: " id)))))))
 
-(defn listener-path
-  [db-snap key path]
-  (cond (= '_ (first path))
-        [:listeners :attr (second path) key]
-
-        (= '_ (second path))
-        [:listeners :entity (resolve-id db-snap (first path)) key]
-
-        :else [:listeners :entity-attr (resolve-id db-snap (first path)) (second path) key]))
-
 (defn listen!
-  ([db key f]
-   (swap! db assoc-in [:listeners :tx-log key] f) db)
-  ([db key path f]
-   (swap! db assoc-in (listener-path @db key path) f) db))
+  [db key f]
+  (swap! db assoc-in [:listeners :tx-log key] f) db)
 
 (defn unlisten!
-  ([db key]
-   (swap! db update-in [:listeners :tx-log] dissoc key)
-   db)
-  ([db key path]
-   (swap! db update-in (pop (listener-path @db key path)) dissoc key)
-   db))
-
-(defn listen-once!
-  [& args]
-  (apply listen! (concat (drop-last args)
-                         (list (fn [& new-args]
-                                 (apply (last args) new-args)
-                                 (apply unlisten! (drop-last args)))))))
+  [db key]
+  (swap! db update-in [:listeners :tx-log] dissoc key)
+  db)
 
 (defn upsert-attr? [id]
   (and (number? id) (neg? id)))
@@ -222,20 +200,6 @@
     (map (fn [[a v]] (list :db/add id a v)) m)))
 
 (defn notify-listeners [db-snap reports]
-  (let [called-entities (atom #{})]
-    (doseq [report reports]
-      (let [e (first report)
-            a (second report)]
-        ;; attribute listeners
-        (doseq [f (vals (get-in db-snap [:listeners :attr a]))]
-          (f report))
-        ;; entity-attr listeners
-        (doseq [f (vals (get-in db-snap [:listeners :entity-attr e a]))]
-          (f report))
-        (when-not (contains? @called-entities e)
-          (swap! called-entities conj e)
-          (doseq [f (vals (get-in db-snap [:listeners :entity e]))]
-            (f (entity db-snap e)))))))
   (doseq [listener (vals (get-in db-snap [:listeners :tx-log]))]
     (listener (remove nil? reports))))
 
