@@ -1,5 +1,5 @@
 (ns re-view.core
-  (:require-macros [re-view.core :refer [defview]])
+  (:require-macros [re-view.core :refer [defcomponent]])
   (:require [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
@@ -18,24 +18,25 @@
 
 (def render-count (atom 0))
 
-(defn has-forced-props? [this]
+(defn has-forced-props?
+  "Determines if we are in a forceUpdate call"
+  [this]
   (= (some-> this .-state .-cljs$forcedProps .-render$count) @render-count))
 
 (defn forced-props [this]
   (aget this "state" "cljs$forcedProps" "cljs$props"))
 
 (defn props
-  "React only supports supplying props to the root component.
-  To enable forceUpdate with new props, we put props in state along with the current
-  value of render-counter. We only use the force$value if its render$count is equal to
-  the current render."
+  "React only supports supplying props to a root component. To enable .forceUpdate
+   on sub-components with new props, we store .forceUpdate props in state and
+   do a check here to determine which props are currently fresh."
   [this]
   (if (has-forced-props? this)
     (forced-props this)
     (some-> this .-props .-cljs$props)))
 
 (defn render-component
-  "Force render a single component with supplied props"
+  "Force render a component with supplied props"
   ([component] (render-component component nil))
   ([component props]
    (when props
@@ -61,7 +62,8 @@
 (defn next-state [this]
   (some-> this .-state .-cljs$nextState))
 
-(defn advance-state [this]
+(defn advance-state
+  [this]
   (let [prev-state (state this)
         next-state (.. this -state -cljs$nextState)
         prev-props (props this)]
@@ -86,8 +88,17 @@
   (if-not (seq? x) x
                    (into [] (map force-children x))))
 
+#_(defn parse-lifecycle-map [m]
+      (reduce-kv (fn [m name f]
+                   (let [name (symbol name)]
 
-(defn factory [class]
+                     (assoc m name {:name name
+                                    :fn   `(~'fn ~(vec args) ~@body)})))
+              {}
+              m))
+
+(defn factory
+  [class]
   (fn [props & children]
     (let [props? (map? props)
           children (if props? children (cons props children))
@@ -101,3 +112,4 @@
                     (force-children children))]
       (set! (.-reactClass element) class)
       element)))
+

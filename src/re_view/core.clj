@@ -1,5 +1,6 @@
 (ns re-view.core
-  (:require [cljs.core :refer [specify!]]))
+  (:require [cljs.core :refer [specify!]]
+            [clojure.string :as string]))
 
 ;; must a better way to do this
 (def parse-props 're-view.core/parse-props)
@@ -10,14 +11,6 @@
 (def prev-props 're-view.core/prev-props)
 (def ^:dynamic *trigger-state-render* 're-view.core/*trigger-state-render*)
 (def advance-state 're-view.core/advance-state)
-
-(defn parse-lifecycle-methods [forms]
-  (reduce (fn [m [name [& args] & body :as form]]
-            (assoc m name {:name name
-                           :form form
-                           :fn   `(~'fn ~(vec args) ~@body)}))
-          {}
-          forms))
 
 (def lifecycle-wrap-fns
   {'componentWillMount
@@ -61,16 +54,48 @@
         :let [{:keys [fn form]} (get parsed-methods name)]]
     (if-let [wrap-f (get lifecycle-wrap-fns name)] (wrap-f fn) form)))
 
-(defn defui* [name lifecycle-methods]
-  (let [wrapped-methods (-> lifecycle-methods
-                            parse-lifecycle-methods
-                            wrap-lifecycle-methods)]
-    `(def ~name
-       (~'-> (specify! (~'clj->js {:getInitialState (fn [] (~'clj->js {}))
-                                   :displayName     ~(str name)}) ~'Object
-               ~@wrapped-methods)
-         (~'js/React.createClass)
-         (~'re-view.core/factory)))))
+(defn camelCase
+  "Convert dash-ed and name/spaced-keywords to dashEd and name_spacedKeywords"
+  [s]
+  (clojure.string/replace s #"([^\\-])-([^\\-])" (fn [[_ m1 m2]]
+                                                   (str m1 (clojure.string/upper-case m2)))))
 
-(defmacro defview [name & forms]
-  (defui* name forms))
+
+
+(defn parse-lifecycle-map [m]
+  (reduce-kv (fn [m kw-name [_ args & body :as f]]
+               (let [method-name (symbol (camelCase (name kw-name)))]
+                 (assoc m method-name {:name method-name
+                                       :form `(~method-name ~args ~@body)
+                                       :fn   f})))
+             {}
+             m))
+
+(defn parse-lifecycle-methods [forms]
+  (if (map? forms)
+    (parse-lifecycle-map forms)
+    (reduce (fn [m [name args & body :as form]]
+              (assoc m name {:name name
+                             :form form
+                             :fn   `(~'fn ~args ~@body)}))
+            {}
+            forms)))
+
+(defn react-class [display-name methods]
+  `(~'-> (specify!
+           (~'clj->js {:getInitialState (fn [] (~'clj->js {}))
+                       :displayName     ~(some-> display-name str)})
+           ~'Object
+           ~@(wrap-lifecycle-methods methods))
+     (~'js/React.createClass)))
+
+(defmacro defcomponent [name & lifecycle-methods]
+  `(def ~name
+     (~'re-view.core/factory
+       ~(react-class name (parse-lifecycle-methods lifecycle-methods)))))
+
+(defmacro component
+  ([method-map] `(~'re-view.core/component nil ~method-map))
+  ([display-name method-map]
+   `(~'re-view.core/factory
+      ~(react-class display-name (parse-lifecycle-map method-map)))))
