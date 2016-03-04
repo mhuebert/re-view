@@ -84,18 +84,9 @@
   (update-state! this #(do state)))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/util.cljs#L3
-(defn force-children [x]
+#_(defn force-children [x]
   (if-not (seq? x) x
                    (into [] (map force-children x))))
-
-#_(defn parse-lifecycle-map [m]
-      (reduce-kv (fn [m name f]
-                   (let [name (symbol name)]
-
-                     (assoc m name {:name name
-                                    :fn   `(~'fn ~(vec args) ~@body)})))
-              {}
-              m))
 
 (defn factory
   [class]
@@ -109,7 +100,7 @@
                                        (keyfn props) key)
                          :ref        ref
                          :cljs$props (dissoc props :keyfn :ref :key)}
-                    (force-children children))]
+                    children)]
       (set! (.-reactClass element) class)
       element)))
 

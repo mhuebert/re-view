@@ -2,7 +2,7 @@
   (:require [cljs.core :refer [specify!]]
             [clojure.string :as string]))
 
-;; must a better way to do this
+;; for brevity - aliasing namespaced symbols to use in macros
 (def parse-props 're-view.core/parse-props)
 (def next-state 're-view.core/next-state)
 (def prev-state 're-view.core/prev-state)
@@ -13,7 +13,19 @@
 (def advance-state 're-view.core/advance-state)
 
 (def lifecycle-wrap-fns
-  {'componentWillMount
+  {'getInitialState
+   (fn [f]
+     `(~'getInitialState [this#]
+        (let [initial-state-f# ~f
+              state# (~'js->clj {})
+              initial-val# (if initial-state-f# (initial-state-f# this#) nil)]
+          ;; can't use #js shorthand here &
+          ;; also can't use the recursive clj->js fn,
+          ;; so we do this, unfortunately.
+          (~'aset state# "cljs$state" initial-val#)
+          (~'aset state# "cljs$nextState" initial-val#)
+          state#)))
+   'componentWillMount
    (fn [f]
      `(~'componentWillMount [this#]
         (~'binding [~*trigger-state-render* false]
@@ -50,7 +62,9 @@
 (defn wrap-lifecycle-methods [parsed-methods]
   ;; always wrap 'shouldComponentUpdate and 'componentWillUpdate, even if they aren't provided,
   ;; because this is where we advance state
-  (for [name (into #{'shouldComponentUpdate 'componentWillUpdate} (keys parsed-methods))
+  (for [name (into #{'shouldComponentUpdate
+                     'componentWillUpdate
+                     'getInitialState} (keys parsed-methods))
         :let [{:keys [fn form]} (get parsed-methods name)]]
     (if-let [wrap-f (get lifecycle-wrap-fns name)] (wrap-f fn) form)))
 
@@ -83,8 +97,7 @@
 
 (defn react-class [display-name methods]
   `(~'-> (specify!
-           (~'clj->js {:getInitialState (fn [] (~'clj->js {}))
-                       :displayName     ~(some-> display-name str)})
+           (~'clj->js {:displayName ~(some-> display-name str)})
            ~'Object
            ~@(wrap-lifecycle-methods methods))
      (~'js/React.createClass)))
