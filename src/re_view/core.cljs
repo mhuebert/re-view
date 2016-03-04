@@ -204,6 +204,25 @@
     (apply js-obj (mapcat identity (wrap-lifecycle-methods methods)))))
 
 (defn component
+  "Returns a React component factory for supplied lifecycle methods.
+   Expects a single map of functions, or any number of key-function pairs,
+
+   (component {:render (fn [this] [:div ...])})
+
+   -or-
+
+   (component
+
+     :get-initial-state
+     (fn [this] {:apple-state :ripe})
+
+     :render
+     (fn [this] [:div ...]))
+
+   See other functions in this namespace for how to work with props and state.
+   Result of :render function is automatically wrapped in sablono.core/html,
+   unless it is already a valid React element.
+   "
   [& methods]
   (let [methods (if (and (= 1 (count methods)) (map? (first methods)))
                   (first methods)
