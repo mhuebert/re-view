@@ -1,5 +1,4 @@
 (ns re-view.core
-  (:require-macros [re-view.core :refer [defcomponent]])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [sablono.core :refer-macros [html]]
@@ -7,17 +6,22 @@
 
 (def ^:dynamic *trigger-state-render* true)
 
+;; convenience access methods
+
 (defn mounted? [c]
   (.isMounted c))
 
 (defn children [this]
   (some-> this .-props .-children))
 
-;; from om
-(defn react-ref
+
+(defn react-ref                                             ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
   "Returns the component associated with a component's React ref."
   [component name]
   (some-> (.-refs component) (gobj/get name)))
+
+
+;; self-management of cljs props and state
 
 (def render-count (atom 0))
 
@@ -37,15 +41,6 @@
   (if (has-forced-props? this)
     (forced-props this)
     (some-> this .-props .-cljs$props)))
-
-(defn render-component
-  "Force render a component with supplied props"
-  ([component] (render-component component nil))
-  ([component props]
-   (when props
-     (set! (.. component -state -cljs$forcedProps) #js {:render$count (swap! render-count inc)
-                                                        :cljs$props   props}))
-   (.forceUpdate component (fn []))))
 
 (defn parse-props [props]
   (.-cljs$props props))
@@ -75,6 +70,8 @@
   (when (.hasOwnProperty (.-state this) "cljs$nextState")
     (aset this "state" "cljs$state" (aget this "state" "cljs$nextState"))))
 
+;; State manipulation
+
 (defn set-state! [this new-state]
   (when (not= new-state (state this))
     (set! (.. this -state -cljs$nextState) new-state)
@@ -87,10 +84,104 @@
 (defn update-state! [this f & args]
   (set-state! this (apply f (cons (state this) args))))
 
-;; https://github.com/omcljs/om/blob/master/src/main/om/util.cljs#L3
-#_(defn force-children [x]
-  (if-not (seq? x) x
-                   (into [] (map force-children x))))
+;; Render
+
+(defn render-component
+  "Force render a component with supplied props, even if not a root component."
+  ([component] (render-component component nil))
+  ([component props]
+   (when props
+     (set! (.. component -state -cljs$forcedProps) #js {:render$count (swap! render-count inc)
+                                                        :cljs$props   props}))
+   (.forceUpdate component (fn []))))
+
+
+;; TODO - include render loop
+
+;; Lifecycle method handling
+
+(def lifecycle-wrap-fns
+  {"getInitialState"
+   (fn [f]
+     (fn []
+       (this-as this
+         (js-obj "cljs$state" (if f (f this) nil)))))
+
+   "componentWillMount"
+   (fn [f]
+     (fn []
+       (this-as this
+         (binding [*trigger-state-render* false] (f this)))))
+
+   "componentWillReceiveProps"
+   (fn [f]
+     (fn [next-props]
+       (this-as this
+         (binding [*trigger-state-render* false]
+           (f this (parse-props next-props))))))
+
+   "shouldComponentUpdate"
+   (fn [f]
+     (fn [next-props _]
+       (this-as this
+         (let [next-props (parse-props next-props)
+               next-state (next-state this)
+               update? (if f (f this next-props next-state)
+                             ;; by default, update if props or state have changed
+                             true
+                             #_(or (not= next-props (props this))
+                                   (not= next-state (state this))))]
+           (when-not update? (advance-state this))
+           update?))))
+
+   "componentWillUpdate"
+   (fn [f]
+     (fn [next-props _]
+       (this-as this
+         (when f (let [next-props (if (has-forced-props? this) (forced-props this)
+                                                               (parse-props next-props))]
+                   (f this next-props (next-state this))))
+         (advance-state this))))
+
+   "componentDidUpdate"
+   (fn [f]
+     (fn [_ _]
+       (this-as this
+         (f this (prev-props this) (prev-state this)))))
+
+   "render"
+   (fn [f]
+     (fn []
+       (this-as this
+         (let [element (f this)]
+           (if (js/React.isValidElement element)
+             element
+             (html element))))))})
+
+(defn camelCase
+  "Convert dash-ed and name/spaced-keywords to dashEd and name_spacedKeywords"
+  [s]
+  (clojure.string/replace s #"([^\\-])-([^\\-])"
+                          (fn [[_ m1 m2]] (str m1 (clojure.string/upper-case m2)))))
+
+(defn update-keys
+  "Update keys of map m with function f"
+  [update-key-f m]
+  (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
+
+(defn wrap-lifecycle-methods
+  "Lifecycle methods are wrapped to manage CLJS props and state
+   and provide default behaviour."
+  [methods]
+  (let [methods (update-keys (comp camelCase name) methods)]
+    (reduce (fn [m name]
+              (let [wrap-f (get lifecycle-wrap-fns name (fn [f]
+                                                          (fn [] (this-as this (f this)))))]
+                (assoc m name (wrap-f (get methods name)))))
+            {}
+            (into #{"shouldComponentUpdate" "componentWillUpdate" "getInitialState"}
+                  ;; these three methods ^^ have default behaviours so we always "wrap" them
+                  (keys methods)))))
 
 (defn factory
   [class]
@@ -107,3 +198,38 @@
                     children)]
       (set! (.-reactClass element) class)
       element)))
+
+(defn react-class [methods]
+  (js/React.createClass
+    (apply js-obj (mapcat identity (wrap-lifecycle-methods methods)))))
+
+(defn component
+  [& methods]
+  (let [methods (if (and (= 1 (count methods)) (map? (first methods)))
+                  (first methods)
+                  (apply hash-map methods))]
+    (-> methods
+        react-class
+        factory)))
+
+(comment
+
+  ;; example of component with controlled input
+
+  (ns my-app.core
+    (:require [re-view.core :as view :refer [component]]))
+
+  (def greeting
+    (component
+
+      :get-initial-state
+      (fn [this] {:first-name "Herbert"})
+
+      :render
+      (fn [this]
+        (let [{:keys [first-name]} (view/state this)]
+          [:div
+           [:p (str "Hello, " first-name "!")]
+           [:input {:value     first-name
+                    :on-change #(view/update-state!
+                                 this assoc :first-name (-> % .-target .-value))}]])))))
