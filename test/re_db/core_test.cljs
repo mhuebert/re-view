@@ -1,5 +1,5 @@
 (ns re-db.core-test
-  (:require [cljs.test :refer-macros [async deftest is testing]]
+  (:require [cljs.test :refer-macros [deftest is]]
             [re-db.core :as d]))
 
 

@@ -3,3 +3,4 @@ target
 pom.xml
 re-db.iml
 resources
+.lein-failures
