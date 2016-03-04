@@ -66,25 +66,26 @@
   (some-> this .-state .-cljs$nextState))
 
 (defn advance-state
+  "Record previous props and state and copy 'next-state' to 'state'
+   once during each component lifecycle."
   [this]
-  (let [prev-state (state this)
-        next-state (.. this -state -cljs$nextState)
-        prev-props (props this)]
-    (set! (.. this -state -cljs$previousProps) prev-props)
-    (set! (.. this -state -cljs$state) next-state)
-    (set! (.. this -state -cljs$previousState) prev-state)))
+  (doto this
+    (aset "state" "cljs$previousProps" (props this))
+    (aset "state" "cljs$previousState" (state this)))
+  (when (.hasOwnProperty (.-state this) "cljs$nextState")
+    (aset this "state" "cljs$state" (aget this "state" "cljs$nextState"))))
+
+(defn set-state! [this new-state]
+  (when (not= new-state (state this))
+    (set! (.. this -state -cljs$nextState) new-state)
+    (if (and *trigger-state-render* (mounted? this))
+      (.forceUpdate this)
+      ;; if *trigger-state-render* is false, we skip the component lifecycle
+      ;; & therefore must advance-state manually here
+      (advance-state this))))
 
 (defn update-state! [this f & args]
-  (let [new-state (apply f (cons (state this) args))]
-    (when (not= new-state (state this))
-      (set! (.. this -state -cljs$previousState) (state this))
-      (set! (.. this -state -cljs$nextState) new-state)
-      (if (and *trigger-state-render* (mounted? this))
-        (.forceUpdate this)
-        (advance-state this)))))
-
-(defn set-state! [this state]
-  (update-state! this #(do state)))
+  (set-state! this (apply f (cons (state this) args))))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/util.cljs#L3
 #_(defn force-children [x]
