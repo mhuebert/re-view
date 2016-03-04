@@ -1,9 +1,13 @@
 (ns re-db.core
-  (:refer-clojure :exclude [get])
+  (:refer-clojure :exclude [get get-in set! update])
   (:require [cljs-uuid-utils.core :as uuid-utils]
             [clojure.set :as set]))
 
 (enable-console-print!)
+
+(def get-in* cljs.core/get-in)
+(def get* cljs.core/get)
+(def update* cljs.core/update)
 
 (defn create
   "Create a new db, with optional schema."
@@ -23,14 +27,14 @@
   (satisfies? cljs.core/IDeref conn))
 
 (defn index? [db-snap a]
-  (or (true? (get-in db-snap [:schema a :db/index]))
-      (true? (get-in db-snap [:schema a :db/unique]))))
+  (or (true? (get-in* db-snap [:schema a :db/index]))
+      (boolean (get-in* db-snap [:schema a :db/unique]))))
 
 (defn many? [db-snap a]
-  (true? (get-in db-snap [:schema a :db/many])))
+  (= :db.cardinality/many (get-in* db-snap [:schema a :db/cardinality])))
 
 (defn unique? [db-snap a]
-  (true? (get-in db-snap [:schema a :db/unique])))
+  (boolean (get-in* db-snap [:schema a :db/unique])))
 
 (defn resolve-id [db-snap id]
   (when id
@@ -38,7 +42,7 @@
           (sequential? id) (let [[a v] id]
                              (if-not (unique? db-snap a)
                                (throw (js/Error (str "Not a unique attribute: " a)))
-                               (get-in db-snap [:index a v])))
+                               (get-in* db-snap [:index a v])))
           :else (do
                   (throw (js/Error (str "Not a valid id: " id)))))))
 
@@ -59,10 +63,13 @@
 
 (defn entity [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (get-in db-snap [:data id])))
+    (get-in* db-snap [:data id])))
 
 (defn get [db-snap id attr]
-  (cljs.core/get (entity db-snap id) attr))
+  (get* (entity db-snap id) attr))
+
+(defn get-in [db-snap id & ks]
+  (get-in* (entity db-snap id) ks))
 
 (defn add-index [[db-snap reports] id a v]
   [(cond (unique? db-snap a)
@@ -84,7 +91,7 @@
 
 (defn clear-empty-ent [[db-snap reports] e]
   [(cond-> db-snap
-           (empty? (dissoc (entity db-snap e) :db/id)) (update :data dissoc e))
+           (empty? (dissoc (entity db-snap e) :db/id)) (update* :data dissoc e))
    reports])
 
 (declare retract-attr)
@@ -92,9 +99,9 @@
 (defn disj-kill
   "m contains set at path attr. disj value from set; if empty, dissoc set."
   [m attr value]
-  (if (= #{value} (cljs.core/get m attr))
+  (if (= #{value} (get* m attr))
     (dissoc m attr)
-    (update m attr disj value)))
+    (update* m attr disj value)))
 
 (defn retract-attr-many [[db-snap reports] id attr value]
   (let [id (resolve-id db-snap id)]
@@ -137,16 +144,16 @@
    {:pre [(not (upsert-attr? id))
           (not (duplicate-on-unique? db-snap id attr val))]}
 
-   (when-let [{:keys [f message] :as validation} (get-in db-snap [:schema attr :validate])]
+   (when-let [{:keys [f message] :as validation} (get-in* db-snap [:schema attr :validate])]
      (or (f val) (throw js/Error (str "Validation failed for " attr ": " message " on " val))))
 
    (let [id (resolve-id db-snap id)
          many? (many? db-snap attr)
          multi-many? (and many? (sequential? val))
          no-op? (if many?
-                  (contains? (cljs.core/get (entity db-snap id) attr) val)
+                  (contains? (get* (entity db-snap id) attr) val)
                   ;; some invalid values throw when compared, eg `(map inc (take 2))`
-                  (try (= val (cljs.core/get (entity db-snap id) attr))
+                  (try (= val (get* (entity db-snap id) attr))
                        (catch js/Error e false)))]
      (cond
        no-op? [db-snap reports]
@@ -157,13 +164,13 @@
                   (conj reports [id attr val nil])]
                  (add-index id attr val))
 
-       :else (let [prev-val (cljs.core/get (entity db-snap id) attr)]
+       :else (let [prev-val (get* (entity db-snap id) attr)]
                (-> [(assoc-in db-snap [:data id attr] val)
                     (conj reports [id attr val prev-val])]
                    (add-index id attr val)
                    (remove-index id attr prev-val)))))))
 
-(defn update! [[db-snap reports] id attr f & args]
+(defn update [[db-snap reports] id attr f & args]
   {:pre [(not (many? db-snap attr))]}
   (assert (not (many? db-snap attr)) "Cannot update a :many attribute")
   (let [new-val (apply f (cons (get db-snap id attr) args))]
@@ -173,10 +180,10 @@
   {:db/retract-entity retract-entity
    :db/retract-attr   retract-attr
    :db/add            add
-   :db/update         update!})
+   :db/update         update})
 
 (defn create-id! [db]
-  (:entity-count (swap! db update :entity-count
+  (:entity-count (swap! db update* :entity-count
                         (fn [c] (first (filter #(not (has? @db %))
                                                (iterate inc (inc c))))))))
 
@@ -186,7 +193,7 @@
   (when-let [a (->> (keys m)
                     (filter (partial unique? db-snap))
                     first)]
-    (resolve-id db-snap [a (cljs.core/get m a)])))
+    (resolve-id db-snap [a (get* m a)])))
 
 (defn resolve-map-id [db m]
   (assoc m :db/id
@@ -200,7 +207,7 @@
     (map (fn [[a v]] (list :db/add id a v)) m)))
 
 (defn notify-listeners [db-snap reports]
-  (doseq [listener (vals (get-in db-snap [:listeners :tx-log]))]
+  (doseq [listener (vals (get-in* db-snap [:listeners :tx-log]))]
     (listener (remove nil? reports))))
 
 (defn transact! [db txs]
@@ -208,7 +215,7 @@
         db-before @db
         [next-db reports] (reduce
                             (fn [[snapshot reports] tx]
-                              (if-let [f (cljs.core/get db-f (first tx))]
+                              (if-let [f (get* db-f (first tx))]
                                 (apply f (cons [snapshot reports] (rest tx)))
                                 (throw (js/Error (str "No db function: " (first tx) tx)))))
                             [db-before []]
@@ -216,6 +223,31 @@
     (reset! db next-db)
     (notify-listeners @db reports)
     db))
+
+(defn upsert! [db ent]
+  {:pre [(map? ent)]}
+  (transact! db [(cond-> ent
+                         (not (contains? ent :db/id)) (assoc :db/id -1))]))
+
+(defn add!
+  ([db ent]
+    (upsert! db ent))
+  ([db id attr val]
+   (transact! db [{:db/id id
+                   attr   val}])))
+
+(defn update! [db id & args]
+  (transact! db [(into [:db/update id] args)]))
+
+(defn retract!
+  ([db id]
+   (transact! db [[:db/retract-entity id]]))
+  ([db id attr]
+   (transact! db [[:db/retract-attr id attr]]))
+  ([db id attr val]
+   (transact! db [[:db/retract-attr id attr val]])))
+
+
 
 (defn entity-ids
   [db-snap & qs]
@@ -228,10 +260,10 @@
                                (list (resolve-id db-snap q))
 
                                (index? db-snap attribute)
-                               (get-in db-snap [:index attribute value])
+                               (get-in* db-snap [:index attribute value])
 
                                :else (do (when (debug? db-snap) (prn (str "Not an indexed attribute: " attribute)))
-                                         (entity-ids db-snap #(= value (cljs.core/get % attribute))))))))) qs)))
+                                         (entity-ids db-snap #(= value (get* % attribute))))))))) qs)))
 
 (defn entities
   [db-snap & qs]
