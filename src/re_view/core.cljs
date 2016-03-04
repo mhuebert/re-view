@@ -1,6 +1,9 @@
 (ns re-view.core
   (:require-macros [re-view.core :refer [defcomponent]])
-  (:require [goog.object :as gobj]))
+  (:require [cljsjs.react]
+            [cljsjs.react.dom]
+            [sablono.core :refer-macros [html]]
+            [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
 
@@ -103,4 +106,3 @@
                     children)]
       (set! (.-reactClass element) class)
       element)))
-

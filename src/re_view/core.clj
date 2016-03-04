@@ -1,5 +1,6 @@
 (ns re-view.core
   (:require [cljs.core :refer [specify!]]
+            [sablono.core :include-macros true]
             [clojure.string :as string]))
 
 ;; for brevity - aliasing namespaced symbols to use in macros
@@ -57,7 +58,15 @@
    'componentDidUpdate
    (fn [f]
      `(~'componentDidUpdate [this# prev-props# prev-state#]
-        (~f this# (~prev-props this#) (~prev-state this#))))})
+        (~f this# (~prev-props this#) (~prev-state this#))))
+   'render
+   (fn [f]
+     `(~'render [this#]
+        (let [element# (~f this#)]
+          (if (~'js/React.isValidElement element#)
+            element#
+            (~'sablono.core/html element#))))
+     )})
 
 (defn wrap-lifecycle-methods [parsed-methods]
   ;; always wrap 'shouldComponentUpdate and 'componentWillUpdate, even if they aren't provided,

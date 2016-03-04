@@ -5,7 +5,11 @@
                       :url  "http://www.eclipse.org/legal/epl-v10.html"}
             :dependencies [[org.clojure/clojure "1.7.0"]
                            [org.clojure/clojurescript "1.7.228"]
-                           [org.clojars.mhuebert/re-db "0.1.0-SNAPSHOT"]]
+                           [org.clojars.mhuebert/re-db "0.1.0-SNAPSHOT"]
+                           [org.clojars.mhuebert/sablono "0.6.3-SNAPSHOT"]
+                           [cljsjs/react-with-addons "0.14.3-0"]
+                           [cljsjs/react-dom-server "0.14.3-0" :exclusions [cljsjs/react]]
+                           [cljsjs/react-dom "0.14.3-1" :exclusions [cljsjs/react]]]
 
             :plugins [[lein-cljsbuild "1.1.2"]
                       [lein-figwheel "0.5.0-2"]
