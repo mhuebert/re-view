@@ -133,7 +133,9 @@
 
   (def greeting
     (component
-      {:get-initial-state (fn [this] {:first-name "Herbert"})
+      {:get-initial-state
+       (fn [this] {:first-name "Herbert"})
+
        :render
        (fn [this]
          (let [{:keys [first-name]} (view/state this)]
