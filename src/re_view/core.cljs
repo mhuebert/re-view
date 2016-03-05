@@ -11,10 +11,6 @@
 (defn mounted? [c]
   (.isMounted c))
 
-(defn children [this]
-  (some-> this .-props .-children))
-
-
 (defn react-ref                                             ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
   "Returns the component associated with a component's React ref."
   [component name]
@@ -23,26 +19,15 @@
 
 ;; self-management of cljs props and state
 
-(def render-count (atom 0))
-
-(defn has-forced-props?
-  "Determines if we are in a forceUpdate call"
-  [this]
-  (= (some-> this .-state .-cljs$forcedProps .-render$count) @render-count))
-
-(defn forced-props [this]
-  (aget this "state" "cljs$forcedProps" "cljs$props"))
-
 (defn props
-  "React only supports supplying props to a root component. To enable .forceUpdate
-   on sub-components with new props, we store .forceUpdate props in state and
-   do a check here to determine which props are currently fresh."
+  "React complains if we mutate props, so we always read from state.
+  (this is set in componentWillReceiveProps)"
   [this]
-  (if (has-forced-props? this)
-    (if (.. this -state -cljs$forcedProps -active)
-      (forced-props this)
-      (some-> this .-state .-cljs$lastProps))
-    (some-> this .-props .-cljs$props)))
+  (.. this -state -cljs$props))
+
+(defn children [this]
+  (:view$children (props this))
+  #_(some-> this .-props .-children))
 
 (defn parse-props [props]
   (.-cljs$props props))
@@ -58,11 +43,10 @@
 (defn advance-state
   "Copy 'next-state' to 'state' once during each component lifecycle."
   [this]
-  (when (has-forced-props? this)
-    (gobj/set (.. this -state -cljs$forcedProps) "active" true))
-  (gobj/set (.-state this) "cljs$lastProps" (props this))
-  (doto (.-state this)
-    (gobj/set "cljs$state" (next-state this))))
+  (when (.hasOwnProperty (.-state this) "cljs$nextProps")
+    (gobj/set (.-state this) "cljs$props" (.. this -state -cljs$nextProps)))
+  (when (.hasOwnProperty (.-state this) "cljs$nextState")
+    (gobj/set (.-state this) "cljs$state" (.. this -state -cljs$nextState))))
 
 ;; State manipulation
 
@@ -85,26 +69,17 @@
 (defn render-component
   "Force render a component with supplied props, even if not a root component."
   ([this] (render-component this nil))
-  ([this props] (render-component this props false))
-  ([this props force?]
-   (let [js-props #js {:render$count (swap! render-count inc)
-                       :cljs$props   props}]
-
-     (doto (.-state this)
-       (gobj/set "cljs$forcedProps" js-props))
-
+  ([this props] (render-component this props nil))
+  ([this props & children]
+   (let [js-props (js-obj "cljs$props" (cond-> props
+                                               (not= '(nil) children) (assoc :view$children children)))]
      ;; manually invoke componentWillReceiveProps
      (when-let [will-receive-props (.-componentWillReceiveProps this)]
        (.call will-receive-props this js-props))
 
      ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-     (when (or force? (.call (.-shouldComponentUpdate this) this js-props nil))
+     (when (.call (.-shouldComponentUpdate this) this js-props nil)
        (.forceUpdate this (fn []))))))
-
-; the thing is
-; props
-; until after :component-will-update,
-; we only get access to new props via
 
 ;; TODO - include render loop
 
@@ -115,7 +90,9 @@
    (fn [f]
      (fn []
        (this-as this
-         (js-obj "cljs$state" (if f (f this) nil)))))
+         (let [initial-state (set! (.-state this) #js {:cljs$props (.. this -props -cljs$props)})]
+           (gobj/set initial-state "cljs$state" (if f (f this) nil))
+           initial-state))))
 
    "componentWillMount"
    (fn [f]
@@ -128,7 +105,8 @@
      (fn [next-props]
        (this-as this
          (binding [*trigger-state-render* false]
-           (f this (parse-props next-props))))))
+           (set! (.. this -state -cljs$nextProps) (.. next-props -cljs$props))
+           (when f (f this (parse-props next-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
@@ -148,9 +126,7 @@
    (fn [f]
      (fn [next-props _]
        (this-as this
-         (when f (let [next-props (if (has-forced-props? this) (forced-props this)
-                                                               (parse-props next-props))]
-                   (f this next-props (next-state this))))
+         (when f (f this (.. this -state -cljs$nextProps) (next-state this)))
          (advance-state this))))
 
    "componentDidUpdate"
@@ -189,7 +165,8 @@
   (let [methods (update-keys (comp camelCase name) methods)]
     (reduce (fn [m name]
               (let [wrap-f (get lifecycle-wrap-fns name (fn [f]
-                                                          (fn [] (this-as this (f this)))))]
+                                                          (fn [& args] (this-as this
+                                                                         (apply f (cons this args))))))]
                 (assoc m name (wrap-f (get methods name)))))
             {}
             (into #{"shouldComponentUpdate" "componentWillUpdate"
@@ -200,15 +177,17 @@
 (defn factory
   [class]
   (fn [props & children]
-    (let [props? (map? props)
+    (let [props? (or (nil? props) (map? props))
           children (if props? children (cons props children))
           {:keys [ref key] :as props} (when props? props)
           element (js/React.createElement
                     class
-                    #js {:key        (if-let [keyfn (.. class -prototype -reactKey)]
-                                       (keyfn props) key)
+                    #js {:key        (or key (if-let [keyfn (.. class -prototype -reactKey)]
+                                               (keyfn props) key))
                          :ref        ref
-                         :cljs$props (dissoc props :keyfn :ref :key)}
+                         :cljs$props (cond->
+                                       (dissoc props :keyfn :ref :key)
+                                       (not= '(nil) children) (assoc :view$children children))}
                     children)]
       (set! (.-reactClass element) class)
       element)))

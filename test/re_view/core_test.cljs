@@ -2,15 +2,7 @@
   (:require [cljs.test :refer-macros [deftest is are]]
             [re-view.core :as view :refer [component]]))
 
-(def lifecycle-signatures
-  ;; React lifecycle method signatures
-  {:get-initial-state            #{}
-   :component-will-mount         #{}
-   :component-will-receive-props #{:next-props}
-   :should-component-update      #{:next-props :next-state}
-   :component-will-update        #{:next-props :next-state}
-   :render                       #{}
-   :component-did-update         #{:prev-props :prev-state}})
+
 
 (def render-count (atom 0))
 
@@ -24,6 +16,8 @@
   (doseq [[attr val] (partition 2 other-states)]
     (swap! lifecycle-log assoc-in [method attr] val)))
 
+(def initial-state {:eaten? false})
+
 (def apple
   ;; a heavily logged component
 
@@ -32,7 +26,7 @@
     :get-initial-state
     (fn [this]
       (log-lifecycle-states this :get-initial-state)
-      {:eaten? false})
+      initial-state)
 
     :component-will-mount
     (fn [this]
@@ -63,12 +57,6 @@
                             :next-state next-state)
       true)
 
-    :component-did-update
-    (fn [this prev-props prev-state]
-      (log-lifecycle-states this :component-did-update
-                            :prev-props prev-props
-                            :prev-state prev-state))
-
     :render
     (fn [this]
       (log-lifecycle-states this :render)
@@ -77,7 +65,13 @@
       [:div "I am an apple."
        (when-not (:eaten (view/state this))
          [:p {:ref   "apple-statement-of-courage"
-              :style {:font-weight "bold"}} " ...and I am brave and alive."])])))
+              :style {:font-weight "bold"}} " ...and I am brave and alive."])])
+
+    :component-did-update
+    (fn [this prev-props prev-state]
+      (log-lifecycle-states this :component-did-update
+                            :prev-props prev-props
+                            :prev-state prev-state))))
 
 (def util js/React.addons.TestUtils)
 (def init-props {:color "red"})
@@ -118,12 +112,19 @@
         "Force rendered")
 
 
-    ;; * note, Force Rendering does not currently support supplying new/changed children
+   ;; Children with force-render
 
-
-    ;; Children
+    (view/render-component c {} [:div "div"])
     (is (= 1 (count (view/children c))))
     (is (= :div (ffirst (view/children c))))
+
+    (view/render-component c {} [:p "Paragraph"])
+    (is (= :p (ffirst (view/children c))))
+
+    ;; Children with ordinary render
+
+    (render nil [:span "Span"])
+    (is (= :span (ffirst (view/children c))))
 
 
     ;; Ref
@@ -132,134 +133,107 @@
                       .-style
                       .-fontWeight)))))
 
-(def lifecycle-arg-index
-  ;; which args should be provided where
-  {:next-props #{:component-will-receive-props
-                 :should-component-update
-                 :component-will-update}
-   :next-state #{:should-component-update
-                 :component-will-update}
-   :prev-props #{:component-did-update}
-   :prev-state #{:component-did-update}})
+(defn validate-transition
+  "Ensure state/props transition from old to new value correctly"
+  [props-or-state
+   initial-val
+   before-val
+   after-val
+   log]
+  (let [_ nil]
+    ;; ensure props, prev-state, prev-props, next-state, next-props
+    ;; are supplied accurately in correct locations
+    (case props-or-state
+      :props (are [method-name val]
+               (= val [(get-in log [method-name :props])
+                       (get-in log [method-name :prev-props])
+                       (get-in log [method-name :next-props])])
 
-(defn validate-lifecycle-args
-  "Ensures the correct arguments were logged for every lifecycle method."
-  [log-atom]
-  (doseq [[method logged-args] @log-atom]
-    (is (= (set (keys logged-args))
-           (into (get lifecycle-signatures method) #{:props :state})))))
+               :get-initial-state [initial-val _ _]
+               :component-will-mount [initial-val _ _]
+               :component-will-receive-props [before-val _ after-val]
+               :should-component-update [before-val _ after-val]
+               :component-will-update [before-val _ after-val]
+               :render [after-val _ _]
+               :component-did-update [after-val before-val _])
 
-(defn verify-lifecycle-args
-  "Ensures the correct lifecycle methods were called for every arg."
-  ([log-atom] (verify-lifecycle-args log-atom false))
-  ([log-atom state?]
-   (validate-lifecycle-args log-atom)
-   (let [index (cond-> lifecycle-arg-index
-                       state? (update :next-props disj :component-will-receive-props))]
-     (doseq [method (keys index)]
-       (is (= (get index method)
-              (->> @log-atom
-                   (filter (fn [[_ state-and-prop-logs]] (get state-and-prop-logs method)))
-                   keys
-                   set)))))))
+      :state (are [method-name val]
+               (= val [(get-in log [method-name :state])
+                       (get-in log [method-name :prev-state])
+                       (get-in log [method-name :next-state])])
 
-
+               :get-initial-state [_ _ _]
+               :component-will-mount [initial-val _ _]
+               ;:component-will-receive-props [before-val _ _]
+               :should-component-update [before-val _ after-val]
+               :component-will-update [before-val _ after-val]
+               :render [after-val _ _]
+               :component-did-update [after-val before-val _]))))
 
 (deftest lifecycle
   (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
                                            (.setAttribute "id" "apple")))
-        render #(js/ReactDOM.render (apple %1 %2) el)
-        this (render {:color "purple"} nil)]
-
-    (is (= {:color "purple"}
-           (get-in @lifecycle-log [:component-will-mount :props])
-           (get-in @lifecycle-log [:get-initial-state :props])))
+        render #(js/ReactDOM.render (apple %1 nil) el)
+        this (render {:color "purple"})]
 
     ;; Prop transition, ordinary render
-    (reset! lifecycle-log {})
-    (render {:color "pink"} nil)
-    (render {:color "blue"} nil)
 
-    ;; ensure that the correct state and prop objects
-    ;; were passed to the correct lifecycle methods
-    (verify-lifecycle-args lifecycle-log)
+    (render {:color "pink"})
+    (render {:color "blue"})
 
     ;; in all instances of prev-props, color was "pink"
-    (is (= #{"pink"} (->> @lifecycle-log
-                          vals
-                          (keep :prev-props)
-                          (map :color)
-                          set))
-        "prev-props accurate in ordinary render")
-    ;; in all instances of next-props, color was "blue"
-    (is (= #{"blue"} (->> @lifecycle-log
-                          vals
-                          (keep :next-props)
-                          (map :color)
-                          set))
-        "next-props accurate in ordinary render")
+    (validate-transition :props
+                         {:color "purple"}                  ;; initial
+                         {:color "pink"}                    ;; before
+                         {:color "blue"}                    ;; after
+                         @lifecycle-log)
 
-    ;; test that value of `props` transitions at correct time
-    (are [method-name color]
-      (= color (get-in @lifecycle-log [method-name :props :color]))
-
-      :component-will-receive-props "pink"
-      :should-component-update "pink"
-      :component-will-update "pink"
-      :render "blue"
-      :component-did-update "blue")
+    ;; state has not changed
+    (validate-transition :state
+                         initial-state                      ;; initial
+                         initial-state                      ;; before
+                         initial-state                      ;; after
+                         @lifecycle-log)
 
     ;; Prop transition, view/render-component (with .forceUpdate)
     (reset! lifecycle-log {})
     (view/render-component this {:color "yellow"})
     (view/render-component this {:color "mink"})
 
-    ;; all prev-props were "yellow"
-    (is (= #{"yellow"} (->> @lifecycle-log
-                            vals
-                            (keep :prev-props)
-                            (map :color)
-                            set))
-        "prev-props accurate in force render")
+    (validate-transition :props
+                         nil                                ;; initial
+                         {:color "yellow"}                  ;; before
+                         {:color "mink"}                    ;; after
+                         @lifecycle-log)
 
-    ;; all next-props were "mink"
-    (is (= #{"mink"} (->> @lifecycle-log
-                          vals
-                          (keep :next-props)
-                          (map :color)
-                          set))
-        "next-props accurate in force render")
+    ;; Two force-renders in a row
 
-    (verify-lifecycle-args lifecycle-log)
+    (view/render-component this {:color "fox"})
+
+    (validate-transition :props
+                         nil                                ;; initial
+                         {:color "mink"}                    ;; before
+                         {:color "fox"}                     ;; after
+                         @lifecycle-log)
 
 
-    ;; test that value of `props` transitions at correct time
-    (are [method-name color]
-      (= color (get-in @lifecycle-log [method-name :props :color]))
+    ;; Force-render followed by normal render
 
-      :component-will-receive-props "yellow"
-      :should-component-update "yellow"
-      :component-will-update "yellow"
-      :render "mink"
-      :component-did-update "mink")
+    (render {:color "bear"})
+
+    (validate-transition :props
+                         nil                                ;; initial
+                         {:color "fox"}                     ;; before
+                         {:color "bear"}                    ;; after
+                         @lifecycle-log)
 
     ;; State transition
     (reset! lifecycle-log {})
-    (view/update-state! this assoc :shiny? false)
+    (view/set-state! this {:shiny? false})
     (view/update-state! this update :shiny? not)
 
-    (is (= #{false} (->> @lifecycle-log
-                         vals
-                         (keep :prev-state)
-                         (map :shiny?)
-                         set))
-        "prev-state correct throughout state transition")
-
-    (is (= #{true} (->> @lifecycle-log
-                        vals
-                        (keep :next-state)
-                        (map :shiny?)
-                        set))
-        "next-state correct throughout state transition")
-
-    (verify-lifecycle-args lifecycle-log true)))
+    (validate-transition :state
+                         nil                                ;; initial
+                         {:shiny? false}                    ;; before
+                         {:shiny? true}                     ;; after
+                         @lifecycle-log)))
