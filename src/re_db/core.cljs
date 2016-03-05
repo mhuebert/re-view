@@ -202,29 +202,59 @@
    :db/add            add
    :db/update         update})
 
-(defn find-id-by-unique-attr [db-snap m]
-  (when-let [a (->> (keys m)
-                    (filter (partial unique? db-snap))
-                    first)]
-    (resolve-id db-snap [a (get* m a)])))
+(defn find-id-by-unique-attr [db-snap tx]
+  (when (map? tx)
+        (when-let [a (->> (keys tx)
+                          (filter (partial unique? db-snap))
+                          first)]
+          (resolve-id db-snap [a (get* tx a)]))))
 
-(defn resolve-map-id [db m]
-  (assoc m :db/id
-           (if-not (upsert-attr? (:db/id m))
-             (resolve-id @db (:db/id m))
-             (or (find-id-by-unique-attr @db m) (create-id! db)))))
+(defn get-id [tx]
+  (cond (map? tx) (:db/id tx)
+        :else (second tx)))
 
-(defn map->txs [db m]
-  {:pre [(contains? m :db/id)]}
-  (let [{:keys [db/id] :as m} (resolve-map-id db m)]
-    (map (fn [[a v]] (list :db/add id a v)) m)))
+(defn map->txs [m]
+  (cond->> m
+           (map? m) (map (fn [[a v]] [:db/add (:db/id m) a v]) m)
+           (not (map? m)) (list)))
+
+(defn temp-id [tx]
+  (let [id (get-id tx)]
+    (when ((every-pred number? neg?) id) id)))
+
+(defn swap-id [tx id]
+  (cond (map? tx) (assoc tx :db/id id)
+        :else (assoc tx 1 id)))
+
+(defn resolve-ids [db txs]
+  (loop [ids {}
+         remaining txs
+         out []]
+    (if-let [tx (first remaining)]
+      (let [id (get-id tx)
+            temp-id (temp-id tx)
+            new-id (cond temp-id (or (find-id-by-unique-attr @db tx)
+                                     (get* ids temp-id)
+                                     (create-id! db))
+                         (sequential? id) (resolve-id @db id)
+                         :else nil)]
+        (recur
+          (cond-> ids
+                  temp-id (assoc temp-id new-id))
+          (rest remaining)
+          (conj out (cond-> tx
+                            new-id (swap-id new-id)))))
+      out)))
 
 (defn notify-listeners [db-snap reports]
   (doseq [listener (vals (get-in* db-snap [:listeners :tx-log]))]
     (listener (remove nil? reports))))
 
 (defn transact! [db txs]
-  (let [txs (remove nil? (mapcat #(if (map? %) (map->txs db %) [%]) txs))
+  (let [txs (->> txs
+                 (resolve-ids db)
+                 (mapcat map->txs)
+                 (remove nil?))
         db-before @db
         [next-db reports] (reduce
                             (fn [[snapshot reports] tx]
@@ -244,7 +274,7 @@
 
 (defn add!
   ([db ent]
-    (upsert! db ent))
+   (upsert! db ent))
   ([db id attr val]
    (when-not (has? @db id) (err [:add!-missing-entity attr id]))
    (transact! db [{:db/id id
