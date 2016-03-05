@@ -39,46 +39,42 @@
    do a check here to determine which props are currently fresh."
   [this]
   (if (has-forced-props? this)
-    (forced-props this)
+    (if (.. this -state -cljs$forcedProps -active)
+      (forced-props this)
+      (some-> this .-state .-cljs$lastProps))
     (some-> this .-props .-cljs$props)))
 
 (defn parse-props [props]
   (.-cljs$props props))
 
-(defn parse-state [state]
-  (.-cljs$state state))
-
 (defn state [this]
   (some-> this .-state .-cljs$state))
 
-(defn prev-props [this]
-  (some-> this .-state .-cljs$previousProps))
-
-(defn prev-state [this]
-  (some-> this .-state .-cljs$previousState))
-
 (defn next-state [this]
-  (some-> this .-state .-cljs$nextState))
+  (if (.hasOwnProperty (.-state this) "cljs$nextState")
+    (aget this "state" "cljs$nextState")
+    (state this)))
 
 (defn advance-state
-  "Record previous props and state and copy 'next-state' to 'state'
-   once during each component lifecycle."
+  "Copy 'next-state' to 'state' once during each component lifecycle."
   [this]
-  (doto this
-    (aset "state" "cljs$previousProps" (props this))
-    (aset "state" "cljs$previousState" (state this)))
-  (when (.hasOwnProperty (.-state this) "cljs$nextState")
-    (aset this "state" "cljs$state" (aget this "state" "cljs$nextState"))))
+  (when (has-forced-props? this)
+    (gobj/set (.. this -state -cljs$forcedProps) "active" true))
+  (gobj/set (.-state this) "cljs$lastProps" (props this))
+  (doto (.-state this)
+    (gobj/set "cljs$state" (next-state this))))
 
 ;; State manipulation
 
 (defn set-state! [this new-state]
   (when (not= new-state (state this))
     (set! (.. this -state -cljs$nextState) new-state)
-    (if (and *trigger-state-render* (mounted? this))
+    (if (and *trigger-state-render*
+             (mounted? this)
+             (.call (.-shouldComponentUpdate this) this (.-props this) nil))
       (.forceUpdate this)
       ;; if *trigger-state-render* is false, we skip the component lifecycle
-      ;; & therefore must advance-state manually here
+      ;; & therefore advance-state manually here
       (advance-state this))))
 
 (defn update-state! [this f & args]
@@ -88,13 +84,27 @@
 
 (defn render-component
   "Force render a component with supplied props, even if not a root component."
-  ([component] (render-component component nil))
-  ([component props]
-   (when props
-     (set! (.. component -state -cljs$forcedProps) #js {:render$count (swap! render-count inc)
-                                                        :cljs$props   props}))
-   (.forceUpdate component (fn []))))
+  ([this] (render-component this nil))
+  ([this props] (render-component this props false))
+  ([this props force?]
+   (let [js-props #js {:render$count (swap! render-count inc)
+                       :cljs$props   props}]
 
+     (doto (.-state this)
+       (gobj/set "cljs$forcedProps" js-props))
+
+     ;; manually invoke componentWillReceiveProps
+     (when-let [will-receive-props (.-componentWillReceiveProps this)]
+       (.call will-receive-props this js-props))
+
+     ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
+     (when (or force? (.call (.-shouldComponentUpdate this) this js-props nil))
+       (.forceUpdate this (fn []))))))
+
+; the thing is
+; props
+; until after :component-will-update,
+; we only get access to new props via
 
 ;; TODO - include render loop
 
@@ -147,13 +157,16 @@
    (fn [f]
      (fn [_ _]
        (this-as this
-         (f this (prev-props this) (prev-state this)))))
+         (f this (.. this -state -cljs$previousProps) (.. this -state -cljs$previousState))
+         (set! (.. this -state -cljs$previousProps) (props this))
+         (set! (.. this -state -cljs$previousState) (state this)))))
 
    "render"
    (fn [f]
      (fn []
        (this-as this
          (let [element (f this)]
+           ;; wrap in sablono.core/html if not already a valid React element
            (if (js/React.isValidElement element)
              element
              (html element))))))})
@@ -179,7 +192,8 @@
                                                           (fn [] (this-as this (f this)))))]
                 (assoc m name (wrap-f (get methods name)))))
             {}
-            (into #{"shouldComponentUpdate" "componentWillUpdate" "getInitialState"}
+            (into #{"shouldComponentUpdate" "componentWillUpdate"
+                    "getInitialState" "componentWillReceiveProps"}
                   ;; these three methods ^^ have default behaviours so we always "wrap" them
                   (keys methods)))))
 
