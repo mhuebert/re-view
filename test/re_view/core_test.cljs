@@ -80,9 +80,10 @@
                                :background    "red"
                                :border-radius 100}}])
 
-(deftest state
-  (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
-                                           (.setAttribute "id" "apple")))
+(def append-el #(js/document.body.appendChild (js/document.createElement "div")))
+
+(deftest basic
+  (let [el (append-el)
         render #(js/ReactDOM.render (apple %1 %2) el)
         c (render init-props init-child)]
 
@@ -99,7 +100,6 @@
         "State has changed")
     (is (= 2 @render-count)
         "Component was rendered")
-
     (is (= "red" (:color (view/props c)))
         "Read props")
 
@@ -112,37 +112,36 @@
         "Force rendered")
 
 
-   ;; Children with force-render
+    ;; Children with force-render
 
     (view/render-component c {} [:div "div"])
-    (is (= 1 (count (view/children c))))
-    (is (= :div (ffirst (view/children c))))
+    (is (= 1 (count (view/children c)))
+        "Has one child")
+    (is (= :div (ffirst (view/children c)))
+        "Read child")
 
     (view/render-component c {} [:p "Paragraph"])
-    (is (= :p (ffirst (view/children c))))
+    (is (= :p (ffirst (view/children c)))
+        "New child - force render")
 
     ;; Children with ordinary render
 
     (render nil [:span "Span"])
-    (is (= :span (ffirst (view/children c))))
+    (is (= :span (ffirst (view/children c)))
+        "New child - normal render")
 
 
     ;; Ref
     (is (= "bold" (-> c
                       (view/react-ref "apple-statement-of-courage")
                       .-style
-                      .-fontWeight)))))
+                      .-fontWeight))
+        "Read react ref")))
 
 (defn validate-transition
   "Ensure state/props transition from old to new value correctly"
-  [props-or-state
-   initial-val
-   before-val
-   after-val
-   log]
+  [log props-or-state [initial-val before-val after-val]]
   (let [_ nil]
-    ;; ensure props, prev-state, prev-props, next-state, next-props
-    ;; are supplied accurately in correct locations
     (case props-or-state
       :props (are [method-name val]
                (= val [(get-in log [method-name :props])
@@ -164,13 +163,12 @@
 
                :get-initial-state [_ _ _]
                :component-will-mount [initial-val _ _]
-               ;:component-will-receive-props [before-val _ _]
                :should-component-update [before-val _ after-val]
                :component-will-update [before-val _ after-val]
                :render [after-val _ _]
                :component-did-update [after-val before-val _]))))
 
-(deftest lifecycle
+(deftest lifecycle-transitions
   (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
                                            (.setAttribute "id" "apple")))
         render #(js/ReactDOM.render (apple %1 nil) el)
@@ -182,58 +180,52 @@
     (render {:color "blue"})
 
     ;; in all instances of prev-props, color was "pink"
-    (validate-transition :props
-                         {:color "purple"}                  ;; initial
-                         {:color "pink"}                    ;; before
-                         {:color "blue"}                    ;; after
-                         @lifecycle-log)
+    (validate-transition @lifecycle-log :props
+                         [{:color "purple"}
+                          {:color "pink"}
+                          {:color "blue"}])
 
     ;; state has not changed
-    (validate-transition :state
-                         initial-state                      ;; initial
-                         initial-state                      ;; before
-                         initial-state                      ;; after
-                         @lifecycle-log)
+    (validate-transition @lifecycle-log :state
+                         [initial-state
+                          initial-state
+                          initial-state])
 
     ;; Prop transition, view/render-component (with .forceUpdate)
     (reset! lifecycle-log {})
     (view/render-component this {:color "yellow"})
     (view/render-component this {:color "mink"})
 
-    (validate-transition :props
-                         nil                                ;; initial
-                         {:color "yellow"}                  ;; before
-                         {:color "mink"}                    ;; after
-                         @lifecycle-log)
+    (validate-transition @lifecycle-log :props
+                         [nil
+                          {:color "yellow"}
+                          {:color "mink"}])
 
     ;; Two force-renders in a row
 
     (view/render-component this {:color "fox"})
 
-    (validate-transition :props
-                         nil                                ;; initial
-                         {:color "mink"}                    ;; before
-                         {:color "fox"}                     ;; after
-                         @lifecycle-log)
+    (validate-transition @lifecycle-log :props
+                         [nil
+                          {:color "mink"}
+                          {:color "fox"}])
 
 
     ;; Force-render followed by normal render
 
     (render {:color "bear"})
 
-    (validate-transition :props
-                         nil                                ;; initial
-                         {:color "fox"}                     ;; before
-                         {:color "bear"}                    ;; after
-                         @lifecycle-log)
+    (validate-transition @lifecycle-log :props
+                         [nil
+                          {:color "fox"}
+                          {:color "bear"}])
 
     ;; State transition
     (reset! lifecycle-log {})
     (view/set-state! this {:shiny? false})
     (view/update-state! this update :shiny? not)
 
-    (validate-transition :state
-                         nil                                ;; initial
-                         {:shiny? false}                    ;; before
-                         {:shiny? true}                     ;; after
-                         @lifecycle-log)))
+    (validate-transition @lifecycle-log :state
+                         [nil
+                          {:shiny? false}
+                          {:shiny? true}])))
