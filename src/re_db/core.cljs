@@ -9,6 +9,19 @@
 (def get* cljs.core/get)
 (def update* cljs.core/update)
 
+(def error-messages
+  {:add!-missing-entity
+   (fn [attr id]
+     (str "The entity you want to add a " attr " to, " id ", does not exist.\n"
+          (when (sequential? id)
+            (str "To upsert a new entity, call add! with a map, like {"
+                 (first id) " " (second id) " :other-attr other-val}"))))})
+
+(defn err [[k & args]]
+  (throw (js/Error
+           (some-> (get* error-messages k) (apply args)))))
+
+
 (defn create
   "Create a new db, with optional schema."
   ([] (create {}))
@@ -36,7 +49,13 @@
 (defn unique? [db-snap a]
   (boolean (get-in* db-snap [:schema a :db/unique])))
 
-(defn resolve-id [db-snap id]
+(defn create-id! [db]
+  (:entity-count (swap! db update* :entity-count
+                        (fn [c] (first (filter #(not (has? @db %))
+                                               (iterate inc (inc c))))))))
+
+(defn resolve-id
+  [db-snap id]
   (when id
     (cond (number? id) id
           (sequential? id) (let [[a v] id]
@@ -148,6 +167,7 @@
      (or (f val) (throw js/Error (str "Validation failed for " attr ": " message " on " val))))
 
    (let [id (resolve-id db-snap id)
+         ;; TODO - clarify when we upsert, etc._ (assert (has? db-snap id))
          many? (many? db-snap attr)
          multi-many? (and many? (sequential? val))
          no-op? (if many?
@@ -181,13 +201,6 @@
    :db/retract-attr   retract-attr
    :db/add            add
    :db/update         update})
-
-(defn create-id! [db]
-  (:entity-count (swap! db update* :entity-count
-                        (fn [c] (first (filter #(not (has? @db %))
-                                               (iterate inc (inc c))))))))
-
-
 
 (defn find-id-by-unique-attr [db-snap m]
   (when-let [a (->> (keys m)
@@ -233,6 +246,7 @@
   ([db ent]
     (upsert! db ent))
   ([db id attr val]
+   (when-not (has? @db id) (err [:add!-missing-entity attr id]))
    (transact! db [{:db/id id
                    attr   val}])))
 
@@ -263,10 +277,12 @@
                                (get-in* db-snap [:index attribute value])
 
                                :else (do (when (debug? db-snap) (prn (str "Not an indexed attribute: " attribute)))
-                                         (entity-ids db-snap #(= value (get* % attribute))))))))) qs)))
+                                         (entity-ids db-snap #(= value (get* % attribute)))))))))
+              qs)))
 
 (defn entities
   [db-snap & qs]
+  (prn (apply entity-ids (cons db-snap qs)))
   (map (partial entity db-snap) (apply entity-ids (cons db-snap qs))))
 
 (defn squuid []

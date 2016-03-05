@@ -9,24 +9,18 @@
     (is (satisfies? cljs.core/IDeref db)
         "DB is an atom")
 
-
     (d/transact! db [{:db/id -1 :id "herman"}])
-
 
     (is (= "herman" (d/get @db [:id "herman"] :id))
         "Upsert with :db.unique/identity")
 
-
     (is (contains? (get-in @db [:index :id]) "herman")
         "Unique index exists")
 
-
     (d/add! db [:id "herman"] :occupation "teacher")
-
 
     (is (= "teacher" (d/get @db [:id "herman"] :occupation))
         "Set and read attributes, via lookup ref")
-
 
     (is (number? (d/get-in @db [:id "herman"] :db/id))
         "Retrieve entity; check for presence of numeric :db/id")
@@ -55,8 +49,6 @@
                       :children {:db/cardinality :db.cardinality/many
                                  :db/index true}})]
 
-    ;; the following three statements are equivalent & idempotent:
-    (d/transact! db [[:db/add [:id "fred"] :children "pete"]])
     (d/add! db {:id "fred" :children "pete"})
 
     (is (true? (contains? (get-in @db [:index :children]) "pete"))
