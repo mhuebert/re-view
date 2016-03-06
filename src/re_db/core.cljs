@@ -49,6 +49,9 @@
 (defn unique? [db-snap a]
   (boolean (get-in* db-snap [:schema a :db/unique])))
 
+(defn has? [db-snap e]
+  (contains? (:data db-snap) (resolve-id db-snap e)))
+
 (defn create-id! [db]
   (:entity-count (swap! db update* :entity-count
                         (fn [c] (first (filter #(not (has? @db %))
@@ -76,9 +79,6 @@
 
 (defn upsert-attr? [id]
   (and (number? id) (neg? id)))
-
-(defn has? [db-snap e]
-  (contains? (:data db-snap) (resolve-id db-snap e)))
 
 (defn entity [db-snap id]
   (when-let [id (resolve-id db-snap id)]
