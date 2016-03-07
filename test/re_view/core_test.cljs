@@ -223,6 +223,8 @@
     ;; State transition
     (reset! lifecycle-log {})
     (view/set-state! this {:shiny? false})
+    (is (false? (-> this view/state :shiny?)))
+
     (view/update-state! this update :shiny? not)
 
     (validate-transition @lifecycle-log :state

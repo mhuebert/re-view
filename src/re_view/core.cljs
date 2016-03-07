@@ -5,13 +5,15 @@
             [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
+(def ^:dynamic *user-prior-state* false)
 
 ;; convenience access methods
 
 (defn mounted? [c]
   (.isMounted c))
 
-(defn react-ref                                             ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
+;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
+(defn react-ref
   "Returns the component associated with a component's React ref."
   [component name]
   (some-> (.-refs component) (gobj/get name)))
@@ -23,7 +25,9 @@
   "React complains if we mutate props, so we always read from state.
   (this is set in componentWillReceiveProps)"
   [this]
-  (.. this -state -cljs$props))
+  (if *user-prior-state*
+    (.. this -state -cljs$previousProps)
+    (.. this -state -cljs$props)))
 
 (defn children [this]
   (:view$children (props this))
@@ -33,38 +37,25 @@
   (.-cljs$props props))
 
 (defn state [this]
-  (some-> this .-state .-cljs$state))
-
-(defn next-state [this]
-  (if (.hasOwnProperty (.-state this) "cljs$nextState")
-    (aget this "state" "cljs$nextState")
-    (state this)))
-
-(defn advance-state
-  "Copy 'next-state' to 'state' once during each component lifecycle."
-  [this]
-  (when (.hasOwnProperty (.-state this) "cljs$nextProps")
-    (gobj/set (.-state this) "cljs$props" (.. this -state -cljs$nextProps)))
-  (when (.hasOwnProperty (.-state this) "cljs$nextState")
-    (gobj/set (.-state this) "cljs$state" (.. this -state -cljs$nextState))))
+  (if *user-prior-state*
+    (some-> this .-state .-cljs$previousState)
+    (some-> this .-state .-cljs$state)))
 
 ;; State manipulation
 
 (defn set-state! [this new-state]
   (when (not= new-state (state this))
-    (set! (.. this -state -cljs$nextState) new-state)
+    (set! (.. this -state -cljs$previousState)
+          (.. this -state -cljs$state))
+    (set! (.. this -state -cljs$state) new-state)
+
     (if (and *trigger-state-render*
              (mounted? this)
              (.call (.-shouldComponentUpdate this) this (.-props this) nil))
-      (.forceUpdate this)
-      ;; if *trigger-state-render* is false, we skip the component lifecycle
-      ;; & therefore advance-state manually here
-      (advance-state this))))
+      (.forceUpdate this))))
 
 (defn update-state! [this f & args]
   (set-state! this (apply f (cons (state this) args))))
-
-;; Render
 
 (defn render-component
   "Force render a component with supplied props, even if not a root component."
@@ -90,9 +81,11 @@
    (fn [f]
      (fn []
        (this-as this
-         (let [initial-state (set! (.-state this) #js {:cljs$props (.. this -props -cljs$props)})]
-           (gobj/set initial-state "cljs$state" (if f (f this) nil))
-           initial-state))))
+         (let [initial-state-obj (set! (.-state this) #js {:cljs$props (.. this -props -cljs$props)})
+               state (if f (f this) nil)]
+           (doto initial-state-obj
+             (gobj/set "cljs$state" state)
+             (gobj/set "cljs$previousState" state))))))
 
    "componentWillMount"
    (fn [f]
@@ -104,38 +97,41 @@
    (fn [f]
      (fn [next-props]
        (this-as this
-         (binding [*trigger-state-render* false]
-           (set! (.. this -state -cljs$nextProps) (.. next-props -cljs$props))
+         (doto (.-state this)
+           (gobj/set "cljs$previousProps" (.. this -state -cljs$props))
+           (gobj/set "cljs$props" (parse-props next-props)))
+         (binding [*trigger-state-render* false
+                   *user-prior-state* true]
            (when f (f this (parse-props next-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
-     (fn [next-props _]
+     (fn [_ _]
        (this-as this
-         (let [next-props (parse-props next-props)
-               next-state (next-state this)
-               update? (if f (f this next-props next-state)
+         (let [update? (if f (binding [*user-prior-state* true]
+                               (f this
+                                  (.. this -state -cljs$props)
+                                  (.. this -state -cljs$state)))
                              ;; by default, update if props or state have changed
-                             true
-                             #_(or (not= next-props (props this))
-                                   (not= next-state (state this))))]
-           (when-not update? (advance-state this))
+                             true)]
            update?))))
 
    "componentWillUpdate"
    (fn [f]
-     (fn [next-props _]
+     (fn [_ _]
        (this-as this
-         (when f (f this (.. this -state -cljs$nextProps) (next-state this)))
-         (advance-state this))))
+         (when f (binding [*user-prior-state* true]
+                   (f this
+                      (.. this -state -cljs$props)
+                      (.. this -state -cljs$state)))))))
 
    "componentDidUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
-         (f this (.. this -state -cljs$previousProps) (.. this -state -cljs$previousState))
-         (set! (.. this -state -cljs$previousProps) (props this))
-         (set! (.. this -state -cljs$previousState) (state this)))))
+         (f this
+            (.. this -state -cljs$previousProps)
+            (.. this -state -cljs$previousState)))))
 
    "render"
    (fn [f]
