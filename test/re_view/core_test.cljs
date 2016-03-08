@@ -231,3 +231,9 @@
                          [nil
                           {:shiny? false}
                           {:shiny? true}])))
+
+
+;; test react-key
+;; test expand-props
+;; - should this be called every time the component is rendered?
+;;   can we cache anything?

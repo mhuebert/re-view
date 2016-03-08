@@ -59,7 +59,7 @@
 
 (defn render-component
   "Force render a component with supplied props, even if not a root component."
-  ([this] (render-component this nil))
+  ([this] (render-component this (props this)))
   ([this props] (render-component this props nil))
   ([this props & children]
    (let [js-props (js-obj "cljs$props" (cond-> props
@@ -76,12 +76,18 @@
 
 ;; Lifecycle method handling
 
+(defn expand-props [this props]
+  (cond-> props
+          (.-expandProps this) ((.-expandProps this) props)))
+
 (def lifecycle-wrap-fns
   {"getInitialState"
    (fn [f]
      (fn []
+
        (this-as this
-         (let [initial-state-obj (set! (.-state this) #js {:cljs$props (.. this -props -cljs$props)})
+         (let [initial-state-obj (set! (.-state this)
+                                       #js {:cljs$props (expand-props this (.. this -props -cljs$props))})
                state (if f (f this) nil)]
            (doto initial-state-obj
              (gobj/set "cljs$state" state)
@@ -97,12 +103,13 @@
    (fn [f]
      (fn [next-props]
        (this-as this
-         (doto (.-state this)
-           (gobj/set "cljs$previousProps" (.. this -state -cljs$props))
-           (gobj/set "cljs$props" (parse-props next-props)))
-         (binding [*trigger-state-render* false
-                   *user-prior-state* true]
-           (when f (f this (parse-props next-props)))))))
+         (let [expanded-props (expand-props this (parse-props next-props))]
+           (doto (.-state this)
+             (gobj/set "cljs$previousProps" (.. this -state -cljs$props))
+             (gobj/set "cljs$props" expanded-props))
+           (binding [*trigger-state-render* false
+                     *user-prior-state* true]
+             (when f (f this expanded-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
@@ -161,8 +168,9 @@
   (let [methods (update-keys (comp camelCase name) methods)]
     (reduce (fn [m name]
               (let [wrap-f (get lifecycle-wrap-fns name (fn [f]
-                                                          (fn [& args] (this-as this
-                                                                         (apply f (cons this args))))))]
+                                                          (fn [& args]
+                                                            (this-as this
+                                                              (apply f (cons this args))))))]
                 (assoc m name (wrap-f (get methods name)))))
             {}
             (into #{"shouldComponentUpdate" "componentWillUpdate"
