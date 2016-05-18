@@ -5,7 +5,8 @@
             [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
-(def ^:dynamic *user-prior-state* false)
+(def ^:dynamic *use-prior* false)
+(def ^:dynamic *use-prior-props* false)
 
 ;; convenience access methods
 
@@ -25,7 +26,7 @@
   "React complains if we mutate props, so we always read from state.
   (this is set in componentWillReceiveProps)"
   [this]
-  (if *user-prior-state*
+  (if (or *use-prior* *use-prior-props*)
     (.. this -state -cljs$previousProps)
     (.. this -state -cljs$props)))
 
@@ -37,22 +38,23 @@
   (.-cljs$props props))
 
 (defn state [this]
-  (if *user-prior-state*
+  (if *use-prior*
     (some-> this .-state .-cljs$previousState)
     (some-> this .-state .-cljs$state)))
 
 ;; State manipulation
 
 (defn set-state! [this new-state]
-  (when (not= new-state (state this))
-    (set! (.. this -state -cljs$previousState)
-          (.. this -state -cljs$state))
-    (set! (.. this -state -cljs$state) new-state)
-
-    (if (and *trigger-state-render*
+  ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
+  ;; if we assume that if state hasn't changed we don't re-render,
+  ;; controlled inputs break.
+  (set! (.. this -state -cljs$previousState)
+        (.. this -state -cljs$state))
+  (set! (.. this -state -cljs$state) new-state)
+  (when (and *trigger-state-render*
              (mounted? this)
              (.call (.-shouldComponentUpdate this) this (.-props this) nil))
-      (.forceUpdate this))))
+    (.forceUpdate this)))
 
 (defn update-state! [this f & args]
   (set-state! this (apply f (cons (state this) args))))
@@ -69,7 +71,7 @@
        (.call will-receive-props this js-props))
 
      ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-     (when (.call (.-shouldComponentUpdate this) this js-props nil)
+     (when (.call (.-shouldComponentUpdate this) this nil nil)
        (.forceUpdate this (fn []))))))
 
 ;; TODO - include render loop
@@ -80,15 +82,36 @@
   (cond-> props
           (.-expandProps this) ((.-expandProps this) props)))
 
+(defn initial-subscription-data
+  "If component has specified subscriptions, initialize them"
+  [this initial-props]
+  (reduce-kv (fn [m k sub-fn]
+               (let [{:keys [default] :as sub} (sub-fn this initial-props #(update-state! this assoc k %))]
+                 (cond-> m
+                         sub (assoc-in [:subscriptions k] sub)
+                         default (assoc k (default)))))
+             {}
+             (.-subscriptions this)))
+
+(defn begin-subscriptions [this]
+  (doseq [{:keys [subscribe]} (vals (:subscriptions (state this)))]
+    (subscribe)))
+
+(defn update-subscriptions [this next-props]
+  (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update next-props))) (vals (:subscriptions (state this))))))
+    (update-state! this merge (initial-subscription-data this next-props))
+    (begin-subscriptions this)))
+
 (def lifecycle-wrap-fns
   {"getInitialState"
-   (fn [f]
+   (fn [get-initial-state-fn]
      (fn []
-
        (this-as this
-         (let [initial-state-obj (set! (.-state this)
-                                       #js {:cljs$props (expand-props this (.. this -props -cljs$props))})
-               state (if f (f this) nil)]
+         (let [initial-props (expand-props this (.. this -props -cljs$props))
+               initial-state-obj (set! (.-state this) #js {:cljs$props initial-props})
+               state (merge (when get-initial-state-fn (get-initial-state-fn this initial-props))
+                            (initial-subscription-data this initial-props))]
+
            (doto initial-state-obj
              (gobj/set "cljs$state" state)
              (gobj/set "cljs$previousState" state))))))
@@ -97,25 +120,29 @@
    (fn [f]
      (fn []
        (this-as this
-         (binding [*trigger-state-render* false] (f this)))))
+         (binding [*trigger-state-render* false]
+           (begin-subscriptions this)
+           (when f (f this))))))
 
    "componentWillReceiveProps"
    (fn [f]
      (fn [next-props]
        (this-as this
-         (let [expanded-props (expand-props this (parse-props next-props))]
+         (let [next-props (expand-props this (parse-props next-props))
+               prev-props (.. this -state -cljs$props)]
            (doto (.-state this)
-             (gobj/set "cljs$previousProps" (.. this -state -cljs$props))
-             (gobj/set "cljs$props" expanded-props))
+             (gobj/set "cljs$previousProps" prev-props)
+             (gobj/set "cljs$props" next-props))
            (binding [*trigger-state-render* false
-                     *user-prior-state* true]
-             (when f (f this expanded-props)))))))
+                     *use-prior-props* true]
+             (update-subscriptions this next-props)
+             (when f (f this next-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
-         (let [update? (if f (binding [*user-prior-state* true]
+         (let [update? (if f (binding [*use-prior* true]
                                (f this
                                   (.. this -state -cljs$props)
                                   (.. this -state -cljs$state)))
@@ -127,7 +154,7 @@
    (fn [f]
      (fn [_ _]
        (this-as this
-         (when f (binding [*user-prior-state* true]
+         (when f (binding [*use-prior* true]
                    (f this
                       (.. this -state -cljs$props)
                       (.. this -state -cljs$state)))))))
@@ -151,7 +178,7 @@
              (html element))))))})
 
 (defn camelCase
-  "Convert dash-ed and name/spaced-keywords to dashEd and name_spacedKeywords"
+  "Convert dash-ed and name/spaced-keywords to strings: dashEd and name_spacedKeywords"
   [s]
   (clojure.string/replace s #"([^\\-])-([^\\-])"
                           (fn [[_ m1 m2]] (str m1 (clojure.string/upper-case m2)))))
@@ -161,20 +188,30 @@
   [update-key-f m]
   (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
 
+(def default-lifecycle-methods #{"shouldComponentUpdate"
+                                 "componentWillUpdate"
+                                 "getInitialState"
+                                 "componentWillMount"
+                                 "componentWillReceiveProps"})
+
 (defn wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
    and provide default behaviour."
   [methods]
   (let [methods (update-keys (comp camelCase name) methods)]
     (reduce (fn [m name]
-              (let [wrap-f (get lifecycle-wrap-fns name (fn [f]
-                                                          (fn [& args]
-                                                            (this-as this
-                                                              (apply f (cons this args))))))]
-                (assoc m name (wrap-f (get methods name)))))
+              (let [method (get methods name)
+                    wrap-f (if (or (fn? method)
+                                   (keyword? method)
+                                   (default-lifecycle-methods name))
+                             (get lifecycle-wrap-fns name (fn [f]
+                                                            (fn [& args]
+                                                              (this-as this
+                                                                (apply f (cons this args))))))
+                             identity)]
+                (assoc m name (wrap-f method))))
             {}
-            (into #{"shouldComponentUpdate" "componentWillUpdate"
-                    "getInitialState" "componentWillReceiveProps"}
+            (into default-lifecycle-methods
                   ;; these three methods ^^ have default behaviours so we always "wrap" them
                   (keys methods)))))
 
@@ -186,14 +223,17 @@
           {:keys [ref key] :as props} (when props? props)
           element (js/React.createElement
                     class
-                    #js {:key        (or key (if-let [keyfn (.. class -prototype -reactKey)]
-                                               (keyfn props) key))
+                    #js {:key        (or key
+                                         (if-let [keyfn (.. class -prototype -reactKey)]
+                                           (keyfn props) key)
+                                         (.-displayName class))
                          :ref        ref
                          :cljs$props (cond->
                                        (dissoc props :keyfn :ref :key)
                                        (not= '(nil) children) (assoc :view$children children))}
                     children)]
-      (set! (.-reactClass element) class)
+      ;;
+      #_(set! (.-reactClass element) class)
       element)))
 
 (defn react-class [methods]
