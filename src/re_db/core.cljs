@@ -49,6 +49,27 @@
 (defn unique? [db-snap a]
   (boolean (get-in* db-snap [:schema a :db/unique])))
 
+(defn identity? [db-snap a]
+  (= :db.unique/identity (get-in* db-snap [:schema a :db/unique])))
+
+(defn resolve-id
+  [db-snap id]
+  (when id
+    (cond (number? id) id
+          ;; experimental: :db.identity/string can be set in schema to be a
+          ;;               :db.unique/identity attribute which will be assumed
+          ;;               if a raw string is passed as an entity id.
+          ;;               example:
+          ;;                with schema - {:db.identity/string :id}
+          ;;                (d/entity "my-id") resolves as (d/entity "my-id")
+          (string? id) (resolve-id db-snap [(get-in* db-snap [:schema :db.identity/string]) id])
+          (sequential? id) (let [[a v] id]
+                             (if-not (unique? db-snap a)
+                               (throw (js/Error (str "Not a unique attribute: " a)))
+                               (get-in* db-snap [:index a v])))
+          :else (do
+                  (throw (js/Error (str "Not a valid id: " id)))))))
+
 (defn has? [db-snap e]
   (contains? (:data db-snap) (resolve-id db-snap e)))
 
@@ -57,25 +78,32 @@
                         (fn [c] (first (filter #(not (has? @db %))
                                                (iterate inc (inc c))))))))
 
-(defn resolve-id
-  [db-snap id]
-  (when id
-    (cond (number? id) id
-          (sequential? id) (let [[a v] id]
-                             (if-not (unique? db-snap a)
-                               (throw (js/Error (str "Not a unique attribute: " a)))
-                               (get-in* db-snap [:index a v])))
-          :else (do
-                  (throw (js/Error (str "Not a valid id: " id)))))))
+
+(defn- listen-path!
+  [db path f]
+  (doto db
+    (swap! update-in path #((fnil conj #{}) % f))))
 
 (defn listen!
-  [db key f]
-  (swap! db assoc-in [:listeners :tx-log key] f) db)
+  ([db f]
+   (listen-path! db [:listeners :tx-log] f))
+  ([db id f]
+   (listen-path! db [:listeners :entity id] f))
+  ([db id attr f]
+   (listen-path! db [:listeners :entity-attr id attr] f)))
+
+(defn- unlisten-path!
+  [db path f]
+  (doto db
+    (swap! update-in path #(disj % f))))
 
 (defn unlisten!
-  [db key]
-  (swap! db update-in [:listeners :tx-log] dissoc key)
-  db)
+  ([db f]
+   (unlisten-path! db [:listeners :tx-log] f))
+  ([db id f]
+   (unlisten-path! db [:listeners :entity id] f))
+  ([db id attr f]
+   (unlisten-path! db [:listeners :entity-attr id attr] f)))
 
 (defn upsert-attr? [id]
   (and (number? id) (neg? id)))
@@ -84,10 +112,10 @@
   (when-let [id (resolve-id db-snap id)]
     (get-in* db-snap [:data id])))
 
-(defn get [db-snap id attr]
-  (get* (entity db-snap id) attr))
+(defn get [db-snap id & args]
+  (apply get* (cons (entity db-snap id) args)))
 
-(defn get-in [db-snap id & ks]
+(defn get-in [db-snap id ks]
   (get-in* (entity db-snap id) ks))
 
 (defn add-index [[db-snap reports] id a v]
@@ -190,7 +218,7 @@
                    (add-index id attr val)
                    (remove-index id attr prev-val)))))))
 
-(defn update [[db-snap reports] id attr f & args]
+(defn update-attr [[db-snap reports] id attr f & args]
   {:pre [(not (many? db-snap attr))]}
   (assert (not (many? db-snap attr)) "Cannot update a :many attribute")
   (let [new-val (apply f (cons (get db-snap id attr) args))]
@@ -200,14 +228,14 @@
   {:db/retract-entity retract-entity
    :db/retract-attr   retract-attr
    :db/add            add
-   :db/update         update})
+   :db/update-attr    update-attr})
 
 (defn find-id-by-unique-attr [db-snap tx]
   (when (map? tx)
-        (when-let [a (->> (keys tx)
-                          (filter (partial unique? db-snap))
-                          first)]
-          (resolve-id db-snap [a (get* tx a)]))))
+    (when-let [a (->> (keys tx)
+                      (filter (partial identity? db-snap))
+                      first)]
+      (resolve-id db-snap [a (get* tx a)]))))
 
 (defn get-id [tx]
   (cond (map? tx) (:db/id tx)
@@ -247,7 +275,17 @@
       out)))
 
 (defn notify-listeners [db-snap reports]
-  (doseq [listener (vals (get-in* db-snap [:listeners :tx-log]))]
+  (when (seq (get-in* db-snap [:listeners :entity]))
+    (doseq [eid (set (map first reports))]
+      (doseq [f (get-in* db-snap [:listeners :entity (get db-snap eid :id)])]
+        (f (entity db-snap eid)))))
+
+  (when (seq (get-in* db-snap [:listeners :entity-attr]))
+    (doseq [[eid attr] (set (map #(do [(first %) (second %)]) reports))]
+      (doseq [f (get-in* db-snap [:listeners :entity-attr (get db-snap eid :id) attr])]
+        (f (get db-snap eid attr)))))
+
+  (doseq [listener (get-in* db-snap [:listeners :tx-log])]
     (listener (remove nil? reports))))
 
 (defn transact! [db txs]
@@ -280,8 +318,8 @@
    (transact! db [{:db/id id
                    attr   val}])))
 
-(defn update! [db id & args]
-  (transact! db [(into [:db/update id] args)]))
+(defn update-attr! [db id attr & args]
+  (transact! db [(into [:db/update-attr id attr] args)]))
 
 (defn retract!
   ([db id]
@@ -312,7 +350,6 @@
 
 (defn entities
   [db-snap & qs]
-  (prn (apply entity-ids (cons db-snap qs)))
   (map (partial entity db-snap) (apply entity-ids (cons db-snap qs))))
 
 (defn squuid []
