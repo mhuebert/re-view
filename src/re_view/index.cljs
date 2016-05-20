@@ -8,14 +8,11 @@
          (map :view/component)
          (filter view/mounted?))))
 
-(defn components-by-e [db e]
-  (when e (components-by-view-id db (d/get @db e :id))))
-
 (defn register-view
   "Keep index to components based on id"
   ([db this indexes]
    (d/transact! db [(merge indexes
-                           {:db/id          -1
+                           {:id             (d/squuid)
                             :view/component this})])))
 
 (defn deregister-view
@@ -23,4 +20,4 @@
   [db this]
   (js/setTimeout
     #(do
-      (d/transact! db [[:db/retract-entity (:db/id (d/entity @db [:view/component this]))]])) 0))
+      (d/transact! db [[:db/retract-entity (:id (d/entity @db [:view/component this]))]])) 0))
