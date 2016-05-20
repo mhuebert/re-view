@@ -27,9 +27,7 @@
   ([] (create {}))
   ([schema]
    (atom {:data         {}
-          :schema       (assoc schema
-                          :db/id {:validate {:f       number?
-                                             :message "Must be a number"}})
+          :schema       schema
           :listeners    {}
           :debug        (:debug schema)
           :entity-count 1})))
@@ -55,29 +53,16 @@
 (defn resolve-id
   [db-snap id]
   (when id
-    (cond (number? id) id
-          ;; experimental: :db.identity/string can be set in schema to be a
-          ;;               :db.unique/identity attribute which will be assumed
-          ;;               if a raw string is passed as an entity id.
-          ;;               example:
-          ;;                with schema - {:db.identity/string :id}
-          ;;                (d/entity "my-id") resolves as (d/entity "my-id")
-          (string? id) (resolve-id db-snap [(get-in* db-snap [:schema :db.identity/string]) id])
-          (sequential? id) (let [[a v] id]
-                             (if-not (unique? db-snap a)
-                               (throw (js/Error (str "Not a unique attribute: " a)))
-                               (get-in* db-snap [:index a v])))
-          :else (do
-                  (throw (js/Error (str "Not a valid id: " id)))))))
+    (if
+      (sequential? id)
+      (let [[a v] id]
+        (if-not (unique? db-snap a)
+          (throw (js/Error (str "Not a unique attribute: " a v)))
+          (get-in* db-snap [:index a v])))
+      id)))
 
 (defn has? [db-snap e]
   (contains? (:data db-snap) (resolve-id db-snap e)))
-
-(defn create-id! [db]
-  (:entity-count (swap! db update* :entity-count
-                        (fn [c] (first (filter #(not (has? @db %))
-                                               (iterate inc (inc c))))))))
-
 
 (defn- listen-path!
   [db path f]
@@ -136,9 +121,9 @@
 
          :else db-snap) reports])
 
-(defn clear-empty-ent [[db-snap reports] e]
+(defn clear-empty-ent [[db-snap reports] id]
   [(cond-> db-snap
-           (empty? (dissoc (entity db-snap e) :db/id)) (update* :data dissoc e))
+           (empty? (dissoc (entity db-snap id) :id)) (update* :data dissoc id))
    reports])
 
 (declare retract-attr)
@@ -162,7 +147,7 @@
           (clear-empty-ent id)))))
 
 (defn retract-attr
-  ([dbx id attr] (retract-attr dbx id attr nil))
+  ([[db-snap reports] id attr] (retract-attr [db-snap reports] id attr (get db-snap id attr)))
   ([[db-snap reports] id attr value]
    (if (many? db-snap attr)
      (retract-attr-many [db-snap reports] id attr value)
@@ -184,12 +169,11 @@
 (defn duplicate-on-unique? [db-snap id a v]
   (and (unique? db-snap a)
        (entity db-snap [a v])
-       (not= id (:db/id (entity db-snap [a v])))))
+       (not= id (:id (entity db-snap [a v])))))
 
 (defn add
   ([[db-snap reports] id attr val]
-   {:pre [(not (upsert-attr? id))
-          (not (duplicate-on-unique? db-snap id attr val))]}
+   {:pre [(not (duplicate-on-unique? db-snap id attr val))]}
 
    (when-let [{:keys [f message] :as validation} (get-in* db-snap [:schema attr :validate])]
      (or (f val) (throw js/Error (str "Validation failed for " attr ": " message " on " val))))
@@ -230,48 +214,29 @@
    :db/add            add
    :db/update-attr    update-attr})
 
-(defn find-id-by-unique-attr [db-snap tx]
-  (when (map? tx)
-    (when-let [a (->> (keys tx)
-                      (filter (partial identity? db-snap))
-                      first)]
-      (resolve-id db-snap [a (get* tx a)]))))
-
 (defn get-id [tx]
-  (cond (map? tx) (:db/id tx)
+  (cond (map? tx) (:id tx)
         :else (second tx)))
 
 (defn map->txs [m]
   (cond->> m
-           (map? m) (map (fn [[a v]] [:db/add (:db/id m) a v]) m)
+           (map? m) (map (fn [[a v]] [:db/add (:id m) a v]) m)
            (not (map? m)) (list)))
 
-(defn temp-id [tx]
-  (let [id (get-id tx)]
-    (when ((every-pred number? neg?) id) id)))
-
 (defn swap-id [tx id]
-  (cond (map? tx) (assoc tx :db/id id)
+  (cond (map? tx) (assoc tx :id id)
         :else (assoc tx 1 id)))
 
 (defn resolve-ids [db txs]
-  (loop [ids {}
-         remaining txs
+  (loop [remaining txs
          out []]
     (if-let [tx (first remaining)]
       (let [id (get-id tx)
-            temp-id (temp-id tx)
-            new-id (cond temp-id (or (find-id-by-unique-attr @db tx)
-                                     (get* ids temp-id)
-                                     (create-id! db))
-                         (sequential? id) (resolve-id @db id)
-                         :else nil)]
+            new-id (resolve-id @db id)]
         (recur
-          (cond-> ids
-                  temp-id (assoc temp-id new-id))
           (rest remaining)
           (conj out (cond-> tx
-                            new-id (swap-id new-id)))))
+                            (and new-id (not= new-id id)) (swap-id new-id)))))
       out)))
 
 (defn notify-listeners [db-snap reports]
@@ -305,31 +270,8 @@
     (notify-listeners @db reports)
     db))
 
-(defn upsert! [db ent]
-  {:pre [(map? ent)]}
-  (transact! db [(cond-> ent
-                         (not (contains? ent :db/id)) (assoc :db/id -1))]))
-
-(defn add!
-  ([db ent]
-   (upsert! db ent))
-  ([db id attr val]
-   (when-not (has? @db id) (err [:add!-missing-entity attr id]))
-   (transact! db [{:db/id id
-                   attr   val}])))
-
 (defn update-attr! [db id attr & args]
   (transact! db [(into [:db/update-attr id attr] args)]))
-
-(defn retract!
-  ([db id]
-   (transact! db [[:db/retract-entity id]]))
-  ([db id attr]
-   (transact! db [[:db/retract-attr id attr]]))
-  ([db id attr val]
-   (transact! db [[:db/retract-attr id attr val]])))
-
-
 
 (defn entity-ids
   [db-snap & qs]
