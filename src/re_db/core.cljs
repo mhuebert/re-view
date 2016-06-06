@@ -9,19 +9,6 @@
 (def get* cljs.core/get)
 (def update* cljs.core/update)
 
-(def error-messages
-  {:add!-missing-entity
-   (fn [attr id]
-     (str "The entity you want to add a " attr " to, " id ", does not exist.\n"
-          (when (sequential? id)
-            (str "To upsert a new entity, call add! with a map, like {"
-                 (first id) " " (second id) " :other-attr other-val}"))))})
-
-(defn err [[k & args]]
-  (throw (js/Error
-           (some-> (get* error-messages k) (apply args)))))
-
-
 (defn create
   "Create a new db, with optional schema."
   ([] (create {}))
@@ -57,7 +44,7 @@
       (sequential? id)
       (let [[a v] id]
         (if-not (unique? db-snap a)
-          (throw (js/Error (str "Not a unique attribute: " a v)))
+          (throw (js/Error (str "Not a unique attribute: " a ", with value: " v)))
           (get-in* db-snap [:index a v])))
       id)))
 
@@ -89,9 +76,6 @@
    (unlisten-path! db [:listeners :entity id] f))
   ([db id attr f]
    (unlisten-path! db [:listeners :entity-attr id attr] f)))
-
-(defn upsert-attr? [id]
-  (and (number? id) (neg? id)))
 
 (defn entity [db-snap id]
   (when-let [id (resolve-id db-snap id)]
@@ -178,19 +162,17 @@
    (when-let [{:keys [f message] :as validation} (get-in* db-snap [:schema attr :validate])]
      (or (f val) (throw js/Error (str "Validation failed for " attr ": " message " on " val))))
 
-   (let [id (resolve-id db-snap id)
-         ;; TODO - clarify when we upsert, etc._ (assert (has? db-snap id))
-         many? (many? db-snap attr)
-         multi-many? (and many? (sequential? val))
+   (let [many? (many? db-snap attr)
+         ;multi-many? (and many? (sequential? val))
          no-op? (if many?
                   (contains? (get* (entity db-snap id) attr) val)
                   ;; some invalid values throw when compared, eg `(map inc (take 2))`
-                  (try (= val (get* (entity db-snap id) attr))
+                  (try (= val (get db-snap id attr))
                        (catch js/Error e false)))]
      (cond
        no-op? [db-snap reports]
 
-       multi-many? (reduce #(add %1 id attr %2) [db-snap reports] val)
+       ;multi-many? (reduce #(add %1 id attr %2) [db-snap reports] val)
 
        many? (-> [(update-in db-snap [:data id attr] (fnil conj #{}) val)
                   (conj reports [id attr val nil])]
@@ -240,18 +222,20 @@
       out)))
 
 (defn notify-listeners [db-snap reports]
-  (when (seq (get-in* db-snap [:listeners :entity]))
-    (doseq [eid (set (map first reports))]
-      (doseq [f (get-in* db-snap [:listeners :entity (get db-snap eid :id)])]
-        (f (entity db-snap eid)))))
+  (when (seq reports)
+    (when (seq (get-in* db-snap [:listeners :entity]))
+      (doseq [id (set (map first reports))]
+        (doseq [f (get-in* db-snap [:listeners :entity id])]
+          (f (entity db-snap id)))))
 
-  (when (seq (get-in* db-snap [:listeners :entity-attr]))
-    (doseq [[eid attr] (set (map #(do [(first %) (second %)]) reports))]
-      (doseq [f (get-in* db-snap [:listeners :entity-attr (get db-snap eid :id) attr])]
-        (f (get db-snap eid attr)))))
+    (when (seq (get-in* db-snap [:listeners :entity-attr]))
+      (doseq [[id attr] (set (map #(do [(first %) (second %)]) reports))]
+        (let [listeners (get-in* db-snap [:listeners :entity-attr id attr])]
+          (doseq [f listeners]
+            (f (get db-snap id attr))))))
 
-  (doseq [listener (get-in* db-snap [:listeners :tx-log])]
-    (listener (remove nil? reports))))
+    (doseq [listener (get-in* db-snap [:listeners :tx-log])]
+      (listener (remove nil? reports)))))
 
 (defn transact! [db txs]
   (let [txs (->> txs
