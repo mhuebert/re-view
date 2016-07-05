@@ -43,7 +43,7 @@
   [component name]
   (some-> (.-refs component) (gobj/get name)))
 
-
+(def component-state (atom {}))
 
 ;; self-management of cljs props and state
 
@@ -51,21 +51,18 @@
   "React complains if we mutate props, so we always read from state.
   (this is set in componentWillReceiveProps)"
   [this]
-  (if (or *use-prior* *use-prior-props*)
-    (.. this -state -cljs$previousProps)
-    (.. this -state -cljs$props)))
+  (get-in @component-state
+          [this
+           (if (or *use-prior* *use-prior-props*)
+             :prev-props :props)]))
 
 (defn children [this]
-  (:view$children (props this))
-  #_(some-> this .-props .-children))
-
-(defn parse-props [props]
-  (.-cljs$props props))
+  (get-in @component-state [this :children]))
 
 (defn state [this]
-  (if *use-prior*
-    (some-> this .-state .-cljs$previousState)
-    (some-> this .-state .-cljs$state)))
+  (get-in @component-state
+          [this
+           (if *use-prior* :prev-state :state)]))
 
 ;; State manipulation
 
@@ -75,10 +72,9 @@
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
-  (set! (.. this -state -cljs$previousState)
-        (.. this -state -cljs$state))
-  (set! (.. this -state -cljs$state)
-        new-state)
+  (swap! component-state update this #(-> %
+                                          (assoc :prev-state (:state %))
+                                          (assoc :state new-state)))
   (when-let [will-receive-state (.-componentWillReceiveState this)]
     (.call will-receive-state this))
   (when (and *trigger-state-render*
@@ -94,16 +90,14 @@
   ([this] (render-component this (props this)))
   ([this props] (render-component this props nil))
   ([this props & children]
-   (let [clj-props (cond-> props
-                           (not= '(nil) children) (assoc :view$children children))
-         js-props (js-obj "cljs$props" clj-props)]
-     ;; manually invoke componentWillReceiveProps
-     (when-let [will-receive-props (.-componentWillReceiveProps this)]
-       (.call will-receive-props this js-props))
+    ;; manually invoke componentWillReceiveProps
+   (when-let [will-receive-props (.-componentWillReceiveProps this)]
+     (.call will-receive-props this #js {:cljs$props props
+                                         :cljs$children children}))
 
-     ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-     (when (.call (.-shouldComponentUpdate this) this clj-props (state this))
-       (force-update this)))))
+    ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
+   (when (.call (.-shouldComponentUpdate this) this props (state this))
+     (force-update this))))
 
 ;; TODO - include render loop
 
@@ -143,13 +137,14 @@
      (fn []
        (this-as this
          (let [initial-props (expand-props this (.. this -props -cljs$props))
-               initial-state-obj (set! (.-state this) #js {:cljs$props initial-props})
-               state (merge (when get-initial-state-fn (get-initial-state-fn this initial-props))
-                            (initial-subscription-data this initial-props))]
-
-           (doto initial-state-obj
-             (gobj/set "cljs$state" state)
-             (gobj/set "cljs$previousState" state))))))
+               initial-state (merge (when get-initial-state-fn (get-initial-state-fn this initial-props))
+                                    (initial-subscription-data this initial-props))]
+           (swap! component-state update this
+                  #(-> %
+                       (assoc :props initial-props)
+                       (assoc :children (.. this -props -cljs$children))
+                       (assoc :state initial-state)
+                       (assoc :prev-state initial-state)))))))
 
    "componentDidMount"
    (fn [f]
@@ -157,7 +152,9 @@
        (this-as this
          (binding [*use-prior-props* false
                    *use-prior* false]
-           (when f (f this (.. this -state -cljs$props) (.. this -state -cljs$state)))))))
+           (when f (f this
+                      (get-in @component-state [this :props])
+                      (get-in @component-state [this :state])))))))
 
    "componentWillMount"
    (fn [f]
@@ -178,27 +175,30 @@
    (fn [f]
      (fn []
        (this-as this
-         (let [props (.. this -state -cljs$props)]
+         (let [props (get-in @component-state [this :props])]
            (update-subscriptions this props props)
            (when f
              (f this
                 props
-                (.. this -state -cljs$state)
-                (.. this -state -cljs$previousState)))))))
+                (get-in @component-state [this :state])
+                (get-in @component-state [this :prev-state])))))))
 
    "componentWillReceiveProps"
    (fn [f]
-     (fn [next-props]
-       (this-as this
-         (let [next-props (expand-props this (parse-props next-props))
-               prev-props (.. this -state -cljs$props)]
-           (doto (.-state this)
-             (gobj/set "cljs$previousProps" prev-props)
-             (gobj/set "cljs$props" next-props))
-           (binding [*trigger-state-render* false
-                     *use-prior-props* true]
-             (update-subscriptions this prev-props next-props)
-             (when f (f this prev-props next-props)))))))
+     (fn [props]
+       (let [next-props (.-cljs$props props)
+             next-children (.-cljs$children props)]
+         (this-as this
+           (let [next-props (expand-props this next-props)
+                 prev-props (get-in @component-state [this :props])]
+             (swap! component-state update this #(-> %
+                                                     (assoc :prev-props prev-props)
+                                                     (assoc :props next-props)
+                                                     (assoc :children next-children)))
+             (binding [*trigger-state-render* false
+                       *use-prior-props* true]
+               (update-subscriptions this prev-props next-props)
+               (when f (f this prev-props next-props))))))))
 
    "shouldComponentUpdate"
    (fn [f]
@@ -207,10 +207,10 @@
          (let [update? (if f (binding [*use-prior* true
                                        *trigger-state-render* false]
                                (f this
-                                  (.. this -state -cljs$props)
-                                  (.. this -state -cljs$state)
-                                  (.. this -state -cljs$previousProps)
-                                  (.. this -state -cljs$previousState)))
+                                  (get-in @component-state [this :props])
+                                  (get-in @component-state [this :state])
+                                  (get-in @component-state [this :prev-props])
+                                  (get-in @component-state [this :prev-state])))
                              ;; by default, update if props or state have changed
                              true)]
            update?))))
@@ -222,28 +222,28 @@
          (when f (binding [*use-prior* true
                            *trigger-state-render* false]
                    (f this
-                      (.. this -state -cljs$props)
-                      (.. this -state -cljs$state)
-                      (.. this -state -cljs$previousProps)
-                      (.. this -state -cljs$previousState)))))))
+                      (get-in @component-state [this :props])
+                      (get-in @component-state [this :state])
+                      (get-in @component-state [this :prev-props])
+                      (get-in @component-state [this :prev-state])))))))
 
    "componentDidUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
          (f this
-            (.. this -state -cljs$props)
-            (.. this -state -cljs$state)
-            (.. this -state -cljs$previousProps)
-            (.. this -state -cljs$previousState)))))
+            (get-in @component-state [this :props])
+            (get-in @component-state [this :state])
+            (get-in @component-state [this :prev-props])
+            (get-in @component-state [this :prev-state])))))
 
    "render"
    (fn [f]
      (fn []
        (this-as this
          (let [element (f this
-                          (.. this -state -cljs$props)
-                          (.. this -state -cljs$state))]
+                          (get-in @component-state [this :props])
+                          (get-in @component-state [this :state]))]
            ;; wrap in sablono.core/html if not already a valid React element
            (if (js/React.isValidElement element)
              element
@@ -302,10 +302,8 @@
                                            (keyfn props) key)
                                          (.-displayName class))
                          :ref        ref
-                         :cljs$props (cond->
-                                       (dissoc props :keyfn :ref :key)
-                                       (not= '(nil) children) (assoc :view$children children))}
-                    children)]
+                         :cljs$props (dissoc props :keyfn :ref :key)
+                         :cljs$children (when (not= '(nil) children) children)})]
       ;;
       #_(set! (.-reactClass element) class)
       element)))
