@@ -43,7 +43,7 @@
   [component name]
   (some-> (.-refs component) (gobj/get name)))
 
-(defn component-state (atom {}))
+
 
 ;; self-management of cljs props and state
 
