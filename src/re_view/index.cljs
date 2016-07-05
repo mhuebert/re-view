@@ -11,13 +11,13 @@
 (defn register-view
   "Keep index to components based on id"
   ([db this indexes]
-   (d/transact! db [(merge indexes
-                           {:id             (d/squuid)
-                            :view/component this})])))
+   (let [id (d/squuid)]
+     (d/transact! db [(merge indexes
+                             {:id             id
+                              :view/component this})]))))
 
 (defn deregister-view
   "Discard index"
   [db this]
   (js/setTimeout
-    #(do
-      (d/transact! db [[:db/retract-entity (:id (d/entity @db [:view/component this]))]])) 0))
+    #(d/transact! db [[:db/retract-entity (:id (d/entity @db [:view/component this]))]]) 0))

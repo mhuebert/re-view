@@ -1,6 +1,6 @@
 (ns re-view.core-test
   (:require [cljs.test :refer-macros [deftest is are]]
-            [re-view.core :as view :refer [component]]))
+            [re-view.core :as view :refer-macros [defcomponent]]))
 
 
 
@@ -18,60 +18,62 @@
 
 (def initial-state {:eaten? false})
 
-(def apple
-  ;; a heavily logged component
 
-  (component
+;; a heavily logged component
 
-    :get-initial-state
-    (fn [this]
-      (log-lifecycle-states this :get-initial-state)
-      initial-state)
+(defcomponent apple
 
-    :component-will-mount
-    (fn [this]
-      (log-lifecycle-states this :component-will-mount))
+  :get-initial-state
+  (fn [this]
+    (log-lifecycle-states this :get-initial-state)
+    initial-state)
 
-    :component-will-receive-props
-    (fn [this next-props]
-      (log-lifecycle-states this :component-will-receive-props
-                            :next-props next-props))
+  :component-will-mount
+  (fn [this]
+    (log-lifecycle-states this :component-will-mount))
+
+  :component-will-receive-props
+  (fn [this prev-props next-props]
+    (log-lifecycle-states this :component-will-receive-props
+                          :next-props next-props))
 
 
-    :should-component-update
-    (fn [this next-props next-state]
-      (log-lifecycle-states this :should-component-update
-                            :next-props next-props
-                            :next-state next-state))
+  :should-component-update
+  (fn [this _ _ next-props next-state]
+    (log-lifecycle-states this :should-component-update
+                          :next-props next-props
+                          :next-state next-state))
 
-    :component-will-update
-    (fn [this next-props next-state]
-      (log-lifecycle-states this :component-will-update
-                            :next-props next-props
-                            :next-state next-state))
+  :component-will-update
+  (fn [this next-props next-state]
+    (log-lifecycle-states this :component-will-update
+                          :next-props next-props
+                          :next-state next-state))
 
-    :should-component-update
-    (fn [this next-props next-state]
-      (log-lifecycle-states this :should-component-update
-                            :next-props next-props
-                            :next-state next-state)
-      true)
+  :should-component-update
+  (fn [this next-props next-state]
+    (log-lifecycle-states this :should-component-update
+                          :next-props next-props
+                          :next-state next-state)
+    true)
 
-    :render
-    (fn [this]
-      (log-lifecycle-states this :render)
-      (swap! render-count inc)
 
-      [:div "I am an apple."
-       (when-not (:eaten (view/state this))
-         [:p {:ref   "apple-statement-of-courage"
-              :style {:font-weight "bold"}} " ...and I am brave and alive."])])
 
-    :component-did-update
-    (fn [this prev-props prev-state]
-      (log-lifecycle-states this :component-did-update
-                            :prev-props prev-props
-                            :prev-state prev-state))))
+
+  :component-did-update
+  (fn [this _ _ prev-props prev-state]
+    (log-lifecycle-states this :component-did-update
+                          :prev-props prev-props
+                          :prev-state prev-state))
+  :render
+  (fn [this]
+    (log-lifecycle-states this :render)
+    (swap! render-count inc)
+
+    [:div "I am an apple."
+     (when-not (:eaten (view/state this))
+       [:p {:ref   "apple-statement-of-courage"
+            :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
 
 (def util js/React.addons.TestUtils)
 (def init-props {:color "red"})

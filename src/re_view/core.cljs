@@ -1,4 +1,5 @@
 (ns re-view.core
+  (:require-macros re-view.core)
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [sablono.core :refer-macros [html]]
@@ -13,12 +14,36 @@
 (defn mounted? [c]
   (.isMounted c))
 
+(defn force-update! [this]
+  (when (mounted? this)
+    (try (.forceUpdate this)
+         (catch js/Error e
+           (if-let [on-error (.-onError this)]
+             (on-error e)
+             (do (.debug js/console "No :on-error method in component" this)
+                 (.error js/console e)))))))
+
+(def to-render (atom #{}))
+(defn render-loop
+  []
+  (let [components @to-render]
+    (when-not (empty? components)
+      (reset! to-render #{})
+      (doseq [c components] (force-update! c))))
+  (js/requestAnimationFrame render-loop))
+
+(defonce _ (render-loop))
+
+(defn force-update [this]
+  (swap! to-render conj this))
+
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
 (defn react-ref
   "Returns the component associated with a component's React ref."
   [component name]
   (some-> (.-refs component) (gobj/get name)))
 
+(defn component-state (atom {}))
 
 ;; self-management of cljs props and state
 
@@ -44,17 +69,22 @@
 
 ;; State manipulation
 
+(declare update-state!)
+
 (defn set-state! [this new-state]
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
   (set! (.. this -state -cljs$previousState)
         (.. this -state -cljs$state))
-  (set! (.. this -state -cljs$state) new-state)
+  (set! (.. this -state -cljs$state)
+        new-state)
+  (when-let [will-receive-state (.-componentWillReceiveState this)]
+    (.call will-receive-state this))
   (when (and *trigger-state-render*
              (mounted? this)
              (.call (.-shouldComponentUpdate this) this (.-props this) nil))
-    (.forceUpdate this)))
+    (force-update this)))
 
 (defn update-state! [this f & args]
   (set-state! this (apply f (cons (state this) args))))
@@ -64,15 +94,16 @@
   ([this] (render-component this (props this)))
   ([this props] (render-component this props nil))
   ([this props & children]
-   (let [js-props (js-obj "cljs$props" (cond-> props
-                                               (not= '(nil) children) (assoc :view$children children)))]
+   (let [clj-props (cond-> props
+                           (not= '(nil) children) (assoc :view$children children))
+         js-props (js-obj "cljs$props" clj-props)]
      ;; manually invoke componentWillReceiveProps
      (when-let [will-receive-props (.-componentWillReceiveProps this)]
        (.call will-receive-props this js-props))
 
      ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-     (when (.call (.-shouldComponentUpdate this) this nil nil)
-       (.forceUpdate this (fn []))))))
+     (when (.call (.-shouldComponentUpdate this) this clj-props (state this))
+       (force-update this)))))
 
 ;; TODO - include render loop
 
@@ -97,8 +128,12 @@
   (doseq [{:keys [subscribe]} (vals (:subscriptions (state this)))]
     (subscribe)))
 
-(defn update-subscriptions [this next-props]
-  (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update next-props))) (vals (:subscriptions (state this))))))
+(defn end-subscriptions [this]
+  (doseq [{:keys [unsubscribe]} (vals (:subscriptions (state this)))]
+    (unsubscribe)))
+
+(defn update-subscriptions [this prev-props next-props]
+  (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update prev-props next-props))) (vals (:subscriptions (state this))))))
     (update-state! this merge (initial-subscription-data this next-props))
     (begin-subscriptions this)))
 
@@ -116,6 +151,14 @@
              (gobj/set "cljs$state" state)
              (gobj/set "cljs$previousState" state))))))
 
+   "componentDidMount"
+   (fn [f]
+     (fn []
+       (this-as this
+         (binding [*use-prior-props* false
+                   *use-prior* false]
+           (when f (f this (.. this -state -cljs$props) (.. this -state -cljs$state)))))))
+
    "componentWillMount"
    (fn [f]
      (fn []
@@ -123,6 +166,25 @@
          (binding [*trigger-state-render* false]
            (begin-subscriptions this)
            (when f (f this))))))
+
+   "componentWillUnmount"
+   (fn [f]
+     (fn []
+       (this-as this
+         (end-subscriptions this)
+         (when f (f this)))))
+
+   "componentWillReceiveState"
+   (fn [f]
+     (fn []
+       (this-as this
+         (let [props (.. this -state -cljs$props)]
+           (update-subscriptions this props props)
+           (when f
+             (f this
+                props
+                (.. this -state -cljs$state)
+                (.. this -state -cljs$previousState)))))))
 
    "componentWillReceiveProps"
    (fn [f]
@@ -135,17 +197,20 @@
              (gobj/set "cljs$props" next-props))
            (binding [*trigger-state-render* false
                      *use-prior-props* true]
-             (update-subscriptions this next-props)
-             (when f (f this next-props)))))))
+             (update-subscriptions this prev-props next-props)
+             (when f (f this prev-props next-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
-         (let [update? (if f (binding [*use-prior* true]
+         (let [update? (if f (binding [*use-prior* true
+                                       *trigger-state-render* false]
                                (f this
                                   (.. this -state -cljs$props)
-                                  (.. this -state -cljs$state)))
+                                  (.. this -state -cljs$state)
+                                  (.. this -state -cljs$previousProps)
+                                  (.. this -state -cljs$previousState)))
                              ;; by default, update if props or state have changed
                              true)]
            update?))))
@@ -154,16 +219,21 @@
    (fn [f]
      (fn [_ _]
        (this-as this
-         (when f (binding [*use-prior* true]
+         (when f (binding [*use-prior* true
+                           *trigger-state-render* false]
                    (f this
                       (.. this -state -cljs$props)
-                      (.. this -state -cljs$state)))))))
+                      (.. this -state -cljs$state)
+                      (.. this -state -cljs$previousProps)
+                      (.. this -state -cljs$previousState)))))))
 
    "componentDidUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
          (f this
+            (.. this -state -cljs$props)
+            (.. this -state -cljs$state)
             (.. this -state -cljs$previousProps)
             (.. this -state -cljs$previousState)))))
 
@@ -171,7 +241,9 @@
    (fn [f]
      (fn []
        (this-as this
-         (let [element (f this)]
+         (let [element (f this
+                          (.. this -state -cljs$props)
+                          (.. this -state -cljs$state))]
            ;; wrap in sablono.core/html if not already a valid React element
            (if (js/React.isValidElement element)
              element
@@ -192,7 +264,9 @@
                                  "componentWillUpdate"
                                  "getInitialState"
                                  "componentWillMount"
-                                 "componentWillReceiveProps"})
+                                 "componentWillUnmount"
+                                 "componentWillReceiveProps"
+                                 "componentWillReceiveState"})
 
 (defn wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
@@ -260,32 +334,30 @@
    Result of :render function is automatically wrapped in sablono.core/html,
    unless it is already a valid React element.
    "
-  [& methods]
-  (let [methods (if (and (= 1 (count methods)) (map? (first methods)))
-                  (first methods)
-                  (apply hash-map methods))]
-    (-> methods
-        react-class
-        factory)))
+  ([& methods]
+   (let [methods (if (= 1 (count methods)) (cons :render methods) methods)
+         methods (apply hash-map methods)]
+     (-> methods
+         react-class
+         factory))))
 
 (comment
 
   ;; example of component with controlled input
 
   (ns my-app.core
-    (:require [re-view.core :as view :refer [component]]))
+    (:require [re-view.core :as view :refer-macros [defcomponent]]))
 
-  (def greeting
-    (component
 
-      :get-initial-state
-      (fn [this] {:first-name "Herbert"})
+  (defcomponent greeting
 
-      :render
-      (fn [this]
-        (let [{:keys [first-name]} (view/state this)]
-          [:div
-           [:p (str "Hello, " first-name "!")]
-           [:input {:value     first-name
-                    :on-change #(view/update-state!
-                                 this assoc :first-name (-> % .-target .-value))}]])))))
+                :get-initial-state
+                (fn [this] {:first-name "Herbert"})
+
+                :render
+                (fn [this _ {:keys [first-name]}]
+                  [:div
+                   [:p (str "Hello, " first-name "!")]
+                   [:input {:value     first-name
+                            :on-change #(view/update-state!
+                                         this assoc :first-name (-> % .-target .-value))}]])))
