@@ -308,7 +308,7 @@
                     class
                     #js {:key           (or key
                                             (if-let [keyfn (.. class -prototype -reactKey)]
-                                              (keyfn props) key)
+                                              (if (string? keyfn) keyfn (keyfn props)) key)
                                             (.-displayName class))
                          :ref           ref
                          :cljs$props    (dissoc props :keyfn :ref :key)
