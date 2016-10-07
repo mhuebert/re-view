@@ -10,6 +10,12 @@
 (def ^:dynamic *use-prior* false)
 (def ^:dynamic *use-prior-props* false)
 
+(def js-get gobj/get)
+
+(defn js-call [target fname & args]
+  (let [f (aget target fname)]
+    (.apply f target (clj->js args))))
+
 (def db (d/create {:view-id {:db/index true}}))
 
 (defn by-id [id]
@@ -20,13 +26,13 @@
 ;; convenience access methods
 
 (defn mounted? [c]
-  (.isMounted c))
+  (and c (.isMounted c)))
 
 (defn force-update! [this]
   (when (mounted? this)
     (try (.forceUpdate this)
          (catch js/Error e
-           (if-let [on-error (.-onError this)]
+           (if-let [on-error (aget this "onError")]
              (on-error e)
              (do (.debug js/console "No :on-error method in component" this)
                  (.error js/console e)))))))
@@ -35,9 +41,11 @@
 (defn render-loop
   []
   (let [components @to-render]
+
     (when-not (empty? components)
       (reset! to-render #{})
-      (doseq [c components] (force-update! c))))
+      (doseq [c components]
+        (force-update! c))))
   (js/requestAnimationFrame render-loop))
 
 (defonce _ (render-loop))
@@ -49,7 +57,7 @@
 (defn react-ref
   "Returns the component associated with a component's React ref."
   [component name]
-  (some-> (.-refs component) (gobj/get name)))
+  (some-> (js-get component "refs") (js-get name)))
 
 
 
@@ -63,6 +71,9 @@
                     :prev-props :props)))
 
 (defn children [this]
+  (d/get @db this :children))
+
+(defn prev-children [this]
   (d/get @db this :children))
 
 (defn state [this]
@@ -79,11 +90,11 @@
   (d/transact! db [{:id         this
                     :prev-state (d/get @db this :state)
                     :state      new-state}])
-  (when-let [will-receive-state (.-componentWillReceiveState this)]
+  (when-let [will-receive-state (js-get this "componentWillReceiveState")]
     (.call will-receive-state this))
   (when (and *trigger-state-render*
              (mounted? this)
-             (.call (.-shouldComponentUpdate this) this (.-props this) nil))
+             (.call (js-get this "shouldComponentUpdate") this (d/get @db this :props) nil))
     (force-update this)))
 
 (defn update-state! [this f & args]
@@ -95,12 +106,12 @@
   ([this props] (render-component this props nil))
   ([this props & children]
     ;; manually invoke componentWillReceiveProps
-   (when-let [will-receive-props (.-componentWillReceiveProps this)]
+   (when-let [will-receive-props (js-get this "componentWillReceiveProps")]
      (.call will-receive-props this #js {:cljs$props    props
                                          :cljs$children children}))
 
     ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-   (when (.call (.-shouldComponentUpdate this) this props (state this))
+   (when (.call (js-get this "shouldComponentUpdate") this props (state this))
      (force-update this))))
 
 ;; TODO - include render loop
@@ -108,8 +119,8 @@
 ;; Lifecycle method handling
 
 (defn expand-props [this props]
-  (cond-> props
-          (.-expandProps this) ((.-expandProps this) props)))
+  (cond->> props
+           (js-get this "expandProps") (js-call this "expandProps")))
 
 (defn initial-subscription-data
   "If component has specified subscriptions, initialize them"
@@ -120,7 +131,7 @@
                          sub (assoc-in [:subscriptions k] sub)
                          default (assoc k (default)))))
              {}
-             (.-subscriptions this)))
+             (js-get this "subscriptions")))
 
 (defn begin-subscriptions [this next-props]
   (doseq [{:keys [subscribe]} (vals (:subscriptions (state this)))]
@@ -128,7 +139,7 @@
 
 (defn end-subscriptions [this prev-props]
   (doseq [{:keys [unsubscribe]} (vals (:subscriptions (state this)))]
-    (unsubscribe prev-props)))
+    (when unsubscribe (unsubscribe prev-props))))
 
 (defn update-subscriptions [this prev-props next-props]
   (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update prev-props next-props))) (vals (:subscriptions (state this))))))
@@ -141,13 +152,13 @@
    (fn [get-initial-state-fn]
      (fn []
        (this-as this
-         (let [initial-props (expand-props this (.. this -props -cljs$props))
+         (let [initial-props (expand-props this (aget this "props" "cljs$props"))
                initial-state (merge (when get-initial-state-fn (get-initial-state-fn this initial-props))
                                     (initial-subscription-data this initial-props))]
            (d/transact! db [{:id         this
                              :props      initial-props
                              :view-id    (or (:view-id initial-props) (:id initial-props))
-                             :children   (.. this -props -cljs$children)
+                             :children   (aget this "props" "cljs$children")
                              :state      initial-state
                              :prev-state initial-state}])))))
 
@@ -173,16 +184,18 @@
    (fn [f]
      (fn []
        (this-as this
-         (end-subscriptions this (props this))
-         (when f (f this))
-         (d/transact! db [[:db/retract-entity this]]))))
+         (binding [*trigger-state-render* false]
+           (end-subscriptions this (props this))
+           (when f (f this))
+           (d/transact! db [[:db/retract-entity this]])))))
 
    "componentWillReceiveState"
    (fn [f]
      (fn []
        (this-as this
          (let [props (d/get @db this :props)]
-           (update-subscriptions this props props)
+           (binding [*trigger-state-render* false]
+             (update-subscriptions this props props))
            (when f
              (f this
                 props
@@ -194,15 +207,16 @@
      (fn [props]
 
        (this-as this
-         (let [prev-props (d/get @db this :props)
-               next-props (expand-props this (.-cljs$props props))
-               next-children (.-cljs$children props)]
+         (let [{prev-props :props prev-children :children} (d/entity @db this)
+               next-props (expand-props this (js-get props "cljs$props"))
+               next-children (js-get props "cljs$children")]
 
-           (d/transact! db [{:id         this
-                             :prev-props prev-props
-                             :props      next-props
-                             :view-id    (or (:view-id next-props) (:id next-props))
-                             :children   next-children}])
+           (d/transact! db [{:id            this
+                             :prev-props    prev-props
+                             :props         next-props
+                             :view-id       (or (:view-id next-props) (:id next-props))
+                             :prev-children prev-children
+                             :children      next-children}])
 
            (binding [*trigger-state-render* false
                      *use-prior-props* true]
@@ -301,13 +315,14 @@
 (defn factory
   [class]
   (fn [props & children]
-    (let [props? (or (nil? props) (map? props))
+    (let [props (js->clj props)
+          props? (or (nil? props) (map? props))
           children (if props? children (cons props children))
           {:keys [ref key] :as props} (when props? props)
           element (js/React.createElement
                     class
                     #js {:key           (or key
-                                            (if-let [keyfn (.. class -prototype -reactKey)]
+                                            (if-let [keyfn (aget class "prototype" "reactKey")]
                                               (if (string? keyfn) keyfn (keyfn props)) key)
                                             (.-displayName class))
                          :ref           ref
@@ -342,11 +357,12 @@
    unless it is already a valid React element.
    "
   ([& methods]
-   (let [methods (if (= 1 (count methods)) (cons :render methods) methods)
-         methods (apply hash-map methods)]
-     (-> methods
-         react-class
-         factory))))
+   (let [methods (if (= 1 (count methods)) (cons :render methods) methods)]
+     (->> methods
+          (map #(if (vector? %) (fn [] %) %))
+          (apply hash-map)
+          react-class
+          factory))))
 
 (comment
 
