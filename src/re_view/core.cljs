@@ -38,10 +38,23 @@
                  (.error js/console e)))))))
 
 (def to-render (atom #{}))
+
+(defn raf-polyfill []
+  (if-not (js-get js/window "requestAnimationFrame")
+    (aset js/window "requestAnimationFrame"
+          (or
+            (js-get js/window "webkitRequestAnimationFrame")
+            (js-get js/window "mozRequestAnimationFrame")
+            (js-get js/window "oRequestAnimationFrame")
+            (js-get js/window "msRequestAnimationFrame")
+            (fn [cb]
+              (js-call js/window "setTimeout" cb (/ 1000 60)))))))
+
+(raf-polyfill)
+
 (defn render-loop
   []
   (let [components @to-render]
-
     (when-not (empty? components)
       (reset! to-render #{})
       (doseq [c components]
