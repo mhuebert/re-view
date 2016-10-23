@@ -228,9 +228,12 @@
         :else (second tx)))
 
 (defn map->txs [m]
-  (cond->> m
-           (map? m) (map (fn [[a v]] [:db/add (:id m) a v]) m)
-           (not (map? m)) (list)))
+  (if (map? m)
+    (when (> (count m) 1)
+      (map (fn [[a v]] (if (nil? v)
+                         [:db/retract-attr (:id m) a]
+                         [:db/add (:id m) a v])) m))
+    (list m)) )
 
 (defn swap-id [tx id]
   (cond (map? tx) (assoc tx :id id)

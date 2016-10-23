@@ -11,10 +11,13 @@
 
     (d/transact! db [{:id "herman"}])
 
-    (is (= "herman" (d/get @db "herman" :id))
-        "Upsert with :db.unique/identity")
+    (is (false? (d/has? @db "herman"))
+        "Inserting an entity without attributes is no-op")
 
     (d/transact! db [{:id "herman" :occupation "teacher"}])
+
+    (is (= "herman" (d/get @db "herman" :id))
+        "Upsert with :db.unique/identity")
 
     (is (= "teacher" (d/get @db "herman" :occupation))
         "Set and read attributes, via lookup ref")
@@ -38,7 +41,18 @@
         "Entity with no attributes is removed")
 
     (is (false? (contains? (get-in @db [:index :id]) "herman"))
-        "Index has been removed")))
+        "Index has been removed")
+
+    (d/transact! db [{:id   "me"
+                      :dog  "herman"
+                      :name "Matt"}])
+    (d/transact! db [{:id  "me"
+                      :dog nil}])
+
+    (is (= (d/entity @db "me") {:id "me" :name "Matt"})
+        "Setting a value to nil is equivalent to retracting it")
+
+    ))
 
 (deftest cardinality-many
   (let [db (d/create {:id       {:db/unique :db.unique/identity}
