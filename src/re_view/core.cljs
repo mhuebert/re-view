@@ -1,20 +1,22 @@
-(ns re-view.core
-  (:require-macros re-view.core)
+(ns ^:figwheel-always re-view.core
+  (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [re-db.core :as d]
+            [re-view.subscriptions]
             [sablono.core :refer-macros [html]]
             [goog.object :as gobj]))
 
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-prior* false)
 (def ^:dynamic *use-prior-props* false)
+(def ^:dynamic *use-render-loop* false)
 
 (def js-get gobj/get)
 
 (defn js-call [target fname & args]
-  (let [f (aget target fname)]
-    (.apply f target (clj->js args))))
+  (let [f (gobj/get target fname)]
+    (apply f args)))
 
 (def db (d/create {:view-id {:db/index true}}))
 
@@ -22,8 +24,6 @@
   (d/entity-ids @db [:view-id id]))
 
 (def component-state (atom {}))
-
-;; convenience access methods
 
 (defn mounted? [c]
   (and c (.isMounted c)))
@@ -64,7 +64,8 @@
 (defonce _ (render-loop))
 
 (defn force-update [this]
-  (swap! to-render conj this))
+  (if *use-render-loop* (swap! to-render conj this)
+                        (force-update! this)))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
 (defn react-ref
@@ -135,7 +136,7 @@
   (cond->> props
            (js-get this "expandProps") (js-call this "expandProps")))
 
-(defn initial-subscription-data
+(defn initialize-subscriptions
   "If component has specified subscriptions, initialize them"
   [this initial-props]
   (reduce-kv (fn [m k sub-fn]
@@ -156,34 +157,35 @@
 
 (defn update-subscriptions [this prev-props next-props]
   (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update prev-props next-props))) (vals (:subscriptions (state this))))))
-    (update-state! this merge (initial-subscription-data this next-props))
+    (update-state! this merge (initialize-subscriptions this next-props))
     (end-subscriptions this prev-props)
     (begin-subscriptions this next-props)))
 
+(defn update-patterns [this prev-patterns next-patterns]
+
+  (when (not= prev-patterns next-patterns)
+    (let [cb (partial force-update this)]
+      (~'apply ~'re-db.d/unlisten! (concat prev-patterns (list cb)))
+      (~'apply ~'re-db.d/listen! (concat next-patterns (list cb)))
+      (reset! prev-patterns next-patterns))))
+
 (def lifecycle-wrap-fns
   {"getInitialState"
-   (fn [get-initial-state-fn]
-     (fn []
-       (this-as this
-         (let [initial-props (expand-props this (aget this "props" "cljs$props"))
-               initial-state (merge (when get-initial-state-fn (get-initial-state-fn this initial-props))
-                                    (initial-subscription-data this initial-props))]
-           (d/transact! db [{:id         this
-                             :props      initial-props
-                             :view-id    (or (:view-id initial-props) (:id initial-props))
-                             :children   (aget this "props" "cljs$children")
-                             :state      initial-state
-                             :prev-state initial-state}])))))
-
-   "componentDidMount"
    (fn [f]
      (fn []
        (this-as this
-         (binding [*use-prior-props* false
-                   *use-prior* false]
-           (when f (f this
-                      (d/get @db this :props)
-                      (d/get @db this :state)))))))
+         (let [initial-props (let [{:keys [view-id id] :as initial-props} (expand-props this (aget this "props" "cljs$props"))]
+                               (d/transact! db [{:id         this
+                                                 :props      initial-props
+                                                 :prev-props nil
+                                                 :view-id    (or view-id id)
+                                                 :children   (aget this "props" "cljs$children")}])
+                               initial-props)
+               initial-state (merge (when f (f this initial-props))
+                                    (initialize-subscriptions this initial-props))]
+           (d/transact! db [{:id         this
+                             :state      initial-state
+                             :prev-state initial-state}])))))
 
    "componentWillMount"
    (fn [f]
@@ -191,7 +193,19 @@
        (this-as this
          (binding [*trigger-state-render* false]
            (begin-subscriptions this (props this))
-           (when f (f this))))))
+           (when f
+             (let [{:keys [props state]} (d/entity @db this)]
+               (f this props state)))))))
+
+   "componentDidMount"
+   (fn [f]
+     (fn []
+       (this-as this
+         (binding [*use-prior-props* false
+                   *use-prior* false]
+           (when f
+             (let [{:keys [props state]} (d/entity @db this)]
+               (f this props state)))))))
 
    "componentWillUnmount"
    (fn [f]
@@ -218,38 +232,32 @@
    "componentWillReceiveProps"
    (fn [f]
      (fn [props]
-
        (this-as this
          (let [{prev-props :props prev-children :children} (d/entity @db this)
-               next-props (expand-props this (js-get props "cljs$props"))
-               next-children (js-get props "cljs$children")]
+               {:keys [view-id id] :as next-props} (expand-props this (js-get props "cljs$props"))]
 
            (d/transact! db [{:id            this
-                             :prev-props    prev-props
                              :props         next-props
-                             :view-id       (or (:view-id next-props) (:id next-props))
+                             :children      (js-get props "cljs$children")
+                             :prev-props    prev-props
                              :prev-children prev-children
-                             :children      next-children}])
+                             :view-id       (or view-id id)}])
 
            (binding [*trigger-state-render* false
                      *use-prior-props* true]
              (update-subscriptions this prev-props next-props)
-             (when f (f this prev-props next-props)))))))
+             (when f (f this next-props prev-props)))))))
 
    "shouldComponentUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
-         (let [update? (if f (binding [*use-prior* true
-                                       *trigger-state-render* false]
-                               (f this
-                                  (d/get @db this :props)
-                                  (d/get @db this :state)
-                                  (d/get @db this :prev-props)
-                                  (d/get @db this :prev-state)))
-                             ;; by default, update if props or state have changed
-                             true)]
-           update?))))
+         (if f
+           (binding [*use-prior* true
+                     *trigger-state-render* false]
+             (let [{:keys [props state prev-props prev-state]} (d/entity @db this)]
+               (f this props state prev-props prev-state)))
+           true))))
 
    "componentWillUpdate"
    (fn [f]
@@ -257,33 +265,25 @@
        (this-as this
          (when f (binding [*use-prior* true
                            *trigger-state-render* false]
-                   (f this
-                      (d/get @db this :props)
-                      (d/get @db this :state)
-                      (d/get @db this :prev-props)
-                      (d/get @db this :prev-state)))))))
+                   (let [{:keys [props state prev-props prev-state]} (d/entity @db this)]
+                     (f this props state prev-props prev-state)))))))
 
    "componentDidUpdate"
    (fn [f]
      (fn [_ _]
        (this-as this
-         (f this
-            (d/get @db this :props)
-            (d/get @db this :state)
-            (d/get @db this :prev-props)
-            (d/get @db this :prev-state)))))
+         (let [{:keys [props state prev-props prev-state]} (d/entity @db this)]
+           (f this prev-props prev-state props state)))))
 
    "render"
    (fn [f]
      (fn []
        (this-as this
-         (let [element (f this
-                          (d/get @db this :props)
-                          (d/get @db this :state))]
+         (let [{:keys [props state]} (d/entity @db this)
+               element (f this props state)]
            ;; wrap in sablono.core/html if not already a valid React element
-           (if (js/React.isValidElement element)
-             element
-             (html element))))))})
+           (cond-> element
+                   (not (js/React.isValidElement element)) (html))))))})
 
 (defn camelCase
   "Convert dash-ed and name/spaced-keywords to strings: dashEd and name_spacedKeywords"
@@ -322,7 +322,7 @@
                 (assoc m name (wrap-f method))))
             {}
             (into default-lifecycle-methods
-                  ;; these three methods ^^ have default behaviours so we always "wrap" them
+                  ;; these methods ^^ have default behaviours so we always "wrap" them
                   (keys methods)))))
 
 (defn factory
@@ -376,6 +376,12 @@
           (apply hash-map)
           react-class
           factory))))
+
+(defn render-to-dom [component el-id]
+  (when-let [element (.getElementById js/document el-id)]
+    (js/ReactDOM.render component element)))
+
+
 
 (comment
 
