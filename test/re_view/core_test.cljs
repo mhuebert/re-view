@@ -205,7 +205,12 @@
                         {:shiny? true}]
                        [initial-props
                         {:color "fox"}
-                        {:color "bear"}])))))
+                        {:color "bear"}])
+
+        (render {:color "violet"})
+        (is (= (view/state this)
+               (view/prev-state this))
+            "After a component lifecycle, prev-state and state are the same.")))))
 
 
 ;; test react-key

@@ -92,6 +92,8 @@
 
 (defn state [this]
   (d/get @db this (if *use-prior* :prev-state :state)))
+(defn prev-state [this]
+  (d/get @db this :prev-state))
 
 ;; State manipulation
 
@@ -108,8 +110,9 @@
     (.call will-receive-state this))
   (when (and *trigger-state-render*
              (mounted? this)
-             (.call (js-get this "shouldComponentUpdate") this (d/get @db this :props) nil))
-    (force-update this)))
+             (and (.-shouldComponentUpdate this) (.shouldComponentUpdate this)))
+    (force-update this))
+  (d/transact! db [[:db/add this :prev-state new-state]]))
 
 (defn update-state! [this f & args]
   (set-state! this (apply f (cons (state this) args))))
@@ -125,7 +128,7 @@
                                          :cljs$children children}))
 
     ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-   (when (.call (js-get this "shouldComponentUpdate") this props (state this))
+   (when (and (.-shouldComponentUpdate this) (.shouldComponentUpdate this))
      (force-update this))))
 
 ;; TODO - include render loop
