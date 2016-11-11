@@ -11,8 +11,14 @@
        (do ~@body)
        @~'re-db.core/*db-log*)))
 
+(defmacro capture-patterns [& body]
+  `(~'re-db.core/capture-patterns ~@body))
+
 (defmacro try-branch [db on-error & body]
   `(let [db-before# ~db]
      (try (branch db-before# ~@body)
           (catch :default e#
             (branch db-before# e# (~on-error e#))))))
+
+(defmacro compute! [& args]
+  `(~'re-db.core/compute! ~'re-db.d/*db* ~@args))

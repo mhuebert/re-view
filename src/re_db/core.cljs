@@ -1,7 +1,8 @@
 (ns re-db.core
-  (:refer-clojure :exclude [get get-in set! update])
+  (:refer-clojure :exclude [get get-in set! update peek])
   (:require [cljs-uuid-utils.core :as uuid-utils]
-            [clojure.set :as set]))
+            [clojure.set :as set])
+  (:require-macros [re-db.core :refer [capture-patterns]]))
 
 (enable-console-print!)
 
@@ -9,12 +10,9 @@
 (def get* cljs.core/get)
 (def update* cljs.core/update)
 
-;; bind *db-log* to an empty atom and it will maintain :db-before from the first transaction,
-;; :db-after for the latest transaction, and :reports of transactions that occur while it is bound.
-(def ^:dynamic *db-log* nil)
-
-;; bind *mute* to prevent listeners from being called.
-(def ^:dynamic *mute* false)
+(def ^:dynamic *db-log* nil)                                ;; maintains tx-report while bound
+(def ^:dynamic *mute* false)                                ;; ignore listeners
+(def ^:dynamic *access-log* nil)                            ;; capture access patterns
 
 (defn create
   "Create a new db, with optional schema."
@@ -56,7 +54,9 @@
       (let [[a v] id]
         (if-not (unique? db-snap a)
           (throw (js/Error (str "Not a unique attribute: " a ", with value: " v)))
-          (get-in* db-snap [:index a v])))
+          (do (some-> *access-log*
+                      (swap! update* :attr-val (fnil conj #{}) [nil a v]))
+              (get-in* db-snap [:index a v]))))
       id)))
 
 (defn has? [db-snap e]
@@ -67,45 +67,98 @@
   (doto db
     (swap! update-in path #((fnil conj #{}) % f))))
 
-(defn listen!
-  ([db f]
-   (listen-path! db [:listeners :tx-log] f))
-  ([db id f]
-   (listen-path! db [:listeners :entity id] f))
-  ([db id attr f]
-   (listen-path! db [:listeners :entity-attr id attr] f)))
-
-(defn listen-attr!
-  [db attr f]
-  (listen-path! db [:listeners :attr attr] f))
-
-
 (defn- unlisten-path!
   [db path f]
   (doto db
     (swap! update-in path #(disj % f))))
 
-(defn unlisten!
-  ([db f]
-   (unlisten-path! db [:listeners :tx-log] f))
-  ([db id f]
-   (unlisten-path! db [:listeners :entity id] f))
-  ([db id attr f]
-   (unlisten-path! db [:listeners :entity-attr id attr] f)))
+(declare get entity)
 
-(defn unlisten-attr!
-  [db attr f]
-  (unlisten-path! db [:listeners :attr attr] f))
+(defn pattern->idx
+  "Identify access pattern type"
+  [db-snap pattern]
+  (let [[id attr val] (map #(if (= % '_) nil %) pattern)]
+    (cond (and id attr) :entity-attr
+          (and attr val) (do (assert (unique? db-snap attr))
+                             :attr-val)
+          id :id
+          attr :attr
+          :else nil)))
+
+(defn- pattern->listener-path
+  "Listener path for access pattern"
+  [db-snap [id attr val :as pattern]]
+  (case (pattern->idx db-snap pattern)
+    :entity-attr [:listeners :entity-attr id attr]
+    :attr-val [:listeners :attr-val attr val]
+    :id [:listeners :entity id]
+    :attr [:listeners :attr attr]
+    nil [:listeners :tx-log]))
+
+(defn- pattern->val
+  "Current val from database for access pattern"
+  [db-snap [id attr val :as pattern]]
+  (case (pattern->idx db-snap pattern)
+    :entity-attr (get db-snap id attr)
+    :attr-val (:id (entity db-snap [attr val]))
+    :id (entity db-snap id)
+    nil))
+
+(declare listen! unlisten!)
+
+(defn lookup-ref?
+  "Returns true if pattern is lookup ref"
+  [pattern]
+  (sequential? (first pattern)))
+
+(defn listen-lookup-ref!
+
+  [db pattern f]
+  (let [[[lookup-attr lookup-val] attr] pattern]
+    (let [prev-id (atom)
+          intermediate-cb (fn [resolved-id]
+                            (when @prev-id (unlisten! db [@prev-id attr] f))
+                            (when resolved-id (listen! db [resolved-id attr] f))
+                            (reset! prev-id resolved-id)
+                            (f (pattern->val @db pattern)))]
+      (listen! db [nil lookup-attr lookup-val] intermediate-cb)
+      (swap! db assoc-in [:listeners :lookup-ref pattern f] {:clear #(do (intermediate-cb nil)
+                                                                         (unlisten! db [nil lookup-attr lookup-val] intermediate-cb)
+                                                                         (swap! db update-in [:listeners :lookup-ref pattern] dissoc f))}))))
+
+(defn listen!
+  [db & patterns]
+  (let [f (last patterns)]
+    (doseq [pattern (drop-last patterns)]
+      (if (lookup-ref? pattern)
+        (listen-lookup-ref! db pattern f)
+        (listen-path! db (pattern->listener-path @db pattern) f)))))
+
+(defn unlisten!
+  [db & patterns]
+  (let [f (last patterns)]
+    (doseq [pattern (drop-last patterns)]
+      (if (lookup-ref? pattern)
+        ((get-in* @db [:listeners :lookup-ref pattern f :clear])))
+      (unlisten-path! db (pattern->listener-path @db pattern) f))))
 
 (defn entity [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (get-in* db-snap [:data id])))
+    (some-> *access-log*
+            (swap! update* :id (fnil conj #{}) [id]))
+    (some-> (get-in* db-snap [:data id])
+            (assoc :id id))))
 
 (defn get [db-snap id & args]
-  (apply get* (cons (entity db-snap id) args)))
+  (when-let [id (resolve-id db-snap id)]
+    (some-> *access-log*
+            (swap! update-in [:entity-attr id] (fnil conj #{}) (first args)))
 
-(defn get-in [db-snap id ks]
-  (get-in* (entity db-snap id) ks))
+    (apply get* (cons (some-> (get-in* db-snap [:data id])
+                              (assoc :id id)) args))))
+
+(defn get-in [db-snap id [attr & ks]]
+  (get-in* (get db-snap id attr) ks))
 
 (defn add-index [[db-snap reports] id a v]
   [(cond (unique? db-snap a)
@@ -144,7 +197,11 @@
       (update* :datoms conj [id attr value prev-value])
       (update* :ids conj id)
       (update* :attrs update* attr (fnil conj #{}) id)
-      (update* :id-attrs conj [id attr])))
+      (update* :entity-attrs conj [id attr])
+      (cond->
+        (unique? (:db-before reports) attr) (update* :attr-vals into (cond-> []
+                                                                             value (conj [id attr value true])
+                                                                             prev-value (conj [id attr prev-value false]))))))
 
 (defn retract-attr-many [[db-snap reports] id attr value]
   (let [id (resolve-id db-snap id)]
@@ -184,7 +241,8 @@
 
 (defn add
   ([[db-snap reports] id attr val]
-   {:pre [(not (duplicate-on-unique? db-snap id attr val))]}
+   {:pre [(not (duplicate-on-unique? db-snap id attr val))
+          (not= attr :id)]}
 
    (when-let [{:keys [f message] :as validation} (get-in* db-snap [:schema attr :validate])]
      (or (f val) (throw js/Error (str "Validation failed for " attr ": " message " on " val))))
@@ -229,11 +287,13 @@
 
 (defn map->txs [m]
   (if (map? m)
-    (when (> (count m) 1)
-      (map (fn [[a v]] (if (nil? v)
-                         [:db/retract-attr (:id m) a]
-                         [:db/add (:id m) a v])) m))
-    (list m)) )
+    (do
+      (assert (contains? m :id))
+      (when (> (count m) 1)
+        (map (fn [[a v]] (if (nil? v)
+                           [:db/retract-attr (:id m) a]
+                           [:db/add (:id m) a v])) (dissoc m :id))))
+    (list m)))
 
 (defn swap-id [tx id]
   (cond (map? tx) (assoc tx :id id)
@@ -251,7 +311,7 @@
                             (and new-id (not= new-id id)) (swap-id new-id)))))
       out)))
 
-(defn notify-listeners [{:keys [db-before db-after] {:keys [datoms ids attrs id-attrs]} :reports}]
+(defn notify-listeners [{:keys [db-before db-after] {:keys [datoms ids attrs entity-attrs attr-vals]} :reports}]
   (let [metadata {:db-before db-before
                   :db-after  db-after
                   :datoms    datoms}]
@@ -263,10 +323,16 @@
             (f (entity db-after id) metadata))))
 
       (when (seq (get-in* db-after [:listeners :entity-attr]))
-        (doseq [[id attr] id-attrs]
+        (doseq [[id attr] entity-attrs]
           (let [listeners (get-in* db-after [:listeners :entity-attr id attr])]
             (doseq [f listeners]
               (f (get db-after id attr))))))
+
+      (when (seq (get-in* db-after [:listeners :attr-val]))
+        (doseq [[id attr val added?] attr-vals]
+          (let [listeners (get-in* db-after [:listeners :attr-val attr val])]
+            (doseq [f listeners]
+              (f (if added? id nil))))))
 
       (when (seq (get-in* db-after [:listeners :attr]))
         (doseq [attr (keys attrs)]
@@ -287,16 +353,19 @@
                                  (apply f (cons [snapshot reports] (rest tx)))
                                  (throw (js/Error (str "No db function: " (first tx) tx)))))
                              [db-before (or (some-> *db-log* deref :reports)
-                                            {:datoms   []
-                                             :ids      #{}
-                                             :attrs    {}
-                                             :id-attrs #{}})]
+                                            {:datoms       []
+                                             :ids          #{}
+                                             :attrs        {}
+                                             :entity-attrs #{}
+                                             :attr-vals    #{}
+                                             :db-before    db-before})]
                              txs)]
     {:db-before db-before
      :db-after  db-after
      :reports   reports}))
 
-(defn transact! [db txs]
+(defn transact!
+  [db txs]
   (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
                                              (and (map? txs) (contains? txs :reports)) txs
                                              (sequential? txs) (transaction @db txs)
@@ -305,7 +374,7 @@
     (when *db-log* (reset! *db-log* (cond-> tx
                                             (:db-before @*db-log*) (assoc :db-before @*db-log*))))
     (when-not *mute* (notify-listeners tx))
-    tx))
+    db))
 
 (defn update-attr! [db id attr & args]
   (transact! db [(into [:db/update-attr id attr] args)]))
@@ -333,3 +402,51 @@
 
 (defn squuid []
   (str (uuid-utils/make-random-uuid)))
+
+(defn access-log-patterns
+  "Returns vector of access log patterns, pruning overlapping patterns"
+  [{ids :id attr-vals :attr-val entity-attrs :entity-attr}]
+  (reduce-kv
+    (fn [patterns id attrs]
+      (if (contains? ids [id])
+        patterns
+        (apply conj patterns (for [attr attrs]
+                               [id attr]))))
+    (apply into #{} ids attr-vals)
+    entity-attrs))
+
+(defn compute-value!
+  ([db pattern]
+   (compute-value! db pattern nil))
+  ([db [id attr] fresh-f]
+   (let [{prev-f :f prev-patterns :patterns prev-listener :listener} (cljs.core/get-in @db [:listeners :computed [id attr]])]
+     (cond (false? fresh-f)
+           (do
+             ;; remove computed value
+             (apply unlisten! (concat (list db) prev-patterns (list prev-listener)))
+             (swap! db update-in [:listeners :computed] dissoc [id attr])
+             true)
+
+           (fn? fresh-f)
+           (do
+             ;; (re)set computed value function
+             (swap! db assoc-in [:listeners :computed [id attr]] {:listener (or prev-listener #(compute-value! db [id attr]))
+                                                                  :f        fresh-f})
+             (compute-value! db [id attr]))
+
+           (nil? fresh-f)
+           ;; run computation when value changes
+           (let [{next-patterns :patterns value :value} (re-db.core/capture-patterns (prev-f))
+                 next-patterns (disj next-patterns [id attr])]
+             (when (not= prev-patterns next-patterns)
+               (swap! db assoc-in [:listeners :computed [id attr] :patterns next-patterns])
+               (when (seq prev-patterns)
+                 (apply unlisten! (concat (list db) prev-patterns (list prev-listener))))
+               (when (seq next-patterns)
+                 (apply listen! (concat (list db) next-patterns (list prev-listener)))))
+             (re-db.core/transact! db [[:db/add id attr value]])
+             value)))))
+
+; metadata on transactions (what function/cell was the source of this fact?)
+; timestamp on fact (compare facts by date)
+; [id attr val added? timestamp tx]

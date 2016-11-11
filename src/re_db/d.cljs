@@ -1,7 +1,7 @@
 (ns re-db.d
   (:refer-clojure :exclude [get get-in])
-  (:require-macros [re-db.d])
-  (:require [re-db.core :as d]))
+  (:require [re-db.core :as d])
+  (:require-macros [re-db.d]))
 
 (def ^:dynamic *db* (d/create {}))
 
@@ -22,33 +22,5 @@
 (def transact! (prefix-atom d/transact!))
 (def listen! (prefix-atom d/listen!))
 (def unlisten! (prefix-atom d/unlisten!))
-(def listen-attr! (prefix-atom d/listen-attr!))
-(def unlisten-attr! (prefix-atom d/unlisten-attr!))
 (def merge-schema! (prefix-atom d/merge-schema!))
 (def squuid d/squuid)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
