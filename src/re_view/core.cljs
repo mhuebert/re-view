@@ -1,4 +1,5 @@
 (ns ^:figwheel-always re-view.core
+  (:refer-clojure :exclude [partial])
   (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
@@ -84,6 +85,14 @@
   (d/get @db this (if (or *use-prior* *use-prior-props*)
                     :prev-props :props)))
 
+(defn partial
+  "Partially apply props to a component"
+  [component partial-props]
+  (fn [& args]
+    (let [[props & children] (cond->> args
+                                      (not (map? (first args))) (cons {}))]
+      (apply component (cons (merge partial-props props) children)))))
+
 (defn children [this]
   (d/get @db this :children))
 
@@ -167,7 +176,7 @@
 (defn update-patterns [this prev-patterns next-patterns]
 
   (when (not= prev-patterns next-patterns)
-    (let [cb (partial force-update this)]
+    (let [cb (cljs.core/partial force-update this)]
       (~'apply ~'re-db.d/unlisten! (concat prev-patterns (list cb)))
       (~'apply ~'re-db.d/listen! (concat next-patterns (list cb)))
       (reset! prev-patterns next-patterns))))

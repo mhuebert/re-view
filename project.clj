@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view "0.1.3"
+(defproject org.clojars.mhuebert/re-view "0.1.4"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -9,7 +9,8 @@
                  [org.clojars.mhuebert/sablono "0.7.4"]
                  [cljsjs/react-with-addons "15.3.1-0"]
                  [cljsjs/react-dom-server "15.3.1-0" :exclusions [cljsjs/react]]
-                 [cljsjs/react-dom "15.3.1-0" :exclusions [cljsjs/react]]]
+                 [cljsjs/react-dom "15.3.1-0" :exclusions [cljsjs/react]]
+                 [secretary "1.2.3"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.0-2"]
