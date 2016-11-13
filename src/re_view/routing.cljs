@@ -75,7 +75,8 @@
   [& pairs]
   (fn
     [_ _ cb]
-    (let [compiled-routes (atom (compile-routes pairs))
+    (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
+          compiled-routes (atom (compile-routes pairs))
           current-match #(match-route @compiled-routes (get-token))
           navigate! #(cb (current-match))]
       {:default     current-match

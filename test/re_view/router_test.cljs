@@ -26,8 +26,8 @@
 
 (defcomponent main
   :subscriptions {:main-view (router "/" index
-                                     "/404" not-found
-                                     "/page/:page-id" page)}
+                                     "/page/:page-id" page
+                                     not-found)}
   :render
   (fn [_ props {:keys [main-view]}]
     (main-view props)))
@@ -44,7 +44,7 @@
       (render-to-dom (main))
 
       ;; route changes should trigger re-render
-      (r/nav! "/404")
+      (r/nav! "/jkdljfsljflskdjflksjls--obviously-this-route-does-not-exist")
       (r/nav! "/page/1001")
 
       (is (= @log [[:index]
