@@ -391,8 +391,9 @@
           factory))))
 
 (defn is-react-element? [x]
-  (or (.-isView x)
-      (js/React.isValidElement x)))
+  (and x
+       (or (.-isView x)
+           (js/React.isValidElement x))))
 
 (defn render-to-dom [component el-id]
   (when-let [element (.getElementById js/document el-id)]
