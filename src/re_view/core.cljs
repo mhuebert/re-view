@@ -339,23 +339,24 @@
 
 (defn factory
   [class]
-  (fn [props & children]
-    (let [props (js->clj props)
-          props? (or (nil? props) (map? props))
-          children (if props? children (cons props children))
-          {:keys [ref key] :as props} (when props? props)
-          element (js/React.createElement
-                    class
-                    #js {:key           (or key
-                                            (if-let [keyfn (aget class "prototype" "reactKey")]
-                                              (if (string? keyfn) keyfn (keyfn props)) key)
-                                            (.-displayName class))
-                         :ref           ref
-                         :cljs$props    (dissoc props :keyfn :ref :key)
-                         :cljs$children (when (not= '(nil) children) children)})]
-      ;;
-      #_(set! (.-reactClass element) class)
-      element)))
+  (doto (fn [props & children]
+          (let [props (js->clj props)
+                props? (or (nil? props) (map? props))
+                children (if props? children (cons props children))
+                {:keys [ref key] :as props} (when props? props)
+                element (js/React.createElement
+                          class
+                          #js {:key           (or key
+                                                  (if-let [keyfn (aget class "prototype" "reactKey")]
+                                                    (if (string? keyfn) keyfn (keyfn props)) key)
+                                                  (.-displayName class))
+                               :ref           ref
+                               :cljs$props    (dissoc props :keyfn :ref :key)
+                               :cljs$children (when (not= '(nil) children) children)})]
+            ;;
+            #_(set! (.-reactClass element) class)
+            element))
+    (#(set! (.-isView %) true))))
 
 (defn react-class [methods]
   (js/React.createClass
@@ -388,6 +389,10 @@
           (apply hash-map)
           react-class
           factory))))
+
+(defn is-react-element? [x]
+  (or (.-isView x)
+      (js/React.isValidElement x)))
 
 (defn render-to-dom [component el-id]
   (when-let [element (.getElementById js/document el-id)]

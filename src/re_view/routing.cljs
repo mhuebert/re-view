@@ -71,7 +71,8 @@
     (secretary/dispatch! token)))
 
 (defn router
-  "A subscription which takes pairs of paths and view functions and returns the matched route."
+  "A subscription which takes pairs of path patterns and view functions and returns the matched route.
+  A final view may be supplied as a default/catch-all view."
   [& pairs]
   (fn
     [_ _ cb]
