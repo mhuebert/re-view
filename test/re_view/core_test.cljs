@@ -1,54 +1,54 @@
 (ns re-view.core-test
-  (:require [cljs.test :refer-macros [deftest is are testing]]
-            [re-view.core :as view :refer-macros [defcomponent]]))
+  (:require [cljs.test :refer [deftest is are testing]]
+            [re-view.core :as v :refer [defcomponent]]))
 
 
 (def render-count (atom 0))
 
 (def lifecycle-log (atom {}))
 
-(defn log-args
-  [& args]
-  (reset! lifecycle-log args))
+#_(defn log-args
+    [& args]
+    (reset! lifecycle-log args))
 
-(defn log-args [method & arguments]
-  (swap! lifecycle-log assoc method {:args  arguments
-                                     :props (view/props (first arguments))
-                                     :state (view/state (first arguments))}))
+(defn log-args [method this]
+  (swap! lifecycle-log assoc method (select-keys this [:props
+                                                       :state
+                                                       :prev-props
+                                                       :prev-state
+                                                       :children]))
+  true)
 
 (def initial-state {:eaten? false})
 
 (defcomponent apple
-  :get-initial-state
+  :initial-state
   (fn [& args]
     (apply (partial log-args :get-initial-state) args)
     initial-state)
 
-  :component-will-mount (partial log-args :component-will-mount)
+  :will-mount (partial log-args :will-mount)
 
-  :component-did-mount (partial log-args :component-did-mount)
+  :did-mount (partial log-args :did-mount)
 
-  :component-will-receive-props (partial log-args :component-will-receive-props)
+  :will-receive-props (partial log-args :will-receive-props)
 
-  :should-component-update (partial log-args :should-component-update)
+  :should-update (partial log-args :should-update)
 
-  :component-will-update (partial log-args :component-will-update)
+  :will-update (partial log-args :will-update)
 
-  :should-component-update (fn [& args] (apply (partial log-args :should-component-update) args) true)
+  :did-update (partial log-args :did-update)
 
-  :component-did-update (partial log-args :component-did-update)
-
-  :component-will-unmount (partial log-args :component-will-unmount)
+  :will-unmount (partial log-args :will-unmount)
 
   :render
-  (fn [& args]
-    (apply (partial log-args :render) args)
-    (let [this (first args)]
-      (swap! render-count inc)
-      [:div "I am an apple."
-       (when-not (:eaten (view/state this))
-         [:p {:ref   "apple-statement-of-courage"
-              :style {:font-weight "bold"}} " ...and I am brave and alive."])])))
+  (fn [this]
+    (log-args :render this)
+    (swap! render-count inc)
+    [:div "I am an apple."
+     (when-not (get-in this [:state :eaten])
+       [:p {:ref   "apple-statement-of-courage"
+            :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
 
 
 ;; a heavily logged component
@@ -70,147 +70,122 @@
           c (render-to-dom init-props init-child)]
 
       (testing "initial state"
-        (is (= {:eaten? false} (view/state c)))
+        (is (= {:eaten? false} (:state c)))
         (is (= 1 @render-count))
         (is (= "red" (get-in @lifecycle-log [:get-initial-state :props :color]))
             "Read props from GetInitialState")
-        (is (= "red" (:color (view/props c)))
+        (is (= "red" (get-in c [:props :color]))
             "Read props"))
 
       (testing "update state"
 
         ;; Update State
-        (view/update-state! c update :eaten? not)
-        (is (true? (:eaten? (view/state c)))
+        (v/swap-state! c update :eaten? not)
+        (is (true? (get-in c [:state :eaten?]))
             "State has changed")
         (is (= 2 @render-count)
             "Component was rendered"))
 
       (testing "render with new props"
 
-        (view/render-component c {:color "green"})
-        (is (= "green" (:color (view/props c)))
+        (v/render-component c {:color "green"})
+        (is (= "green" (get-in c [:props :color]))
             "Update Props")
         (is (= 3 @render-count)
             "Force rendered"))
 
-
       (testing "children"
 
-        (view/render-component c {} [:div "div"])
-        (is (= 1 (count (view/children c)))
+        (v/render-component c {} [:div "div"])
+        (is (= 1 (count (:children c)))
             "Has one child")
-        (is (= :div (ffirst (view/children c)))
+        (is (= :div (ffirst (:children c)))
             "Read child")
 
-        (view/render-component c {} [:p "Paragraph"])
-        (is (= :p (ffirst (view/children c)))
+        (v/render-component c {} [:p "Paragraph"])
+        (is (= :p (ffirst (:children c)))
             "New child - force render")
 
         (render-to-dom nil [:span "Span"])
-        (is (= :span (ffirst (view/children c)))
+        (is (= :span (ffirst (:children c)))
             "New child - normal render"))
-
 
       (testing "refs"
         (is (= "bold" (-> c
-                          (view/react-ref "apple-statement-of-courage")
+                          (v/get-ref "apple-statement-of-courage")
                           .-style
                           .-fontWeight))
             "Read react ref")))))
+(comment
+  (defn validate-args
+    [log [initial-state before-state after-state] [initial-props before-props after-props]]
 
-(defn validate-args
-  [log [initial-state before-state after-state] [initial-props before-props after-props]]
+    (are [method-name val]
+      (= val (rest (get-in log [method-name :args])))
 
-  (are [method-name val]
-    (= val (rest (get-in log [method-name :args])))
+      :get-initial-state [initial-props]
 
-    :get-initial-state [initial-props]
+      :will-mount [initial-props initial-state]
 
-    :component-will-mount [initial-props initial-state]
+      :did-mount [initial-props initial-state]
 
-    :component-did-mount [initial-props initial-state]
+      :will-receive-props [after-props before-props]
 
-    :component-will-receive-props [after-props before-props]
+      :should-update [after-props after-state before-props before-state]
 
-    :should-component-update [after-props after-state before-props before-state]
+      :will-update [after-props after-state before-props before-state]
 
-    :component-will-update [after-props after-state before-props before-state]
+      :did-update [before-props before-state after-props after-state]
 
-    :component-did-update [before-props before-state after-props after-state]
+      ;:will-unmount [after-props after-state]
 
-    ;:component-will-unmount [after-props after-state]
-
-    :render [after-props after-state]))
-
-
-
-(deftest lifecycle-transitions
-  (binding [re-view.core/*use-render-loop* false]
-    (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
-                                             (.setAttribute "id" "apple")))
-          render #(js/ReactDOM.render (apple %1 nil) el)
-          initial-props {:color "purple"}
-          this (render initial-props)]
+      :render [after-props after-state]))
 
 
-      (testing "prop transitions"
 
-        (render {:color "pink"})
-        (render {:color "blue"})
-
-        (validate-args @lifecycle-log
-                       [initial-state initial-state initial-state]
-                       [initial-props {:color "pink"} {:color "blue"}])
-
-        (view/render-component this {:color "yellow"})
-        (view/render-component this {:color "mink"})
-
-        (validate-args @lifecycle-log
-                       [initial-state initial-state initial-state]
-                       [initial-props
-                        {:color "yellow"}
-                        {:color "mink"}])
-
-        (view/render-component this {:color "fox"})
-
-        (validate-args @lifecycle-log
-                       [initial-state initial-state initial-state]
-                       [initial-props
-                        {:color "mink"}
-                        {:color "fox"}])
+  (deftest lifecycle-transitions
+    (binding [re-view.core/*use-render-loop* false]
+      (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
+                                               (.setAttribute "id" "apple")))
+            render #(js/ReactDOM.render (apple %1 nil) el)
+            initial-props {:color "purple"}
+            this (render initial-props)]
 
 
-        ;; Force-render followed by normal render
+        (testing "prop transitions"
 
-        (render {:color "bear"})
+          (render {:color "pink"})
+          (render {:color "blue"})
 
-        (validate-args @lifecycle-log
-                       [initial-state initial-state initial-state]
-                       [initial-props
-                        {:color "fox"}
-                        {:color "bear"}]))
+          (is (= "pink" (get-in this [:prev-props :color])))
+          (is (= "blue" (get-in this [:props :color])))
 
-      (testing "state transition"
 
-        (view/set-state! this {:shiny? false})
+          (v/render-component this {:color "yellow"})
+          (v/render-component this {:color "mink"})
 
-        (is (false? (-> this view/state :shiny?)))
+          (is (= "yellow" (get-in this [:prev-props :color])))
+          (is (= "mink" (get-in this [:props :color])))
 
-        (view/update-state! this update :shiny? not)
+          (render {:color "bear"})
+          (is (= "mink" (get-in this [:prev-props :color])))
+          (is (= "bear" (get-in this [:props :color])))
 
-        (validate-args @lifecycle-log
-                       [initial-state
-                        {:shiny? false}
-                        {:shiny? true}]
-                       [initial-props
-                        {:color "fox"}
-                        {:color "bear"}])
+          (testing "state transition"
 
-        (render {:color "violet"})
-        (is (= (view/state this)
-               (view/prev-state this))
-            "After a component lifecycle, prev-state and state are the same.")))))
+            (reset! this {:shiny? false})
+
+            (is (false? (-> this :state :shiny?)))
+
+            (v/swap-state! this update :shiny? not)
+
+            (is (false? (get-in this [:prev-state :shiny?])))
+            (is (true? (get-in this [:state :shiny?])))
+
+            (render {:color "violet"})
+            (is (= (:state this)
+                   (:prev-state this))
+                "After a component lifecycle, prev-state and state are the same.")))))))
 
 
 ;; test react-key

@@ -1,10 +1,7 @@
 (ns re-view.router-test
-  (:require [cljs.test :refer-macros [deftest is are testing]]
+  (:require [cljs.test :refer [deftest is are testing]]
             [re-view.routing :as r :refer [router]]
-            [re-view.core :as view :refer-macros [defcomponent]]))
-
-
-
+            [re-view.core :as view :refer [defcomponent]]))
 
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 (def log (atom []))
@@ -20,7 +17,7 @@
     [:div]))
 
 (defcomponent page
-  (fn [_ props]
+  (fn [{props :props}]
     (swap! log conj [:page props])
     [:div]))
 
@@ -29,10 +26,12 @@
                                      "/page/:page-id" page
                                      not-found)}
   :render
-  (fn [_ props {:keys [main-view]}]
+  (fn [{{:keys [main-view]} :state
+        props :props}]
     (main-view props)))
 
 (deftest routing-test
+
   (testing "Basic routing"
     (let [dom-el (append-el)
           render-to-dom #(js/ReactDOM.render % dom-el)]

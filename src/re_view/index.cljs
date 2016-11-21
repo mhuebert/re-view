@@ -5,8 +5,7 @@
 (defn components-by-view-id [db id]
   (when id
     (->> (d/entities @db [:view/id id])
-         (map :view/component)
-         (filter view/mounted?))))
+         (map :view/component))))
 
 (defn register-view
   "Keep index to components based on id"

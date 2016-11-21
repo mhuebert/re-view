@@ -1,6 +1,6 @@
 # re-view
 
-A thin [React](https://facebook.github.io/react/) ClojureScript wrapper designed to play well with [re-db](https://github.com/mhuebert/re-db) or [datascript](https://github.com/tonsky/datascript) and closely follow/expose ordinary React behaviour.
+A thin [React](https://facebook.github.io/react/) ClojureScript wrapper designed to play well with [re-db](https://github.com/mhuebert/re-db) and closely follow/expose ordinary React behaviour.
 
 Example:
 
@@ -9,18 +9,18 @@ Example:
 (ns app.core
   (:require [re-view.core :as view]))
 
-(def my-first-component
-  (component
+(defcomponent my-first-component
+
    :get-initial-state
-   (fn [this props] {:color "purple"})
+   (fn [_] {:color "purple"})
 
    ;; put rendered height into state
-   :component-did-mount
-   (fn [this] (view/update-state this assoc :height
+   :did-mount
+   (fn [this] (view/swap-state! this assoc :height
                 (.height (js/ReactDOM.findDOMNode this))))
 
    :render
-   (fn [this] [:div "Hello, world"])))
+   (fn [this] [:div "Hello, world"]))
 
 ```
 
@@ -29,13 +29,13 @@ Pass `component` React lifecycle methods (names are auto-converted from :hyphena
 
 Important to know:
 
-* use `view/state` to read state and `view/props` to read props
+* access state and props as keyword properties on `this`, eg. `(:props this)` or `(:state this)`
 
 ```
 ...
   :render
   (fn [this]
-    [:div "Hello, " (:name (view/state this))])
+    [:div "Hello, " (get-in this [:state :name])])
 ...
 ```
 
@@ -44,20 +44,9 @@ Important to know:
 ```
 ...
   :react-key
-  (fn [this props] (:id props))
+  (fn [{:keys [props]}] (:id props))
 ...
 ```
-
-* pass sparse props to components, and define `expand-props` to fetch/get the rest. For example, you might pass a component only `{:id <some-id>}`, and leave responsibility with the component to fetch the rest of the entity.
-
- ```
- ...
-   :expand-props
-   (fn [this props]
-     (sync-entity! (:id props))
-     (merge props (d/entity @db [:id props)])))
- ...
- ```
 
 * call `render-component` to re-render a component, optionally with new props. this can be any component, not only root components.
 
@@ -65,3 +54,25 @@ Important to know:
 (view/render-component my-component {:id <some-id>})
 ```
 
+### Changelog
+
+0.2
+
+- `props` and `state` are keyword properties on `this`. Also available are `:prev-props, :prev-state, :children`. Destructuring on function arglist is encouraged:
+
+```clj
+(defcomponent x
+  :render
+  (fn [{:keys [props state] :as this}] ...))
+
+(defcomponent y
+  :render
+  (fn [{[a b c] :children
+        {:keys [id]} :props}] ...)
+
+```
+
+- Swap state via `(view/swap-state! this ...)`. Or, if you are feeling evil, plain `swap!` is equivalent to `view/swap-state!`.
+- Shorten keyword method names (`:will-mount`, `:should-update`, etc.)
+- Depracate `expand-props`
+- Upgrade to Clojure(Script) 1.9.*
