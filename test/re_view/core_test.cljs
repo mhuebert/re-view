@@ -116,76 +116,51 @@
                           .-style
                           .-fontWeight))
             "Read react ref")))))
-(comment
-  (defn validate-args
-    [log [initial-state before-state after-state] [initial-props before-props after-props]]
-
-    (are [method-name val]
-      (= val (rest (get-in log [method-name :args])))
-
-      :get-initial-state [initial-props]
-
-      :will-mount [initial-props initial-state]
-
-      :did-mount [initial-props initial-state]
-
-      :will-receive-props [after-props before-props]
-
-      :should-update [after-props after-state before-props before-state]
-
-      :will-update [after-props after-state before-props before-state]
-
-      :did-update [before-props before-state after-props after-state]
-
-      ;:will-unmount [after-props after-state]
-
-      :render [after-props after-state]))
 
 
-
-  (deftest lifecycle-transitions
-    (binding [re-view.core/*use-render-loop* false]
-      (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
-                                               (.setAttribute "id" "apple")))
-            render #(js/ReactDOM.render (apple %1 nil) el)
-            initial-props {:color "purple"}
-            this (render initial-props)]
-
-
-        (testing "prop transitions"
-
-          (render {:color "pink"})
-          (render {:color "blue"})
-
-          (is (= "pink" (get-in this [:prev-props :color])))
-          (is (= "blue" (get-in this [:props :color])))
+(deftest lifecycle-transitions
+  (binding [re-view.core/*use-render-loop* false]
+    (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
+                                             (.setAttribute "id" "apple")))
+          render #(js/ReactDOM.render (apple %1 nil) el)
+          initial-props {:color "purple"}
+          this (render initial-props)]
 
 
-          (v/render-component this {:color "yellow"})
-          (v/render-component this {:color "mink"})
+      (testing "prop transitions"
 
-          (is (= "yellow" (get-in this [:prev-props :color])))
-          (is (= "mink" (get-in this [:props :color])))
+        (render {:color "pink"})
+        (render {:color "blue"})
 
-          (render {:color "bear"})
-          (is (= "mink" (get-in this [:prev-props :color])))
-          (is (= "bear" (get-in this [:props :color])))
+        (is (= "pink" (get-in this [:prev-props :color])))
+        (is (= "blue" (get-in this [:props :color])))
 
-          (testing "state transition"
 
-            (reset! this {:shiny? false})
+        (v/render-component this {:color "yellow"})
+        (v/render-component this {:color "mink"})
 
-            (is (false? (-> this :state :shiny?)))
+        (is (= "yellow" (get-in this [:prev-props :color])))
+        (is (= "mink" (get-in this [:props :color])))
 
-            (v/swap-state! this update :shiny? not)
+        (render {:color "bear"})
+        (is (= "mink" (get-in this [:prev-props :color])))
+        (is (= "bear" (get-in this [:props :color]))))
 
-            (is (false? (get-in this [:prev-state :shiny?])))
-            (is (true? (get-in this [:state :shiny?])))
+      (testing "state transition"
 
-            (render {:color "violet"})
-            (is (= (:state this)
-                   (:prev-state this))
-                "After a component lifecycle, prev-state and state are the same.")))))))
+        (reset! this {:shiny? false})
+
+        (is (false? (-> this :state :shiny?)))
+
+        (v/swap-state! this update :shiny? not)
+
+        (is (false? (get-in @lifecycle-log [:should-update :prev-state :shiny?])))
+        (is (true? (get-in @lifecycle-log [:should-update :state :shiny?])))
+
+        (render {:color "violet"})
+        (is (= (:state this)
+               (:prev-state this))
+            "After a component lifecycle, prev-state and state are the same.")))))
 
 
 ;; test react-key

@@ -75,11 +75,11 @@
   A final view may be supplied as a default/catch-all view."
   [& pairs]
   (fn
-    [_ _ cb]
+    [this _ st-key]
     (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
           compiled-routes (atom (compile-routes pairs))
           current-match #(match-route @compiled-routes (get-token))
-          navigate! #(cb (current-match))]
+          navigate! #(swap! this assoc st-key (current-match))]
       {:default     current-match
        :subscribe   #(do
                       (reset! compiled-routes (compile-routes pairs))

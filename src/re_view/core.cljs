@@ -10,7 +10,7 @@
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* false)
 
-(def db (d/create {:view-id {:db/index true}}))
+(defonce db (d/create {:view-id {:db/index true}}))
 
 (defn by-id [id]
   (d/entity-ids @db [:view-id id]))

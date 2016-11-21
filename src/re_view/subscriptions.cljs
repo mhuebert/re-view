@@ -4,33 +4,34 @@
   (:require-macros [re-view.subscriptions]))
 
 (defn get-id [id-selector props]
-  (cond (fn? id-selector) (id-selector props)
-        (and (keyword? id-selector)
+  (cond (and (keyword? id-selector)
              (contains? props id-selector)) (get props id-selector)
+        (fn? id-selector) (id-selector props)
         :else id-selector))
 
-(defn db [[id-selector attr :as pattern]]
-  (fn [_ props cb]
-    (let [id (atom (get-id id-selector props))
-          prev-id (atom @id)]
+(defn db [[id-selector attr]]
+  (fn [this st-key]
+    (let [id (atom (get-id id-selector (:props this)))
+          cb #(swap! this assoc st-key %)]
       {:default       #(cond (and id attr) (d/get @id attr)
                              id (d/entity @id)
                              :else nil)
-       :subscribe     #(d/listen! [@id attr] cb)
+       :subscribe     #(let [next-id (get-id id-selector (:props this))]
+                        (reset! id next-id)
+                        (swap! this update-in [:subscriptions st-key :unsubscribe-cbs] (fnil conj []) (fn [] (d/unlisten! [next-id attr] cb)))
+                        (d/listen! [next-id attr] cb))
        :unsubscribe   #(do
-                        (d/unlisten! [@prev-id attr] cb)
-                        (reset! prev-id @id))
-       :should-update #(let [next-id (get-id id-selector %2)]
-                        (when (not= next-id @id)
-                          (reset! id next-id)
-                          true))})))
+                        (doseq [unsub (get-in this [:state :subscriptions st-key :unsubscribe-cbs])]
+                          (unsub))
+                        (swap! this update-in [:state :subscriptions st-key] dissoc :unsubscribe-cbs))
+       :should-update #(not= @id (get-id id-selector (:props this)))})))
 
 
 (defn initialize-subscriptions
   "If component has specified subscriptions, initialize them"
-  [{initial-props :props :as this}]
+  [this]
   (reduce-kv (fn [m k sub-fn]
-               (let [{:keys [default] :as sub} (sub-fn this initial-props #(swap! this assoc k %))]
+               (let [{:keys [default] :as sub} (sub-fn this k)]
                  (cond-> m
                          sub (assoc-in [:subscriptions k] sub)
                          default (assoc k (default)))))
