@@ -68,7 +68,7 @@ Important to know:
 (defcomponent y
   :render
   (fn [{[a b c] :children
-        {:keys [id]} :props}] ...)
+        {:keys [id]} :props}] ...))
 
 ```
 
