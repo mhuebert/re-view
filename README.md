@@ -70,6 +70,13 @@ Important to know:
   (fn [{[a b c] :children
         {:keys [id]} :props}] ...))
 
+;; state behaves like an atom, forcing a re-render when appropriate
+(v/swap-state! this assoc :x 10)
+(get-in this [:state :x]) ;; => 10
+
+;; list of relevant kw properties defined on `this`:
+[:props :state :children :prev-props :prev-state :prev-children]        
+
 ```
 
 - Swap state via `(view/swap-state! this ...)`. Or, if you are feeling evil, plain `swap!` is equivalent to `view/swap-state!`.
