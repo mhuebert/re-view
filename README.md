@@ -11,7 +11,7 @@ Example:
 
 (defcomponent my-first-component
 
-   :get-initial-state
+   :initial-state
    (fn [_] {:color "purple"})
 
    ;; put rendered height into state
