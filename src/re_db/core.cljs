@@ -112,7 +112,6 @@
   (sequential? (first pattern)))
 
 (defn listen-lookup-ref!
-
   [db pattern f]
   (let [[[lookup-attr lookup-val] attr] pattern]
     (let [prev-id (atom)
@@ -126,14 +125,6 @@
                                                                          (unlisten! db [nil lookup-attr lookup-val] intermediate-cb)
                                                                          (swap! db update-in [:listeners :lookup-ref pattern] dissoc f))}))))
 
-(defn listen!
-  [db & patterns]
-  (let [f (last patterns)]
-    (doseq [pattern (drop-last patterns)]
-      (if (lookup-ref? pattern)
-        (listen-lookup-ref! db pattern f)
-        (listen-path! db (pattern->listener-path @db pattern) f)))))
-
 (defn unlisten!
   [db & patterns]
   (let [f (last patterns)]
@@ -141,6 +132,15 @@
       (if (lookup-ref? pattern)
         ((get-in* @db [:listeners :lookup-ref pattern f :clear])))
       (unlisten-path! db (pattern->listener-path @db pattern) f))))
+
+(defn listen!
+  [db & patterns]
+  (let [f (last patterns)]
+    (doseq [pattern (drop-last patterns)]
+      (if (lookup-ref? pattern)
+        (listen-lookup-ref! db pattern f)
+        (listen-path! db (pattern->listener-path @db pattern) f))))
+  #(apply unlisten! (cons db patterns)))
 
 (defn entity [db-snap id]
   (when-let [id (resolve-id db-snap id)]
