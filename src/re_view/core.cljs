@@ -1,9 +1,9 @@
 (ns ^:figwheel-always re-view.core
-  (:refer-clojure :exclude [partial])
   (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [re-db.core :as d]
+            [re-view.util :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
             [sablono.core :refer [html]]))
 
@@ -59,15 +59,6 @@
   [component name]
   (some-> (aget component "refs") (aget name)))
 
-;; self-management of cljs props and state
-
-(defn partial
-  "Partially apply props to a component"
-  [component partial-props]
-  (fn [& args]
-    (let [[props & children] (cond->> args
-                                      (not (map? (first args))) (cons {}))]
-      (apply component (cons (merge partial-props props) children)))))
 
 ;; State manipulation
 
@@ -238,8 +229,10 @@
     ILookup
     (-lookup
       ([this k]
+       (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
        (d/get @db this k))
       ([this k not-found]
+       (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
        (d/get @db this k not-found)))
 
     ISwap

@@ -56,6 +56,23 @@ Important to know:
 
 ### Changelog
 
+0.2.1
+
+- Removed pattern-based db subscriber. Use re-view.subscriptions/db (a macro) to create a reactive database subscription. When body of subs/db is executed, listeners are created on accessed db-patterns, and body is re-run when these entities/attributes change. If the body reads from :props, the subscription will be updated when props change.
+
+```
+(require '[re-view.subscriptions :as subs])
+
+(defcomponent x
+  :subscriptions {:name (subs/db [this] (d/get (get-in this [:props :uid]) :name))
+                                 ;;^^ optional binding of `this` for reading :props.
+                  :signed-in? (subs/db (d/get :app/state :signed-in?))}
+  :render
+  (fn [{{:keys [name signed-in?]} :state}]
+    ...))
+
+```
+
 0.2
 
 - `props` and `state` are keyword properties on `this`. Also available are `:prev-props, :prev-state, :children`. Destructuring on function arglist is encouraged:

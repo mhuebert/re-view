@@ -1,31 +1,7 @@
 (ns re-view.subscriptions
-  (:require [re-db.d :as d]
-            [re-db.core :include-macros true])
+  (:require [re-view.subscriptions.router-sub :as router-sub]
+            [re-view.subscriptions.db-sub])
   (:require-macros [re-view.subscriptions]))
-
-(defn get-id [id-selector props]
-  (cond (and (keyword? id-selector)
-             (contains? props id-selector)) (get props id-selector)
-        (fn? id-selector) (id-selector props)
-        :else id-selector))
-
-(defn db [[id-selector attr]]
-  (fn [this st-key]
-    (let [id (atom (get-id id-selector (:props this)))
-          cb #(swap! this assoc st-key %)]
-      {:default       #(cond (and id attr) (d/get @id attr)
-                             id (d/entity @id)
-                             :else nil)
-       :subscribe     #(let [next-id (get-id id-selector (:props this))]
-                        (reset! id next-id)
-                        (swap! this update-in [:subscriptions st-key :unsubscribe-cbs] (fnil conj []) (fn [] (d/unlisten! [next-id attr] cb)))
-                        (d/listen! [next-id attr] cb))
-       :unsubscribe   #(do
-                        (doseq [unsub (get-in this [:state :subscriptions st-key :unsubscribe-cbs])]
-                          (unsub))
-                        (swap! this update-in [:state :subscriptions st-key] dissoc :unsubscribe-cbs))
-       :should-update #(not= @id (get-id id-selector (:props this)))})))
-
 
 (defn initialize-subscriptions
   "If component has specified subscriptions, initialize them"
@@ -57,3 +33,5 @@
    :will-mount         begin-subscriptions
    :will-unmount       end-subscriptions
    :will-receive-props update-subscriptions})
+
+(def router router-sub/router)

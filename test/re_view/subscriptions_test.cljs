@@ -10,7 +10,7 @@
 (def log (atom []))
 
 (defcomponent test-c
-  :subscriptions {:name (subs/reactive [props] (d/get (:id props) :name))}
+  :subscriptions {:name (subs/db [this] (d/get (get-in this [:props :id]) :name))}
   :render
   (fn [this]
     (swap! log conj (get-in this [:state :name]))
@@ -26,10 +26,9 @@
 
     (binding [re-view.core/*use-render-loop* false]
       (let [el (append-el)
-            render-to-dom #(js/ReactDOM.render (test-c {:id %}) el)
-            c (render-to-dom 1)]
+            render-to-dom #(js/ReactDOM.render (test-c {:id %}) el)]
 
-
+        (render-to-dom 1)
         (is (= 1 (count @log)))
 
         (d/transact! [[:db/add 1 :name "Frank"]])
