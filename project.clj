@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-db "0.1.4-SNAPSHOT"
+(defproject org.clojars.mhuebert/re-db "0.1.4"
   :description "Tiny data store"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
