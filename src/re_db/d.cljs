@@ -3,7 +3,7 @@
   (:require [re-db.core :as d])
   (:require-macros [re-db.d]))
 
-(def ^:dynamic *db* (d/create {}))
+(defonce ^:dynamic *db* (d/create {}))
 
 (defn prefix-atom
   ([f] (prefix-atom f false))
