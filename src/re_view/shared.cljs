@@ -1,4 +1,4 @@
-(ns re-view.util
+(ns re-view.shared
   (:refer-clojure :exclude [partial]))
 
 (def ^:dynamic *lookup-log*)

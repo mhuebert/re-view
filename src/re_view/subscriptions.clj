@@ -1,7 +1,9 @@
 (ns re-view.subscriptions)
 
 (defmacro db
-  [prop-binding & body]
-  `(~'re-view.subscriptions.db-sub/db-fn ~(if (vector? prop-binding)
-                                            `(fn ~prop-binding ~@body)
-                                            `(fn [this#] ~@(cons prop-binding body)))))
+  ([expr]
+   `(~'re-view.subscriptions.db-sub/db-fn (~'fn [this#] ~expr) nil))
+  ([prop-binding expr]
+   `(~'re-view.subscriptions.db-sub/db-fn (~'fn ~prop-binding ~expr) nil))
+  ([prop-binding expr should-update?]
+   `(~'re-view.subscriptions.db-sub/db-fn (~'fn ~prop-binding ~expr) ~should-update?)))

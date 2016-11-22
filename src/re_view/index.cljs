@@ -4,7 +4,7 @@
 
 (defn components-by-view-id [db id]
   (when id
-    (->> (d/entities @db [:view/id id])
+    (->> (d/entities @db [:re-view/id id])
          (map :view/component))))
 
 (defn register-view

@@ -56,6 +56,13 @@ Important to know:
 
 ### Changelog
 
+0.2.2
+
+- Use global re-db.d database (simplifies db subscriptions)
+- Use namespace kw for indexing views by id (`:re-view/id`)
+- `subs/db` subscription macro takes an extra `should-update?` parameter, no attempt to infer this from props
+- More efficient subscription initialization
+
 0.2.1
 
 - Removed pattern-based db subscriber. Use re-view.subscriptions/db (a macro) to create a reactive database subscription. When body of subs/db is executed, listeners are created on accessed db-patterns, and body is re-run when these entities/attributes change. If the body reads from :props, the subscription will be updated when props change.

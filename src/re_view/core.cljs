@@ -2,18 +2,18 @@
   (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
-            [re-db.core :as d]
-            [re-view.util :refer [*lookup-log*]]
+            [re-db.d :as d]
+            [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
             [sablono.core :refer [html]]))
 
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* false)
 
-(defonce db (d/create {:view-id {:db/index true}}))
+(defonce _ (re-db.core/merge-schema! d/*db* {:re-view/id {:db/index true}}))
 
 (defn by-id [id]
-  (d/entity-ids @db [:view-id id]))
+  (d/entity-ids [:re-view/id id]))
 
 (defn force-update! [this]
   (try (.forceUpdate this)
@@ -68,9 +68,9 @@
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
-  (d/transact! db [{:id         this
-                    :prev-state (d/get @db this :state)
-                    :state      new-state}])
+  (d/transact! [{:id         this
+                 :prev-state (d/get this :state)
+                 :state      new-state}])
 
   (when-let [will-receive (aget this "componentWillReceiveState")]
     (.call will-receive this))
@@ -80,7 +80,7 @@
                  (.call (aget this "shouldComponentUpdate") this)))
     (force-update this))
 
-  (d/transact! db [[:db/add this :prev-state new-state]]))
+  (d/transact! [[:db/add this :prev-state new-state]]))
 
 (defn swap-state! [this f & args]
   (set-state! this (apply f (cons (:state this) args))))
@@ -111,32 +111,32 @@
   {"constructor"
    (fn [this $props]
      ;; initialize props and children
-     (let [{:keys [view-id id] :as initial-props} (some-> $props (.-cljs$props))]
-       (d/transact! db [{:id            this
-                         :props         initial-props
-                         :prev-props    nil
-                         :view-id       (or view-id id)
-                         :children      (some-> $props (.-cljs$children))
-                         :prev-children nil}]))
+     (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
+       (d/transact! [{:id            this
+                      :props         initial-props
+                      :prev-props    nil
+                      :re-view/id    id
+                      :children      (some-> $props (.-cljs$children))
+                      :prev-children nil}]))
      ;; initialize state
      (when-let [initial-state-f (aget this "$getInitialState")]
        (let [initial-state (initial-state-f this)]
-         (d/transact! db [{:id         this
-                           :state      initial-state
-                           :prev-state initial-state}])))
+         (d/transact! [{:id         this
+                        :state      initial-state
+                        :prev-state initial-state}])))
      this)
    :will-receive-props
    (fn [this props]
      (let [{prev-props :props prev-children :children} this
-           {:keys [view-id id] :as next-props} (aget props "cljs$props")]
-       (d/transact! db [{:id            this
-                         :props         next-props
-                         :children      (aget props "cljs$children")
-                         :prev-props    prev-props
-                         :prev-children prev-children
-                         :view-id       (or view-id id)}])))})
+           {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
+       (d/transact! [{:id            this
+                      :props         next-props
+                      :children      (aget props "cljs$children")
+                      :prev-props    prev-props
+                      :prev-children prev-children
+                      :re-view/id    id}])))})
 (def base-mixin-after
-  {:will-unmount #(d/transact! db [[:db/retract-entity %]])})
+  {:will-unmount #(d/transact! [[:db/retract-entity %]])})
 
 (def kmap {:initial-state      "$getInitialState"
            :will-mount         "componentWillMount"
@@ -170,7 +170,7 @@
           (cond-> element
                   (not (js/React.isValidElement element)) (html))))
       (fn [& args]
-        (doseq [f fns] (apply f args)))) ))
+        (doseq [f fns] (apply f args))))))
 
 (defn collect [methods]
   (->> (apply merge-with (cons (fn [a b] (if (vector? a) (conj a b) [a b])) methods))
@@ -230,10 +230,10 @@
     (-lookup
       ([this k]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get @db this k))
+       (d/get this k))
       ([this k not-found]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get @db this k not-found)))
+       (d/get this k not-found)))
 
     ISwap
     (-swap!

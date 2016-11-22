@@ -3,33 +3,36 @@
             [re-view.subscriptions.db-sub])
   (:require-macros [re-view.subscriptions]))
 
-(defn initialize-subscriptions
-  "If component has specified subscriptions, initialize them"
+(defn init-sub
+  "Merge initial subscription data into state map"
+  [this m st-key sub-fn]
+  (let [{:keys [default] :as sub} (sub-fn this st-key)]
+    (-> m
+        (assoc-in [:subscriptions/state st-key] sub)
+        (assoc st-key (default)))))
+
+(defn init-subs
   [this]
-  (reduce-kv (fn [m k sub-fn]
-               (let [{:keys [default] :as sub} (sub-fn this k)]
-                 (cond-> m
-                         sub (assoc-in [:subscriptions k] sub)
-                         default (assoc k (default)))))
-             {}
-             (aget this "subscriptions")))
+  (reduce-kv (partial init-sub this) {} (aget this "subscriptions")))
 
-(defn end-subscriptions [{:keys [prev-props state] :as this}]
-  (doseq [{:keys [unsubscribe]} (vals (:subscriptions state))]
-    (when unsubscribe (unsubscribe prev-props))))
+(defn end-subscriptions [this]
+  (doseq [{:keys [unsubscribe]} (vals (get-in this [:state :subscriptions/state]))]
+    (when-not (nil? unsubscribe) (unsubscribe this))))
 
-(defn begin-subscriptions [{:keys [props state] :as this}]
-  (end-subscriptions this)
-  (doseq [{:keys [subscribe]} (vals (:subscriptions state))]
-    (subscribe props)))
+(defn begin-subscriptions [this]
+  (doseq [{:keys [subscribe]} (vals (get-in this [:state :subscriptions/state]))]
+    (subscribe)))
 
-(defn update-subscriptions [{:keys [prev-props props] :as this}]
-  (when (seq (keep identity (filter (fn [{:keys [should-update]}] (and should-update (should-update prev-props props))) (vals (:subscriptions (:state this))))))
-    (swap! this merge (initialize-subscriptions this))
-    (begin-subscriptions this)))
+(defn update-subscriptions [this]
+  (doseq [[st-key {:keys [should-update unsubscribe]}] (seq (get-in this [:state :subscriptions/state]))]
+    (when (and (not (nil? should-update)) (should-update this))
+      (when-not ^:boolean (nil? unsubscribe) (unsubscribe))
+      (swap! this #(init-sub this % st-key (get (aget % "subscriptions") st-key)))
+      (let [subscribe (get-in this [:state :subscriptions/state st-key :subscribe])]
+        (subscribe)))))
 
 (def subscription-mixin
-  {:initial-state      initialize-subscriptions
+  {:initial-state      init-subs
    :will-mount         begin-subscriptions
    :will-unmount       end-subscriptions
    :will-receive-props update-subscriptions})

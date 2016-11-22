@@ -2,7 +2,7 @@
   (:require [goog.events]
             [goog.dom :as gdom]
             [secretary.core :as secretary :refer [*routes* add-route!]]
-            [re-view.util :as util])
+            [re-view.shared :as shared])
   (:import
     [goog.history Html5History EventType]
     [goog History]))
@@ -60,7 +60,7 @@
   (binding [*routes* (atom [])]
     (doseq [[path matched-view] (partition 2 route-pairs)]
       (add-route! path #(if (fn? matched-view)
-                         (util/partial matched-view %)
+                         (shared/partial matched-view %)
                          matched-view)))
     @*routes*))
 
