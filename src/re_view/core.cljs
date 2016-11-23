@@ -8,7 +8,7 @@
             [sablono.core :refer [html]]))
 
 (def ^:dynamic *trigger-state-render* true)
-(def ^:dynamic *use-render-loop* false)
+(def ^:dynamic *use-render-loop* true)
 
 (defonce _ (re-db.core/merge-schema! d/*db* {:re-view/id {:db/index true}}))
 

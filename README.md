@@ -56,6 +56,10 @@ Important to know:
 
 ### Changelog
 
+0.2.3
+
+- Use render loop by default
+
 0.2.2
 
 - Use global re-db.d database (simplifies db subscriptions)
