@@ -10,7 +10,7 @@
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* true)
 
-(defonce _ (re-db.core/merge-schema! d/*db* {:re-view/id {:db/index true}}))
+(defonce _db (re-db.core/merge-schema! d/*db* {:re-view/id {:db/index true}}))
 
 (defn by-id [id]
   (d/entity-ids [:re-view/id id]))
@@ -22,8 +22,6 @@
            (on-error e)
            (do (.debug js/console "No :on-error method in component" this)
                (.error js/console e))))))
-
-(def to-render (atom #{}))
 
 (defn raf-polyfill []
   (if-not (aget js/window "requestAnimationFrame")
@@ -38,6 +36,8 @@
 
 (raf-polyfill)
 
+(def to-render (atom #{}))
+
 (defn render-loop
   []
   (let [components @to-render]
@@ -47,7 +47,7 @@
         (force-update! c))))
   (js/requestAnimationFrame render-loop))
 
-(defonce _ (render-loop))
+(defonce _render-loop (render-loop))
 
 (defn force-update [this]
   (if *use-render-loop* (swap! to-render conj this)
