@@ -224,7 +224,6 @@
        (update-keys #(get kmap % (camelCase (name %))))))
 
 (defn specify-protocols [o]
-  (set! (.-isView o) true)
   (specify! o
     ILookup
     (-lookup
@@ -247,20 +246,21 @@
 
 (defn factory
   [class]
-  (fn [props & children]
-    (let [props (js->clj props)
-          props? (or (nil? props) (map? props))
-          children (if props? children (cons props children))
-          {:keys [ref key] :as props} (when props? props)]
-      (js/React.createElement
-        class
-        #js {:key           (or key
-                                (if-let [keyfn (aget class "prototype" "reactKey")]
-                                  (if (string? keyfn) keyfn (keyfn props)) key)
-                                (.-displayName class))
-             :ref           ref
-             :cljs$props    (dissoc props :keyfn :ref :key)
-             :cljs$children (when (not= '(nil) children) children)}))))
+  (doto (fn [props & children]
+          (let [props (js->clj props)
+                props? (or (nil? props) (map? props))
+                children (if props? children (cons props children))
+                {:keys [ref key] :as props} (when props? props)]
+            (js/React.createElement
+              class
+              #js {:key           (or key
+                                      (if-let [keyfn (aget class "prototype" "reactKey")]
+                                        (if (string? keyfn) keyfn (keyfn props)) key)
+                                      (.-displayName class))
+                   :ref           ref
+                   :cljs$props    (dissoc props :keyfn :ref :key)
+                   :cljs$children (when (not= '(nil) children) children)})))
+    (aset "isView" true)))
 
 (defn extends [child parent]
   (let [ReactView (aget child "constructor")]
