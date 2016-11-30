@@ -169,9 +169,12 @@
       :render
       (fn [this]
         ;; support a single render-wrap fn
-        (if (= 1 (count fns))
-          (ensure-element ((first fns) this))
-          ((first fns) this #(ensure-element ((last fns) this)))))
+        (let [render (last fns)]
+          (if (= 1 (count fns))
+            (ensure-element ((first fns) this))
+            ((first fns) this #(ensure-element (if (fn? render)
+                                                 (render this)
+                                                 render))))))
       (fn [& args]
         (doseq [f fns] (apply f args))))))
 
@@ -214,7 +217,7 @@
   [update-key-f m]
   (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
 
-(defn  wrap-lifecycle-methods
+(defn wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
    and provide default behaviour."
   [methods]
@@ -302,9 +305,12 @@
    unless it is already a valid React element.
    "
   [methods]
-  (->> methods
-       react-class
-       factory))
+  (->> (cond (map? methods) methods
+             (vector? methods) {:render (fn [] methods)}
+             (fn? methods) {:render methods}
+             :else (throw "re-view.core/view must be supplied with a map of lifecycl methods, a render function, or a hiccup vector."))
+       (react-class)
+       (factory)))
 
 (defn is-react-element? [x]
   (and x
