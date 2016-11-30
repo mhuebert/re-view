@@ -1,6 +1,5 @@
 (ns re-view.subscriptions
-  (:require [re-view.subscriptions.router-sub :as router-sub]
-            [re-view.subscriptions.db-sub])
+  (:require [re-view.subscriptions.db-sub])
   (:require-macros [re-view.subscriptions]))
 
 (defn init-sub
