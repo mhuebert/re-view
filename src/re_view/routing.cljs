@@ -7,9 +7,6 @@
     [goog.history Html5History EventType]
     [goog History]))
 
-(defn log [x]
-  (prn x) x)
-
 (defn get-token []
   (if (Html5History.isSupported)
     (str js/window.location.pathname js/window.location.search)
@@ -49,40 +46,38 @@
   []
   (goog.events/listen js/document goog.events.EventType.CLICK
                       #(when-let [path (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
-                        (.preventDefault %)
-                        (nav! path))))
+                         (.preventDefault %)
+                         (nav! path))))
 
 (defonce _ (intercept-clicks))
 
-(defn compile-routes
-  "Returns a list of compiled Secretary routes, for use with `match-route`."
+(defn compile-routes*
+  "Returns a list of compiled Secretary routes, for use with `match-route`"
   [route-pairs]
   (binding [*routes* (atom [])]
     (doseq [[path matched-view] (partition 2 route-pairs)]
       (add-route! path #(if (fn? matched-view)
-                         (shared/partial matched-view %)
-                         matched-view)))
+                          (shared/partial matched-view %)
+                          matched-view)))
     @*routes*))
 
-(defn match-route
+(def compile-routes (memoize compile-routes*))
+
+(defn on-route [cb]
+  (cb (get-token))
+  (goog.events/listen history EventType.NAVIGATE #(cb (get-token))))
+
+(defn match-route*
   "Matches a token (path) to a route in a list of compiled secretary routes"
   [routes token]
   (binding [*routes* (atom routes)]
     (secretary/dispatch! token)))
 
-(defn router
-  "A subscription which takes pairs of path patterns and view functions and returns the matched route.
-  A final view may be supplied as a default/catch-all view."
-  [& pairs]
-  (fn
-    [this st-key]
-    (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
-          compiled-routes (atom (compile-routes pairs))
-          current-match #(match-route @compiled-routes (get-token))
-          navigate! #(swap! this assoc st-key (current-match))]
-      {:default     current-match
-       :subscribe   #(do
-                      (reset! compiled-routes (compile-routes pairs))
-                      (goog.events/listen history EventType.NAVIGATE navigate!)
-                      (navigate!))
-       :unsubscribe #(goog.events/unlisten history EventType.NAVIGATE navigate!)})))
+(defn router* [token & pairs]
+  (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
+        compiled-routes (compile-routes pairs)]
+    (match-route* compiled-routes token)))
+
+(defn router [& args]
+  ((apply router* args)))
+

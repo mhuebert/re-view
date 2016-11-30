@@ -1,7 +1,7 @@
 (ns re-view.subscriptions-test
   (:require [cljs.test :refer [deftest is are testing]]
             [re-db.d :as d]
-            [re-view.core :as v :refer [defcomponent]]
+            [re-view.core :as v :refer [defview]]
             [re-view.subscriptions :as subs :include-macros true]))
 
 
@@ -9,12 +9,10 @@
 
 (def log (atom []))
 
-(defcomponent test-c
-  :subscriptions {:name (subs/db [this] (d/get (get-in this [:props :id]) :name))}
-  :render
-  (fn [this]
-    (swap! log conj (get-in this [:state :name]))
-    [:div "hello"]))
+(defview test-c
+         (fn [{{:keys [id]} :props}]
+           (swap! log conj (d/get id :name))
+           [:div "hello"]))
 
 (d/transact! [{:id         1
                :name       "Herbert"

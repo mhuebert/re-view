@@ -4,10 +4,9 @@
 
 (defn db-fn [f should-update?]
   (fn [this st-key]
-    (let [capture-patterns #(let [patterns (binding [*lookup-log* (atom #{})]
-                                             (assoc (d/capture-patterns (f this))
-                                               :prop-fn? (contains? @*lookup-log* :props)))]
-                             (update patterns :patterns (partial remove (fn [p] (= (first p) this)))))
+    (let [capture-patterns #(binding [*lookup-log* (atom #{})]
+                              (assoc (d/capture-patterns (f this))
+                                :prop-fn? (contains? @*lookup-log* :props)))
           pattern-result (atom (capture-patterns))
           unsub (atom)]
       {:default       #(:value @pattern-result)

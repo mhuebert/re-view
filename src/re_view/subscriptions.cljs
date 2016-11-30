@@ -36,5 +36,3 @@
    :will-mount         begin-subscriptions
    :will-unmount       end-subscriptions
    :will-receive-props update-subscriptions})
-
-(def router router-sub/router)

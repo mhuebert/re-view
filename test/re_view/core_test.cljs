@@ -1,6 +1,6 @@
 (ns re-view.core-test
   (:require [cljs.test :refer [deftest is are testing]]
-            [re-view.core :as v :refer [defcomponent]]))
+            [re-view.core :as v :refer [defview]]))
 
 
 (def render-count (atom 0))
@@ -21,34 +21,32 @@
 
 (def initial-state {:eaten? false})
 
-(defcomponent apple
-  :initial-state
-  (fn [& args]
-    (apply (partial log-args :get-initial-state) args)
-    initial-state)
+(defview apple
+         {:initial-state
+                              (fn [& args]
+                                (apply (partial log-args :get-initial-state) args)
+                                initial-state)
 
-  :will-mount (partial log-args :will-mount)
+          :will-mount         (partial log-args :will-mount)
 
-  :did-mount (partial log-args :did-mount)
+          :did-mount          (partial log-args :did-mount)
 
-  :will-receive-props (partial log-args :will-receive-props)
+          :will-receive-props (partial log-args :will-receive-props)
 
-  :should-update (partial log-args :should-update)
+          :should-update      (partial log-args :should-update)
 
-  :will-update (partial log-args :will-update)
+          :will-update        (partial log-args :will-update)
 
-  :did-update (partial log-args :did-update)
+          :did-update         (partial log-args :did-update)
 
-  :will-unmount (partial log-args :will-unmount)
-
-  :render
-  (fn [this]
-    (log-args :render this)
-    (swap! render-count inc)
-    [:div "I am an apple."
-     (when-not (get-in this [:state :eaten])
-       [:p {:ref   "apple-statement-of-courage"
-            :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
+          :will-unmount       (partial log-args :will-unmount)}
+         (fn [this]
+           (log-args :render this)
+           (swap! render-count inc)
+           [:div "I am an apple."
+            (when-not (get-in this [:state :eaten])
+              [:p {:ref   "apple-statement-of-courage"
+                   :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
 
 
 ;; a heavily logged component

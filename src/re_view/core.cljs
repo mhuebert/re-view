@@ -2,7 +2,7 @@
   (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
-            [re-db.d :as d]
+            [re-db.core :as d]
             [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
             [sablono.core :refer [html]]))
@@ -10,10 +10,7 @@
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* true)
 
-(defonce _db (re-db.core/merge-schema! d/*db* {:re-view/id {:db/index true}}))
-
-(defn by-id [id]
-  (d/entity-ids [:re-view/id id]))
+(defonce db (re-db.core/create))
 
 (defn force-update! [this]
   (try (.forceUpdate this)
@@ -68,9 +65,9 @@
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
-  (d/transact! [{:id         this
-                 :prev-state (d/get this :state)
-                 :state      new-state}])
+  (d/transact! db [{:id         this
+                    :prev-state (d/get @db this :state)
+                    :state      new-state}])
 
   (when-let [will-receive (aget this "componentWillReceiveState")]
     (.call will-receive this))
@@ -80,7 +77,7 @@
                  (.call (aget this "shouldComponentUpdate") this)))
     (force-update this))
 
-  (d/transact! [[:db/add this :prev-state new-state]]))
+  (d/transact! db [[:db/add this :prev-state new-state]]))
 
 (defn swap-state! [this f & args]
   (set-state! this (apply f (cons (:state this) args))))
@@ -99,44 +96,47 @@
    (when (and (.-shouldComponentUpdate this) (.shouldComponentUpdate this))
      (force-update this))))
 
-
-(defn update-patterns [this prev-patterns next-patterns]
-  (when (not= prev-patterns next-patterns)
-    (let [cb (cljs.core/partial force-update this)]
-      (~'apply ~'re-db.d/unlisten! (concat prev-patterns (list cb)))
-      (~'apply ~'re-db.d/listen! (concat next-patterns (list cb)))
-      (reset! prev-patterns next-patterns))))
-
 (def base-mixin-before
   {"constructor"
    (fn [this $props]
      ;; initialize props and children
      (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
-       (d/transact! [{:id            this
-                      :props         initial-props
-                      :prev-props    nil
-                      :re-view/id    id
-                      :children      (some-> $props (.-cljs$children))
-                      :prev-children nil}]))
+       (d/transact! db [{:id            this
+                         :props         initial-props
+                         :prev-props    nil
+                         :re-view/id    id
+                         :children      (some-> $props (.-cljs$children))
+                         :prev-children nil}]))
      ;; initialize state
      (when-let [initial-state-f (aget this "$getInitialState")]
        (let [initial-state (initial-state-f this)]
-         (d/transact! [{:id         this
-                        :state      initial-state
-                        :prev-state initial-state}])))
+         (d/transact! db [{:id         this
+                           :state      initial-state
+                           :prev-state initial-state}])))
      this)
    :will-receive-props
    (fn [this props]
      (let [{prev-props :props prev-children :children} this
            {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
-       (d/transact! [{:id            this
-                      :props         next-props
-                      :children      (aget props "cljs$children")
-                      :prev-props    prev-props
-                      :prev-children prev-children
-                      :re-view/id    id}])))})
+       (d/transact! db [{:id            this
+                         :props         next-props
+                         :children      (aget props "cljs$children")
+                         :prev-props    prev-props
+                         :prev-children prev-children
+                         :re-view/id    id}])))})
 (def base-mixin-after
-  {:will-unmount #(d/transact! [[:db/retract-entity %]])})
+  {:will-unmount #(d/transact! db [[:db/retract-entity %]])})
+
+(def reactive-mixin
+  {:will-unmount #(when-let [unsub (.-reactiveUnsubscribe %)] (unsub))
+   :render       (fn [this f]
+                   (let [{:keys [patterns value]} (d/capture-patterns (f))
+                         prev-patterns (.-reactivePatterns this)]
+                     (when-not (= prev-patterns patterns)
+                       (when-let [unsub (.-reactiveUnsubscribe this)] (unsub))
+                       (set! (.-reactiveUnsubscribe this) (apply re-db.d/listen! (concat patterns (list #(force-update this)))))
+                       (set! (.-reactivePatterns this) patterns))
+                     value))})
 
 (def kmap {:initial-state      "$getInitialState"
            :will-mount         "componentWillMount"
@@ -148,6 +148,9 @@
            :did-update         "componentDidUpdate"
            :will-unmount       "componentWillUnmount"
            :render             "render"})
+
+(defn ensure-element [element]
+  (if-not (js/React.isValidElement element) (html element) element))
 
 (defn quash [method-k fns]
   (when-let [fns (->> (if (vector? fns) fns [fns])
@@ -165,10 +168,10 @@
                  true)))
       :render
       (fn [this]
-        (let [element ((last fns) this)]
-          ;; wrap in sablono.core/html if not already a valid React element
-          (cond-> element
-                  (not (js/React.isValidElement element)) (html))))
+        ;; support a single render-wrap fn
+        (if (= 1 (count fns))
+          (ensure-element ((first fns) this))
+          ((first fns) this #(ensure-element ((last fns) this)))))
       (fn [& args]
         (doseq [f fns] (apply f args))))))
 
@@ -211,12 +214,13 @@
   [update-key-f m]
   (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
 
-(defn wrap-lifecycle-methods
+(defn  wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
    and provide default behaviour."
   [methods]
   (->> (collect [base-mixin-before
                  (when (contains? methods :subscriptions) subs/subscription-mixin)
+                 reactive-mixin
                  methods
                  base-mixin-after])
        (reduce-kv (fn [m method-k method]
@@ -229,10 +233,10 @@
     (-lookup
       ([this k]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get this k))
+       (d/get @db this k))
       ([this k not-found]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get this k not-found)))
+       (d/get @db this k not-found)))
 
     ISwap
     (-swap!
@@ -277,7 +281,7 @@
       (extends js/React.Component)))
 
 
-(defn component
+(defn view
   "Returns a React component factory for supplied lifecycle methods.
    Expects a single map of functions, or any number of key-function pairs,
 
@@ -297,13 +301,10 @@
    Result of :render function is automatically wrapped in sablono.core/html,
    unless it is already a valid React element.
    "
-  ([& methods]
-   (let [methods (if (= 1 (count methods)) (cons :render methods) methods)]
-     (->> methods
-          (map #(if (vector? %) (fn [] %) %))
-          (apply hash-map)
-          react-class
-          factory))))
+  [methods]
+  (->> methods
+       react-class
+       factory))
 
 (defn is-react-element? [x]
   (and x
@@ -319,17 +320,12 @@
   ;; example of component with controlled input
 
   (ns my-app.core
-    (:require [re-view.core :refer [defcomponent]]))
+    (:require [re-view.core :refer [defview]]))
 
-
-  (defcomponent greeting
-
-                :initial-state
-                (fn [this] {:first-name "Herbert"})
-
-                :render
-                (fn [{{:keys [first-name]} :state :as this}]
-                  [:div
-                   [:p (str "Hello, " first-name "!")]
-                   [:input {:value     first-name
-                            :on-change #(swap! this assoc :first-name (-> % .-target .-value))}]])))
+  (defview greeting
+           {:initial-state (fn [this] {:first-name "Herbert"})}
+           (fn [{{:keys [first-name]} :state :as this}]
+             [:div
+              [:p (str "Hello, " first-name "!")]
+              [:input {:value     first-name
+                       :on-change #(swap! this assoc :first-name (-> % .-target .-value))}]])))
