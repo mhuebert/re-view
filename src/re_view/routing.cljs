@@ -46,8 +46,9 @@
   []
   (goog.events/listen js/document goog.events.EventType.CLICK
                       #(when-let [path (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
-                         (.preventDefault %)
-                         (nav! path))))
+                         (when-not (.test #"http.*" path)
+                           (.preventDefault %)
+                           (nav! path)))))
 
 (defonce _ (intercept-clicks))
 
