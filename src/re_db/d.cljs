@@ -1,5 +1,5 @@
 (ns re-db.d
-  (:refer-clojure :exclude [get get-in])
+  (:refer-clojure :exclude [get get-in contains?])
   (:require [re-db.core :as d])
   (:require-macros [re-db.d]))
 
@@ -12,7 +12,7 @@
                  (apply f (cons (cond-> db read? deref) args))))))
 
 (def entity (prefix-atom d/entity true))
-(def has? (prefix-atom d/has? true))
+(def contains? (prefix-atom d/contains? true))
 (def entities (prefix-atom d/entities true))
 (def entity-ids (prefix-atom d/entity-ids true))
 (def get (prefix-atom d/get true))

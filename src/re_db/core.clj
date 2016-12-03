@@ -11,7 +11,3 @@
 (defmacro peek [& body]
   `(binding [~'re-db.core/*access-log* nil]
      (do ~@body)))
-
-(defmacro compute! [db [id attr] & body]
-  `(let [f# (fn [] (do ~@body))]
-     (~'re-db.core/compute-value! ~db [~id ~attr] f#)))
