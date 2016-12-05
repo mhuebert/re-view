@@ -19,7 +19,7 @@
     (is (= {:db/id "herman" :occupation "teacher"} (d/entity @db "herman"))
         "Entity is returned as it was inserted")
 
-    (is (= "herman" (d/get @db "herman" :db/id))
+    (is (= "herman" (:db/id (d/entity @db "herman")))
         "Entity is returned with :db/id attribute")
 
     (is (= "teacher" (d/get @db "herman" :occupation))
@@ -63,7 +63,7 @@
         "Cannot change :db/id of entity")))
 
 (deftest lookup-refs
-  (let [db (-> (d/create {:email {:db/unique true}})
+  (let [db (-> (d/create {:email {:db/index :db.index/unique}})
                (d/transact! [{:db/id "fred"
                               :email "fred@example.com"}]))]
 
@@ -72,7 +72,7 @@
         "Can substitute unique attr for id (à la 'lookup refs')")))
 
 (deftest cardinality-many
-  (let [db (-> (d/create {:db/id    {:db/unique :db.unique/identity}
+  (let [db (-> (d/create {:db/id    {:db/index :db.index/unique}
                           :children {:db/cardinality :db.cardinality/many
                                      :db/index       true}})
                (d/transact! [{:db/id    "fred"
@@ -106,8 +106,7 @@
     (testing "unique cardinality/many attribute"
 
       (d/merge-schema! db {:pets {:db/cardinality :db.cardinality/many
-                                  :db/index       true
-                                  :db/unique      true}})
+                                  :db/index       :db.index/unique}})
 
       (d/transact! db [[:db/add "fred" :pets "fido"]])
 
@@ -118,8 +117,7 @@
 
 (deftest listeners
   (let [db (d/create {:person/children {:db/cardinality :db.cardinality/many
-                                        :index          true
-                                        :db/unique      true}})
+                                        :db/index       :db.index/unique}})
         log (atom {})
         cb (fn [path] (partial swap! log assoc path))]
 
@@ -137,33 +135,25 @@
 
     (d/listen! db ["mary"] (cb :mary-entity))
 
-
-
-
-
-
-
     (d/listen! db [[:person/children "peter"]] (fn [& args]
-                                                 (println :peter-children-cb (first args))
                                                  (apply (cb :peter-children) args)))
-    #_(d/listen! db '[_ :person/children "peter"] (cb :val-listener))
-    ;(println (get-in @db [:listeners :lookup-ref]))
 
     (d/transact! db [{:db/id "peter"
                       :name  "Peter"}
                      [:db/add "mary" :person/children "peter"]
                      [:db/add "mary" :name "MMMary"]])
 
-    (is (= (d/entity @db "mary") (:mary-entity @log))
-        "Entity listener called with entity")
-    (is (= (d/entity @db "mary") (:peter-children @log))
-        "Entity listener via lookup ref, called with entity")
-    #_(is (= "mary" (:val-listener @log)))
+    (is (= "MMMary" (:name (d/entity @db (:mary-entity @log))))
+        "Entity listener called with entity id")
+
+    (is (= [:person/children "peter"] (:peter-children @log))
+        "Lookup ref entity listener is called with lookup ref")
 
     (d/transact! db [[:db/retract-attr "mary" :person/children "peter"]])
 
-    (is (nil? (:peter-children @log))
-        "Entity listener, when entity is retracted, called with nil")
+    (is (and (= [:person/children "peter"] (:peter-children @log))
+             (= nil (d/entity @db (:peter-children @log))))
+        "Lookup ref entity listener is called with lookup ref")
 
 
     ;; attr-val listeners - look for `nil` on retraction, id on added
