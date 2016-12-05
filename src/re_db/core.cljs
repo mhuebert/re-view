@@ -269,20 +269,20 @@
   (when-let [listeners (get* db-after :listeners)]
     (let [seen-ids (atom #{})]
 
-      (doseq [datom datoms]
+      (doseq [[id a v prev-v :as datom] datoms]
 
         (swap! seen-ids conj (datom 0))
 
         ;; entity-attr listeners
-        (doseq [f (get-in* listeners [:entity-attr (datom 0) (datom 1)])]
-          (f datom))
+        (doseq [f (get-in* listeners [:entity-attr id a])]
+          (f v))
 
         ;; attr-val listeners
-        (doseq [f (get-in* listeners [:attr-val (datom 1) (or (datom 2) (datom 3))])]
-          (f datom))
+        (doseq [f (get-in* listeners [:attr-val a (or v prev-v)])]
+          (f id))
 
         ;; attr listeners
-        (doseq [f (get-in* listeners [:attr (datom 1)])]
+        (doseq [f (get-in* listeners [:attr a])]
           (f datom)))
 
       (doseq [id @seen-ids]
