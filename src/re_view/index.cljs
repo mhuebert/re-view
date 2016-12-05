@@ -12,11 +12,11 @@
   ([db this indexes]
    (let [id (d/squuid)]
      (d/transact! db [(merge indexes
-                             {:id             id
+                             {:db/id             id
                               :view/component this})]))))
 
 (defn deregister-view
   "Discard index"
   [db this]
   (js/setTimeout
-    #(d/transact! db [[:db/retract-entity (:id (d/entity @db [:view/component this]))]]) 0))
+    #(d/transact! db [[:db/retract-entity (:db/id (d/entity @db [:view/component this]))]]) 0))

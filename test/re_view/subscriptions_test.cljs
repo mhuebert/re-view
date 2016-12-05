@@ -10,11 +10,11 @@
 (def log (atom []))
 
 (defview test-c
-         (fn [{{:keys [id]} :props}]
+         (fn [{{:keys [db/id]} :props}]
            (swap! log conj (d/get id :name))
            [:div "hello"]))
 
-(d/transact! [{:id         1
+(d/transact! [{:db/id         1
                :name       "Herbert"
                :occupation "Chimney Sweep"}])
 
@@ -24,7 +24,7 @@
 
     (binding [re-view.core/*use-render-loop* false]
       (let [el (append-el)
-            render-to-dom #(js/ReactDOM.render (test-c {:id %}) el)]
+            render-to-dom #(js/ReactDOM.render (test-c {:db/id %}) el)]
 
         (render-to-dom 1)
         (is (= 1 (count @log)))
@@ -34,7 +34,7 @@
         (is (= 2 (count @log)))
         (is (= "Frank" (last @log)))
 
-        (d/transact! [{:id 2 :name "Gertrude"}])
+        (d/transact! [{:db/id 2 :name "Gertrude"}])
 
         (is (= 2 (count @log)))
 

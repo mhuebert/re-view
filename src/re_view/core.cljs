@@ -65,7 +65,7 @@
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
-  (d/transact! db [{:id         this
+  (d/transact! db [{:db/id         this
                     :prev-state (d/get @db this :state)
                     :state      new-state}])
 
@@ -101,7 +101,7 @@
    (fn [this $props]
      ;; initialize props and children
      (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
-       (d/transact! db [{:id            this
+       (d/transact! db [{:db/id            this
                          :props         initial-props
                          :prev-props    nil
                          :re-view/id    id
@@ -110,7 +110,7 @@
      ;; initialize state
      (when-let [initial-state-f (aget this "$getInitialState")]
        (let [initial-state (initial-state-f this)]
-         (d/transact! db [{:id         this
+         (d/transact! db [{:db/id         this
                            :state      initial-state
                            :prev-state initial-state}])))
      this)
@@ -118,7 +118,7 @@
    (fn [this props]
      (let [{prev-props :props prev-children :children} this
            {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
-       (d/transact! db [{:id            this
+       (d/transact! db [{:db/id            this
                          :props         next-props
                          :children      (aget props "cljs$children")
                          :prev-props    prev-props
@@ -132,9 +132,16 @@
    :render       (fn [this f]
                    (let [{:keys [patterns value]} (d/capture-patterns (f))
                          prev-patterns (.-reactivePatterns this)]
+
                      (when-not (= prev-patterns patterns)
-                       (when-let [unsub (.-reactiveUnsubscribe this)] (unsub))
-                       (set! (.-reactiveUnsubscribe this) (apply re-db.d/listen! (concat patterns (list #(force-update this)))))
+
+                       (when-let [unsub (.-reactiveUnsubscribe this)]
+                         (unsub))
+
+                       (set! (.-reactiveUnsubscribe this)
+                             (when-not (empty? patterns)
+                               (apply re-db.d/listen! (concat patterns (list #(force-update this))))))
+
                        (set! (.-reactivePatterns this) patterns))
                      value))})
 
