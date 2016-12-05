@@ -275,11 +275,11 @@
 
         ;; entity-attr listeners
         (doseq [f (get-in* listeners [:entity-attr id a])]
-          (f v))
+          (f datom))
 
         ;; attr-val listeners
         (doseq [f (get-in* listeners [:attr-val a (or v prev-v)])]
-          (f id))
+          (f datom))
 
         ;; attr listeners
         (doseq [f (get-in* listeners [:attr a])]
