@@ -4,10 +4,13 @@
   (:require-macros [tests.helpers :refer [throws]]))
 
 (deftest basic
-  (let [db (d/create {})]
+  (let [db (d/create {})
+        tx-log (atom [])]
 
     (is (satisfies? cljs.core/IDeref db)
         "DB is an atom")
+
+    (d/listen! db :tx-log #(swap! tx-log conj %))
 
     (d/transact! db [{:db/id "herman"}])
 
@@ -15,6 +18,10 @@
         "Inserting an entity without attributes is no-op")
 
     (d/transact! db [{:db/id "herman" :occupation "teacher"}])
+
+    (is (= (last @tx-log)
+           [["herman" :occupation "teacher" nil]])
+        "Tx-log listener called with datoms")
 
     (is (= {:db/id "herman" :occupation "teacher"} (d/entity @db "herman"))
         "Entity is returned as it was inserted")

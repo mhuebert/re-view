@@ -143,10 +143,10 @@
    [_ attr _]   => :attr"
   [db & patterns]
   (let [f (last patterns)]
-    (doseq [pattern (or (seq (drop-last patterns)) [[]])]
-      (if (vector? (first pattern))
-        (listen-lookup-ref! db pattern f)
-        (listen-path! db (pattern->listener-path @db pattern) f))))
+    (doseq [pattern (seq (drop-last patterns))]
+      (cond (= :tx-log pattern) (listen-path! db [:listeners :tx-log] f)
+            (vector? (first pattern)) (listen-lookup-ref! db pattern f)
+            :else (listen-path! db (pattern->listener-path @db pattern) f))))
   #(apply unlisten! (cons db patterns)))
 
 (defn entity
@@ -354,7 +354,7 @@
                                   (index? db-snap attribute)
                                   (get-in* db-snap [:index attribute value])
 
-                                  :else (do (when ^:boolean (true? *debug*) (prn (str "Not an indexed attribute: " attribute)))
+                                  :else (do (when ^:boolean (true? *debug*) (println (str "Not an indexed attribute: " attribute)))
                                             (entity-ids db-snap #(= value (get* % attribute))))))))))
        (apply set/intersection)))
 
