@@ -74,11 +74,9 @@
   (binding [*routes* (atom routes)]
     (secretary/dispatch! token)))
 
-(defn router* [token & pairs]
+(defn router [token & pairs]
   (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
-        compiled-routes (compile-routes pairs)]
-    (match-route* compiled-routes token)))
-
-(defn router [& args]
-  ((apply router* args)))
+        compiled-routes (compile-routes pairs)
+        view (match-route* compiled-routes token)]
+    (if (fn? view) (view) view)))
 

@@ -10,28 +10,26 @@
 (defonce _ (r/on-route #(d/transact! [[:db/add ::state :route (r/get-token)]])))
 
 (defview index
-         (fn []
-           (swap! log conj [:index])
-           [:div]))
+  (fn []
+    (swap! log conj [:index])
+    [:div]))
 
 (defview not-found
-         (fn []
-           (swap! log conj [:not-found])
-           [:div]))
+  (fn []
+    (swap! log conj [:not-found])
+    [:div]))
 
 (defview page
-         (fn [{props :props}]
-           (swap! log conj [:page props])
-           [:div]))
+  (fn [{props :props}]
+    (swap! log conj [:page props])
+    [:div]))
 
 (defview main
-         (fn [{props :props}]
-           (let [view (r/router* (d/get ::state :route)
-                                 "/" index
-                                 "/page/:page-id" page
-                                 not-found)]
-             (view props))))
-
+  (fn [_]
+    (r/router (d/get ::state :route)
+              "/" index
+              "/page/:page-id" page
+              not-found)))
 
 (deftest routing-test
   (testing "Basic routing"
@@ -54,8 +52,7 @@
                      [:page {:page-id "1001"}]])
             "Router render on pushstate change")
 
-        (render-to-dom (main {:id 2002}))
+        (render-to-dom (main {:db/id 2002}))
 
-        (is (= (last @log) [:page {:page-id "1001"
-                                   :id      2002}])
+        (is (= (last @log) [:page {:page-id "1001"}])
             "Router params are partially applied to view")))))

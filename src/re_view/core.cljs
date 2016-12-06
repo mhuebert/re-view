@@ -10,6 +10,13 @@
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* true)
 
+(def ^:private count-fps? false)
+(def ^:private last-fps-time 1)
+
+(defn count-fps!
+  [enable?]
+  (set! count-fps? enable?))
+
 (defonce db (re-db.core/create))
 
 (defn force-update! [this]
@@ -20,34 +27,36 @@
            (do (.debug js/console "No :on-error method in component" this)
                (.error js/console e))))))
 
-(defn raf-polyfill []
-  (if-not (aget js/window "requestAnimationFrame")
-    (aset js/window "requestAnimationFrame"
-          (or
-            (aget js/window "webkitRequestAnimationFrame")
-            (aget js/window "mozRequestAnimationFrame")
-            (aget js/window "oRequestAnimationFrame")
-            (aget js/window "msRequestAnimationFrame")
-            (fn [cb]
-              (.call (aget js/window "setTimeout") js/window cb (/ 1000 60)))))))
+(defonce _raf-polyfill
+         (if-not (aget js/window "requestAnimationFrame")
+           (aset js/window "requestAnimationFrame"
+                 (or
+                   (aget js/window "webkitRequestAnimationFrame")
+                   (aget js/window "mozRequestAnimationFrame")
+                   (aget js/window "oRequestAnimationFrame")
+                   (aget js/window "msRequestAnimationFrame")
+                   (fn [cb]
+                     (.call (aget js/window "setTimeout") js/window cb (/ 1000 60)))))))
 
-(raf-polyfill)
-
-(def to-render (atom #{}))
+(def to-render #{})
+(def frame-count 0)
 
 (defn render-loop
-  []
-  (let [components @to-render]
-    (when-not (empty? components)
-      (reset! to-render #{})
-      (doseq [c components]
-        (force-update! c))))
+  [frame-ms]
+  (set! frame-count (inc frame-count))
+  (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
+    (re-db.d/transact! [[:db/add ::state :fps (* 1000 (/ 30 (- frame-ms last-fps-time)))]])
+    (set! last-fps-time frame-ms))
+  (when-not ^:boolean (empty? to-render)
+    (doseq [c to-render]
+      (force-update! c))
+    (set! to-render #{}))
   (js/requestAnimationFrame render-loop))
 
-(defonce _render-loop (render-loop))
+(defonce _render-loop (js/requestAnimationFrame render-loop))
 
 (defn force-update [this]
-  (if *use-render-loop* (swap! to-render conj this)
+  (if *use-render-loop* (set! to-render (conj to-render this))
                         (force-update! this)))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
@@ -65,7 +74,7 @@
   ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
   ;; if we assume that if state hasn't changed we don't re-render,
   ;; controlled inputs break.
-  (d/transact! db [{:db/id         this
+  (d/transact! db [{:db/id      this
                     :prev-state (d/get @db this :state)
                     :state      new-state}])
 
@@ -101,7 +110,7 @@
    (fn [this $props]
      ;; initialize props and children
      (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
-       (d/transact! db [{:db/id            this
+       (d/transact! db [{:db/id         this
                          :props         initial-props
                          :prev-props    nil
                          :re-view/id    id
@@ -110,7 +119,7 @@
      ;; initialize state
      (when-let [initial-state-f (aget this "$getInitialState")]
        (let [initial-state (initial-state-f this)]
-         (d/transact! db [{:db/id         this
+         (d/transact! db [{:db/id      this
                            :state      initial-state
                            :prev-state initial-state}])))
      this)
@@ -118,7 +127,7 @@
    (fn [this props]
      (let [{prev-props :props prev-children :children} this
            {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
-       (d/transact! db [{:db/id            this
+       (d/transact! db [{:db/id         this
                          :props         next-props
                          :children      (aget props "cljs$children")
                          :prev-props    prev-props
@@ -260,20 +269,22 @@
 
 (defn factory
   [class]
-  (doto (fn [props & children]
-          (let [props (js->clj props)
-                props? (or (nil? props) (map? props))
-                children (if props? children (cons props children))
-                {:keys [ref key] :as props} (when props? props)]
-            (js/React.createElement
-              class
-              #js {:key           (or key
-                                      (if-let [keyfn (aget class "prototype" "reactKey")]
-                                        (if (string? keyfn) keyfn (keyfn props)) key)
-                                      (.-displayName class))
-                   :ref           ref
-                   :cljs$props    (dissoc props :keyfn :ref :key)
-                   :cljs$children (when (not= '(nil) children) children)})))
+  (doto (fn view-f
+          ([] (view-f {}))
+          ([props & children]
+           (let [props? (or (nil? props) (map? props))
+                 children (cond-> children
+                                  (not props?) (cons props))
+                 {:keys [ref key] :as props} (when props? props)]
+             (js/React.createElement
+               class
+               #js {"key"           (or key
+                                        (if-let [keyfn (aget class "prototype" "reactKey")]
+                                          (if (string? keyfn) keyfn (keyfn props)) key)
+                                        (.-displayName class))
+                    "ref"           ref
+                    "cljs$props"    (dissoc props :keyfn :ref :key)
+                    "cljs$children" children}))))
     (aset "isView" true)))
 
 (defn extends [child parent]
