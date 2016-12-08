@@ -1,5 +1,5 @@
 (ns re-db.d
-  (:refer-clojure :exclude [get get-in contains?])
+  (:refer-clojure :exclude [get get-in contains? select-keys])
   (:require [re-db.core :as d])
   (:require-macros [re-db.d]))
 
