@@ -1,7 +1,8 @@
 (ns ^:figwheel-always re-db.core
-  (:refer-clojure :exclude [get get-in set! peek contains?] :rename {get       get*
-                                                                     get-in    get-in*
-                                                                     contains? contains?*})
+  (:refer-clojure :exclude [get get-in select-keys set! peek contains?] :rename {get         get*
+                                                                                 get-in      get-in*
+                                                                                 contains?   contains?*
+                                                                                 select-keys select-keys*})
   (:require [cljs-uuid-utils.core :as uuid-utils]
             [clojure.set :as set])
   (:require-macros [re-db.core :refer [capture-patterns]]))
@@ -50,11 +51,11 @@
   "Returns id, resolving lookup refs (vectors of the form `[attribute value]`) to ids. Lookup refs are only supported for indexed attributes."
   [db-snap id]
   (if ^:boolean (vector? id)
-    (let [[a v] id]
-      (if-not (unique? db-snap a)
-        (throw (js/Error (str "Not a unique attribute: " a ", with value: " v)))
-        (do (some-> *access-log* (swap! update :attr-val (fnil conj #{}) [nil a v]))
-            (get-in* db-snap [:index a v]))))
+    (let [[attr val] id]
+      (if-not (unique? db-snap attr)
+        (throw (js/Error (str "Not a unique attribute: " attr ", with value: " val)))
+        (do (some-> *access-log* (swap! update :attr-val conj [nil attr val]))
+            (get-in* db-snap [:index attr val]))))
     id))
 
 (defn contains?
@@ -74,9 +75,9 @@
 
 (declare get entity)
 
-(defn push! [a v]
-  (.push a v)
-  a)
+(defn push! [attr val]
+  (.push attr val)
+  attr)
 
 (defn pattern->idx
   "Returns type of listener pattern."
@@ -154,7 +155,7 @@
   [db-snap id]
   (when-let [id (resolve-id db-snap id)]
     (some-> *access-log*
-            (swap! update :id (fnil conj #{}) [id]))
+            (swap! update :id conj [id]))
     (some-> (get-in* db-snap [:data id])
             (assoc id-attr id))))
 
@@ -172,6 +173,16 @@
   [db-snap id ks]
   (when-let [id (resolve-id db-snap id)]
     (apply get-in* (cons db-snap (cons id ks)))))
+
+(defn select-keys
+  "Select keys from entity of id"
+  [db-snap id ks]
+  (when-let [id (resolve-id db-snap id)]
+    (some-> *access-log*
+            (swap! update-in [:entity-attr id] (fnil into #{}) ks))
+    (-> (get-in* db-snap [:data id])
+        (assoc id-attr id)
+        (select-keys* ks))))
 
 (defn- add-index [[db-snap datoms] id a v]
   [(cond (unique? db-snap a)
@@ -221,12 +232,13 @@
   ([[db-snap datoms :as state] id attr value]
    (if (many? db-snap attr)
      (retract-attr-many state id attr value)
-     (if-let [prev-val (or value (get-in* db-snap [:data id attr]))]
-       (-> [(update-in db-snap [:data id] dissoc attr)
-            (push! datoms [id attr nil prev-val])]
-           (remove-index id attr prev-val)
-           (clear-empty-ent id))
-       state))))
+     (let [prev-val (if-not (nil? value) value (get-in* db-snap [:data id attr]))]
+       (if-not (nil? prev-val)
+         (-> [(update-in db-snap [:data id] dissoc attr)
+              (push! datoms [id attr nil prev-val])]
+             (remove-index id attr prev-val)
+             (clear-empty-ent id))
+         state)))))
 
 (defn- retract-entity [state id]
   (reduce (fn [state [a v]]
@@ -328,7 +340,8 @@
   (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
                                              (and (map? txs) (contains?* txs :datoms)) txs
                                              (or (vector? txs)
-                                                 (list? txs)) (transaction @db txs)
+                                                 (list? txs)
+                                                 (seq? txs)) (transaction @db txs)
                                              :else (throw (js/Error "Transact! was not passed a valid transaction")))]
     (reset! db db-after)
     (when-not (nil? *db-log*)
@@ -345,17 +358,21 @@
                (set (cond (fn? q)
                           (reduce-kv (fn [s id entity] (if ^:boolean (q entity) (conj s id) s)) #{} (get* db-snap :data))
                           (keyword? q)
-                          (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :data))
+                          (do (some-> *access-log*
+                                      (swap! update :attr conj [nil q nil]))
+                              (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :data)))
                           :else
-                          (let [[attribute value] q]
-                            (cond (unique? db-snap attribute)
+                          (let [[attr val] q]
+                            (some-> *access-log*
+                                    (swap! update :attr-val conj [nil attr val]))
+                            (cond (unique? db-snap attr)
                                   [(resolve-id db-snap q)]
 
-                                  (index? db-snap attribute)
-                                  (get-in* db-snap [:index attribute value])
+                                  (index? db-snap attr)
+                                  (get-in* db-snap [:index attr val])
 
-                                  :else (do (when ^:boolean (true? *debug*) (println (str "Not an indexed attribute: " attribute)))
-                                            (entity-ids db-snap #(= value (get* % attribute))))))))))
+                                  :else (do (when ^:boolean (true? *debug*) (println (str "Not an indexed attribute: " attr)))
+                                            (entity-ids db-snap #(= val (get* % attr))))))))))
        (apply set/intersection)))
 
 (defn entities
@@ -365,14 +382,20 @@
 (defn squuid []
   (str (uuid-utils/make-random-uuid)))
 
+(def blank-access-log
+  {:id          #{}
+   :attr        #{}
+   :attr-val    #{}
+   :entity-attr {}})
+
 (defn access-log-patterns
   "Returns vector of access log patterns, pruning overlapping patterns"
-  [{ids :id attr-vals :attr-val entity-attrs :entity-attr}]
+  [{ids :id attr-vals :attr-val entity-attrs :entity-attr attrs :attr}]
   (reduce-kv
     (fn [patterns id attrs]
       (if (contains?* ids [id])
         patterns
         (apply conj patterns (for [attr attrs]
                                [id attr]))))
-    (apply into #{} ids attr-vals)
+    (set/union ids attr-vals attrs)
     entity-attrs))

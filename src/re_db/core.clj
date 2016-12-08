@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [peek]))
 
 (defmacro capture-patterns [& body]
-  `(binding [~'re-db.core/*access-log* (~'atom {})]
+  `(binding [~'re-db.core/*access-log* (~'atom ~'re-db.core/blank-access-log)]
      (let [value# (do ~@body)
            patterns# (~'deref ~'re-db.core/*access-log*)]
        {:value    value#

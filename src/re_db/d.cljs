@@ -17,6 +17,7 @@
 (def entity-ids (prefix-atom d/entity-ids true))
 (def get (prefix-atom d/get true))
 (def get-in (prefix-atom d/get-in true))
+(def select-keys (prefix-atom d/select-keys true))
 (def transaction (prefix-atom d/transaction true))
 
 (def transact! (prefix-atom d/transact!))
