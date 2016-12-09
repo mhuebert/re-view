@@ -336,20 +336,21 @@
      :datoms    (vec datoms)}))
 
 (defn transact!
-  [db txs]
-  (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
-                                             (and (map? txs) (contains?* txs :datoms)) txs
-                                             (or (vector? txs)
-                                                 (list? txs)
-                                                 (seq? txs)) (transaction @db txs)
-                                             :else (throw (js/Error "Transact! was not passed a valid transaction")))]
-    (reset! db db-after)
-    (when-not (nil? *db-log*)
-      (reset! *db-log* (cond-> tx
-                               (:db-before @*db-log*) (assoc :db-before @*db-log*))))
-    (when-not (true? *mute*)
-      (notify-listeners tx))
-    db))
+  ([db txs] (transact! db txs {}))
+  ([db txs options]
+   (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
+                                              (and (map? txs) (contains?* txs :datoms)) txs
+                                              (or (vector? txs)
+                                                  (list? txs)
+                                                  (seq? txs)) (transaction @db txs)
+                                              :else (throw (js/Error "Transact! was not passed a valid transaction")))]
+     (reset! db db-after)
+     (when-not (nil? *db-log*)
+       (reset! *db-log* (cond-> tx
+                                (:db-before @*db-log*) (assoc :db-before @*db-log*))))
+     (when-not (or (true? (get* options :mute)) (true? *mute*))
+       (notify-listeners tx))
+     db)))
 
 (defn entity-ids
   [db-snap & qs]
