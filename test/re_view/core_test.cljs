@@ -110,7 +110,7 @@
 
       (testing "refs"
         (is (= "bold" (-> c
-                          (v/get-ref "apple-statement-of-courage")
+                          (v/ref "apple-statement-of-courage")
                           .-style
                           .-fontWeight))
             "Read react ref")))))

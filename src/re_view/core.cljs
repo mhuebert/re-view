@@ -5,7 +5,8 @@
             [re-db.core :as d]
             [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
-            [sablono.core :refer [html]]))
+            [sablono.core :refer [html]]
+            [clojure.set :as set]))
 
 (def ^:dynamic *trigger-state-render* true)
 (def ^:dynamic *use-render-loop* true)
@@ -20,12 +21,13 @@
 (defonce db (re-db.core/create))
 
 (defn force-update! [this]
-  (try (.forceUpdate this)
-       (catch js/Error e
-         (if-let [on-error (aget this "onError")]
-           (on-error e)
-           (do (.debug js/console "No :on-error method in component" this)
-               (.error js/console e))))))
+  (when-not (true? (.-unmounted this))
+    (try (.forceUpdate this)
+         (catch js/Error e
+           (if-let [on-error (aget this "onError")]
+             (on-error e)
+             (do (.debug js/console "No :on-error method in component" this)
+                 (.error js/console e)))))))
 
 (defonce _raf-polyfill
          (if-not (aget js/window "requestAnimationFrame")
@@ -39,6 +41,7 @@
                      (.call (aget js/window "setTimeout") js/window cb (/ 1000 60)))))))
 
 (def to-render #{})
+(def to-run [])
 (def frame-count 0)
 
 (defn render-loop
@@ -47,10 +50,16 @@
   (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
     (re-db.d/transact! [[:db/add ::state :fps (* 1000 (/ 30 (- frame-ms last-fps-time)))]])
     (set! last-fps-time frame-ms))
-  (when-not ^:boolean (empty? to-render)
+
+  (when-not (empty? to-render)
     (doseq [c to-render]
       (force-update! c))
     (set! to-render #{}))
+
+  (when-not ^:boolean (= [] to-run)
+    (doseq [f to-run] (f))
+    (set! to-run []))
+
   (js/requestAnimationFrame render-loop))
 
 (defonce _render-loop (js/requestAnimationFrame render-loop))
@@ -59,12 +68,23 @@
   (if *use-render-loop* (set! to-render (conj to-render this))
                         (force-update! this)))
 
+(defn schedule! [f]
+  (set! to-run (conj to-run f)))
+
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
-(defn get-ref
+(defn ref
   "Returns the component associated with a component's React ref."
   [component name]
   (some-> (aget component "refs") (aget name)))
 
+(defn dom-node
+  "Return dom node for component"
+  [component]
+  (.findDOMNode js/ReactDOM component))
+
+(defn focus!
+  "Schedules a focus action for a component"
+  [component] (schedule! #(.focus (dom-node component))))
 
 ;; State manipulation
 
@@ -81,63 +101,48 @@
   (when-let [will-receive (aget this "componentWillReceiveState")]
     (.call will-receive this))
 
-  (when (and *trigger-state-render*
-             (or (nil? (aget this "shouldComponentUpdate"))
-                 (.call (aget this "shouldComponentUpdate") this)))
-    (force-update this))
+  (when *trigger-state-render* (force-update this))
 
   (d/transact! db [[:db/add this :prev-state new-state]]))
 
 (defn swap-state! [this f & args]
   (set-state! this (apply f (cons (:state this) args))))
 
-(defn render-component
-  "Force render a component with supplied props, even if not a root component."
-  ([this] (render-component this (:props this)))
-  ([this props] (render-component this props nil))
-  ([this props & children]
-    ;; manually invoke componentWillReceiveProps
-   (when-let [will-receive-props (aget this "componentWillReceiveProps")]
-     (.call will-receive-props this #js {:cljs$props    props
-                                         :cljs$children children}))
-
-    ;; only render if shouldComponentUpdate returns true (emulate ordinary React lifecycle)
-   (when (and (.-shouldComponentUpdate this) (.shouldComponentUpdate this))
-     (force-update this))))
-
 (def base-mixin-before
   {"constructor"
-   (fn [this $props]
-     ;; initialize props and children
-     (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
-       (d/transact! db [{:db/id         this
-                         :props         initial-props
-                         :prev-props    nil
-                         :re-view/id    id
-                         :children      (some-> $props (.-cljs$children))
-                         :prev-children nil}]))
-     ;; initialize state
-     (when-let [initial-state-f (aget this "$getInitialState")]
-       (let [initial-state (initial-state-f this)]
-         (d/transact! db [{:db/id      this
-                           :state      initial-state
-                           :prev-state initial-state}])))
-     this)
+                  (fn [this $props]
+                    ;; initialize props and children
+                    (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
+                      (d/transact! db [{:db/id         this
+                                        :props         initial-props
+                                        :prev-props    nil
+                                        :re-view/id    id
+                                        :children      (some-> $props (.-cljs$children))
+                                        :prev-children nil}]))
+                    ;; initialize state
+                    (when-let [initial-state-f (aget this "$getInitialState")]
+                      (let [initial-state (initial-state-f this)]
+                        (d/transact! db [{:db/id      this
+                                          :state      initial-state
+                                          :prev-state initial-state}])))
+                    this)
+   :should-update (fn [this] (not= (:props this) (:prev-props this)))
    :will-receive-props
-   (fn [this props]
-     (let [{prev-props :props prev-children :children} this
-           {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
-       (d/transact! db [{:db/id         this
-                         :props         next-props
-                         :children      (aget props "cljs$children")
-                         :prev-props    prev-props
-                         :prev-children prev-children
-                         :re-view/id    id}])))})
+                  (fn [this props]
+                    (let [{prev-props :props prev-children :children} this
+                          {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
+                      (d/transact! db [{:db/id         this
+                                        :props         next-props
+                                        :children      (aget props "cljs$children")
+                                        :prev-props    prev-props
+                                        :prev-children prev-children
+                                        :re-view/id    id}])))})
 (def base-mixin-after
-  {:will-unmount #(d/transact! db [[:db/retract-entity %]])})
+  {:will-unmount #(do (d/transact! db [[:db/retract-entity %]])
+                      (set! (.-unmounted %) true))})
 
 (def reactive-mixin
-  {:will-unmount #(when-let [unsub (.-reactiveUnsubscribe %)] (unsub))
+  {:will-unmount #(some-> (.-reactiveUnsubscribe %) (.call))
    :render       (fn [this f]
                    (let [{:keys [patterns value]} (d/capture-patterns (f))
                          prev-patterns (.-reactivePatterns this)]
@@ -217,8 +222,7 @@
         (contains? #{:will-receive-props :will-mount :will-unmount :will-receive-state :will-update} method-k)
         (bind-without-render* f)
 
-        (or (fn? f) (keyword? f))
-        (bind* f)
+        (fn? f) (bind* f)
 
         :else f))
 
@@ -242,9 +246,10 @@
                  reactive-mixin
                  methods
                  base-mixin-after])
-       (reduce-kv (fn [m method-k method]
-                    (assoc m method-k (bind method-k method))) {})
-       (update-keys #(get kmap % (camelCase (name %))))))
+       (reduce-kv (fn [js-m method-k method]
+                    (doto js-m
+                      (aset (get kmap method-k (camelCase (name method-k)))
+                            (bind method-k method)))) #js {})))
 
 (defn specify-protocols [o]
   (specify! o
@@ -270,21 +275,24 @@
 (defn factory
   [class]
   (doto (fn view-f
-          ([] (view-f {}))
-          ([props & children]
-           (let [props? (or (nil? props) (map? props))
-                 children (cond-> children
-                                  (not props?) (cons props))
-                 {:keys [ref key] :as props} (when props? props)]
-             (js/React.createElement
-               class
-               #js {"key"           (or key
-                                        (if-let [keyfn (aget class "prototype" "reactKey")]
-                                          (if (string? keyfn) keyfn (keyfn props)) key)
-                                        (.-displayName class))
-                    "ref"           ref
-                    "cljs$props"    (dissoc props :keyfn :ref :key)
-                    "cljs$children" children}))))
+          [& children]
+          (let [[props children] (cond (empty? children) nil
+                                       (or (map? (first children))
+                                           (nil? (first children))) [(first children) (rest children)]
+                                       :else [nil children])
+                {:keys [ref key] :as props} props]
+            (js/React.createElement
+              class
+              #js {"key"           (or
+                                     key
+                                     (let [key (aget class "prototype" "key")]
+                                       (cond (string? key) key
+                                             (fn? key) (.call key {:props    props
+                                                                   :children children})
+                                             :else nil)))
+                   "ref"           ref
+                   "cljs$props"    (dissoc props :ref :key)
+                   "cljs$children" children})))
     (aset "isView" true)))
 
 (defn extends [child parent]
@@ -298,7 +306,7 @@
 (specify-protocols (.-prototype js/React.Component))
 
 (defn react-class [methods]
-  (-> (apply js-obj (mapcat identity (wrap-lifecycle-methods methods)))
+  (-> (wrap-lifecycle-methods methods)
       (extends js/React.Component)))
 
 
