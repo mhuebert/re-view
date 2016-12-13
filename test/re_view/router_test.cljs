@@ -33,26 +33,28 @@
 
 (deftest routing-test
   (testing "Basic routing"
-    (binding [re-view.core/*use-render-loop* false]
-      (let [dom-el (append-el)
-            render-to-dom #(js/ReactDOM.render % dom-el)]
+    (let [dom-el (append-el)
+          render-to-dom #(js/ReactDOM.render % dom-el)]
 
-        ;; set initial route to root
-        (r/nav! "/")
+      ;; set initial route to root
+      (r/nav! "/")
+      (view/flush!)
 
-        ;; first render
-        (render-to-dom (main))
+      ;; first render
+      (render-to-dom (main))
 
-        ;; route changes should trigger re-render
-        (r/nav! "/jkdljfsljflskdjflksjls--obviously-this-route-does-not-exist")
-        (r/nav! "/page/1001")
+      ;; route changes should trigger re-render
+      (r/nav! "/jkdljfsljflskdjflksjls--obviously-this-route-does-not-exist")
+      (view/flush!)
+      (r/nav! "/page/1001")
+      (view/flush!)
 
-        (is (= @log [[:index]
-                     [:not-found]
-                     [:page {:page-id "1001"}]])
-            "Router render on pushstate change")
+      (is (= @log [[:index]
+                   [:not-found]
+                   [:page {:page-id "1001"}]])
+          "Router render on pushstate change")
 
-        (render-to-dom (main {:db/id 2002}))
+      (render-to-dom (main {:db/id 2002}))
 
-        (is (= (last @log) [:page {:page-id "1001"}])
-            "Router params are partially applied to view")))))
+      (is (= (last @log) [:page {:page-id "1001"}])
+          "Router params are partially applied to view"))))

@@ -22,31 +22,33 @@
 (def initial-state {:eaten? false})
 
 (defview apple
-         {:initial-state
-                              (fn [& args]
-                                (apply (partial log-args :get-initial-state) args)
-                                initial-state)
+  {:initial-state
+                       (fn [& args]
+                         (apply (partial log-args :get-initial-state) args)
+                         initial-state)
 
-          :will-mount         (partial log-args :will-mount)
+   :will-mount         (partial log-args :will-mount)
 
-          :did-mount          (partial log-args :did-mount)
+   :did-mount          (partial log-args :did-mount)
 
-          :will-receive-props (partial log-args :will-receive-props)
+   :will-receive-props (partial log-args :will-receive-props)
 
-          :should-update      (partial log-args :should-update)
+   :will-receive-state (partial log-args :will-receive-state)
 
-          :will-update        (partial log-args :will-update)
+   :should-update      (partial log-args :should-update)
 
-          :did-update         (partial log-args :did-update)
+   :will-update        (partial log-args :will-update)
 
-          :will-unmount       (partial log-args :will-unmount)}
-         (fn [this]
-           (log-args :render this)
-           (swap! render-count inc)
-           [:div "I am an apple."
-            (when-not (get-in this [:state :eaten])
-              [:p {:ref   "apple-statement-of-courage"
-                   :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
+   :did-update         (partial log-args :did-update)
+
+   :will-unmount       (partial log-args :will-unmount)}
+  (fn [this]
+    (log-args :render this)
+    (swap! render-count inc)
+    [:div "I am an apple."
+     (when-not (get-in this [:state :eaten])
+       [:p {:ref   "apple-statement-of-courage"
+            :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
 
 
 ;; a heavily logged component
@@ -62,103 +64,105 @@
 
 
 (deftest basic
-  (binding [re-view.core/*use-render-loop* false]
-    (let [el (append-el)
-          render-to-dom #(js/ReactDOM.render (apple %1 %2) el)
-          c (render-to-dom init-props init-child)]
+  (let [el (append-el)
+        render-to-dom #(js/ReactDOM.render (apple %1 %2) el)
+        c (render-to-dom init-props init-child)]
 
-      (testing "initial state"
-        (is (= {:eaten? false} (:state c)))
-        (is (= 1 @render-count))
-        (is (= "red" (get-in @lifecycle-log [:get-initial-state :props :color]))
-            "Read props from GetInitialState")
-        (is (= "red" (get-in c [:props :color]))
-            "Read props"))
+    (testing "initial state"
+      (is (= {:eaten? false} (:state c)))
+      (is (= 1 @render-count))
+      (is (= "red" (get-in @lifecycle-log [:get-initial-state :props :color]))
+          "Read props from GetInitialState")
+      (is (= "red" (get-in c [:props :color]))
+          "Read props"))
 
-      (testing "update state"
+    (testing "update state"
 
-        ;; Update State
-        (v/swap-state! c update :eaten? not)
-        (is (true? (get-in c [:state :eaten?]))
-            "State has changed")
-        (is (= 2 @render-count)
-            "Component was rendered"))
+      ;; Update State
+      (v/swap-state! c update :eaten? not)
+      (v/flush!)
 
-      (testing "render with new props"
+      (is (true? (get-in c [:state :eaten?]))
+          "State has changed")
+      (is (= 2 @render-count)
+          "Component was rendered"))
 
-        (v/render-component c {:color "green"})
-        (is (= "green" (get-in c [:props :color]))
-            "Update Props")
-        (is (= 3 @render-count)
-            "Force rendered"))
+    (testing "render with new props"
 
-      (testing "children"
+      (render-to-dom {:color "green"} nil)
+      (is (= "green" (get-in c [:props :color]))
+          "Update Props")
+      (is (= 3 @render-count)
+          "Force rendered"))
 
-        (v/render-component c {} [:div "div"])
-        (is (= 1 (count (:children c)))
-            "Has one child")
-        (is (= :div (ffirst (:children c)))
-            "Read child")
+    (testing "children"
 
-        (v/render-component c {} [:p "Paragraph"])
-        (is (= :p (ffirst (:children c)))
-            "New child - force render")
+      (render-to-dom {} [:div "div"])
+      (is (= 1 (count (:children c)))
+          "Has one child")
+      (is (= :div (ffirst (:children c)))
+          "Read child")
 
-        (render-to-dom nil [:span "Span"])
-        (is (= :span (ffirst (:children c)))
-            "New child - normal render"))
+      (render-to-dom {} [:p "Paragraph"])
+      (is (= :p (ffirst (:children c)))
+          "New child - force render")
 
-      (testing "refs"
-        (is (= "bold" (-> c
-                          (v/ref "apple-statement-of-courage")
-                          .-style
-                          .-fontWeight))
-            "Read react ref")))))
+      (render-to-dom nil [:span "Span"])
+      (is (= :span (ffirst (:children c)))
+          "New child - normal render"))
+
+    (testing "refs"
+      (is (= "bold" (-> c
+                        (v/ref "apple-statement-of-courage")
+                        .-style
+                        .-fontWeight))
+          "Read react ref"))))
 
 
 (deftest lifecycle-transitions
-  (binding [re-view.core/*use-render-loop* false]
-    (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
-                                             (.setAttribute "id" "apple")))
-          render #(js/ReactDOM.render (apple %1 nil) el)
-          initial-props {:color "purple"}
-          this (render initial-props)]
+  (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
+                                           (.setAttribute "id" "apple")))
+        render #(js/ReactDOM.render (apple %1 nil) el)
+        initial-props {:color "purple"}
+        this (render initial-props)]
 
 
-      (testing "prop transitions"
+    (testing "prop transitions"
 
-        (render {:color "pink"})
-        (render {:color "blue"})
+      (render {:color "pink"})
+      (render {:color "blue"})
 
-        (is (= "pink" (get-in this [:prev-props :color])))
-        (is (= "blue" (get-in this [:props :color])))
+      (is (= "pink" (get-in this [:prev-props :color])))
+      (is (= "blue" (get-in this [:props :color])))
 
 
-        (v/render-component this {:color "yellow"})
-        (v/render-component this {:color "mink"})
+      (render {:color "yellow"})
+      (render {:color "mink"})
 
-        (is (= "yellow" (get-in this [:prev-props :color])))
-        (is (= "mink" (get-in this [:props :color])))
+      (is (= "yellow" (get-in this [:prev-props :color])))
+      (is (= "mink" (get-in this [:props :color])))
 
-        (render {:color "bear"})
-        (is (= "mink" (get-in this [:prev-props :color])))
-        (is (= "bear" (get-in this [:props :color]))))
+      (render {:color "bear"})
+      (is (= "mink" (get-in this [:prev-props :color])))
+      (is (= "bear" (get-in this [:props :color]))))
 
-      (testing "state transition"
+    (testing "state transition"
 
-        (reset! this {:shiny? false})
+      (reset! this {:shiny? false})
+      (v/flush!)
 
-        (is (false? (-> this :state :shiny?)))
+      (is (false? (-> this :state :shiny?)))
 
-        (v/swap-state! this update :shiny? not)
+      (v/swap-state! this update :shiny? not)
+      (v/flush!)
 
-        (is (false? (get-in @lifecycle-log [:should-update :prev-state :shiny?])))
-        (is (true? (get-in @lifecycle-log [:should-update :state :shiny?])))
+      (is (false? (get-in @lifecycle-log [:will-receive-state :prev-state :shiny?])))
+      (is (true? (get-in @lifecycle-log [:will-receive-state :state :shiny?])))
 
-        (render {:color "violet"})
-        (is (= (:state this)
-               (:prev-state this))
-            "After a component lifecycle, prev-state and state are the same.")))))
+      (render {:color "violet"})
+      (is (= (:state this)
+             (:prev-state this))
+          "After a component lifecycle, prev-state and state are the same."))))
 
 
 ;; test react-key

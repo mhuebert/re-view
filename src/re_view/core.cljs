@@ -3,22 +3,28 @@
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [re-db.core :as d]
+            [goog.object :as gobj]
             [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
-            [sablono.core :refer [html]]
-            [clojure.set :as set]))
+            [sablono.core :refer [html]]))
+
+;; todo
+;; - store component state in/on component atom (avoid cost of re-db transactions)
+;; - some kind of devtools? (show component hierarchy; show subscribed patterns for a component)
+;; - can we get accurate error messages from React, to show exactly which component hasn't declared :key properties?
+;; - spec? https://www.youtube.com/watch?v=oyLBGkS5ICk&feature=youtu.be
+;; - test perf of (empty? to-render) vs (= [] to-render)
+;; - look at :should-update behavior in core-test
 
 (def ^:dynamic *trigger-state-render* true)
-(def ^:dynamic *use-render-loop* true)
 
 (def ^:private count-fps? false)
 (def ^:private last-fps-time 1)
+(def frame-rate 0)
 
 (defn count-fps!
   [enable?]
   (set! count-fps? enable?))
-
-(defonce db (re-db.core/create))
 
 (defn force-update! [this]
   (when-not (true? (.-unmounted this))
@@ -44,29 +50,32 @@
 (def to-run [])
 (def frame-count 0)
 
-(defn render-loop
-  [frame-ms]
-  (set! frame-count (inc frame-count))
-  (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
-    (re-db.d/transact! [[:db/add ::state :fps (* 1000 (/ 30 (- frame-ms last-fps-time)))]])
-    (set! last-fps-time frame-ms))
-
-  (when-not (empty? to-render)
+(defn flush!
+  []
+  (when-not ^:boolean (empty? to-render)
     (doseq [c to-render]
       (force-update! c))
     (set! to-render #{}))
 
-  (when-not ^:boolean (= [] to-run)
+  (when-not ^:boolean (empty? to-run)
     (doseq [f to-run] (f))
-    (set! to-run []))
+    (set! to-run [])))
+
+(defn render-loop
+  [frame-ms]
+  (set! frame-count (inc frame-count))
+  (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
+    (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
+    (set! last-fps-time frame-ms))
+
+  (flush!)
 
   (js/requestAnimationFrame render-loop))
 
 (defonce _render-loop (js/requestAnimationFrame render-loop))
 
 (defn force-update [this]
-  (if *use-render-loop* (set! to-render (conj to-render this))
-                        (force-update! this)))
+  (set! to-render (conj to-render this)))
 
 (defn schedule! [f]
   (set! to-run (conj to-run f)))
@@ -90,56 +99,43 @@
 
 (declare update-state!)
 
-(defn set-state! [this new-state]
-  ;; set-state! always triggers render, unless shouldComponentUpdate returns false.
-  ;; if we assume that if state hasn't changed we don't re-render,
-  ;; controlled inputs break.
-  (d/transact! db [{:db/id      this
-                    :prev-state (d/get @db this :state)
-                    :state      new-state}])
+(defn reset-state! [this new-state]
+  (when (not= new-state (aget this "$reView" "state"))
+    (aset this "$reView" "prev-state" (aget this "$reView" "state"))
+    (aset this "$reView" "state" new-state)
+    (when-let [will-receive (aget this "componentWillReceiveState")]
+      (.call will-receive this))
 
-  (when-let [will-receive (aget this "componentWillReceiveState")]
-    (.call will-receive this))
+    ;; we do not call shouldComponentUpdate here, choosing instead to always re-render
+    ;; on setState.
+    (when *trigger-state-render* (force-update this))
 
-  (when *trigger-state-render* (force-update this))
-
-  (d/transact! db [[:db/add this :prev-state new-state]]))
+    (aset this "$reView" "prev-state" new-state)))
 
 (defn swap-state! [this f & args]
-  (set-state! this (apply f (cons (:state this) args))))
+  (reset-state! this (apply f (cons (:state this) args))))
 
 (def base-mixin-before
-  {"constructor"
-                  (fn [this $props]
-                    ;; initialize props and children
-                    (let [{:keys [re-view/id] :as initial-props} (some-> $props (.-cljs$props))]
-                      (d/transact! db [{:db/id         this
-                                        :props         initial-props
-                                        :prev-props    nil
-                                        :re-view/id    id
-                                        :children      (some-> $props (.-cljs$children))
-                                        :prev-children nil}]))
-                    ;; initialize state
-                    (when-let [initial-state-f (aget this "$getInitialState")]
-                      (let [initial-state (initial-state-f this)]
-                        (d/transact! db [{:db/id      this
-                                          :state      initial-state
-                                          :prev-state initial-state}])))
-                    this)
-   :should-update (fn [this] (not= (:props this) (:prev-props this)))
-   :will-receive-props
-                  (fn [this props]
-                    (let [{prev-props :props prev-children :children} this
-                          {:keys [re-view/id] :as next-props} (aget props "cljs$props")]
-                      (d/transact! db [{:db/id         this
-                                        :props         next-props
-                                        :children      (aget props "cljs$children")
-                                        :prev-props    prev-props
-                                        :prev-children prev-children
-                                        :re-view/id    id}])))})
+  {"constructor"       (fn [this $props]
+                         (aset this "$reView" #js {"props"    (some-> $props (.-cljs$props))
+                                                   "children" (some-> $props (.-cljs$children))})
+                         ;; initialize state
+                         (when-let [initial-state-f (aget this "$getInitialState")]
+                           (let [initial-state (initial-state-f this)]
+                             (aset this "$reView" "state" initial-state)
+                             (aset this "$reView" "prev-state" initial-state)))
+                         this)
+   :will-receive-props (fn [this props]
+                         (let [{prev-props :props prev-children :children} this
+                               next-props (aget props "cljs$props")]
+                           (aset this "$reView" "props" next-props)
+                           (aset this "$reView" "prev-props" prev-props)
+                           (aset this "$reView" "children" (aget props "cljs$children"))
+                           (aset this "$reView" "prev-children" prev-children)))})
 (def base-mixin-after
-  {:will-unmount #(do (d/transact! db [[:db/retract-entity %]])
-                      (set! (.-unmounted %) true))})
+  {
+   :should-update (fn [this] (not= (:props this) (:prev-props this)))
+   :will-unmount  #(set! (.-unmounted %) true)})
 
 (def reactive-mixin
   {:will-unmount #(some-> (.-reactiveUnsubscribe %) (.call))
@@ -257,10 +253,10 @@
     (-lookup
       ([this k]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get @db this k))
+       (gobj/getValueByKeys this #js ["$reView" (name k)]))
       ([this k not-found]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (d/get @db this k not-found)))
+       (gobj/getValueByKeys this #js ["$reView" (name k)] not-found)))
 
     ISwap
     (-swap!
@@ -270,7 +266,7 @@
       ([this f a b xs] (apply swap-state! (concat (list this f a b) xs))))
 
     IReset
-    (-reset! [this v] (set-state! this v))))
+    (-reset! [this v] (reset-state! this v))))
 
 (defn factory
   [class]
@@ -293,7 +289,7 @@
                    "ref"           ref
                    "cljs$props"    (dissoc props :ref :key)
                    "cljs$children" children})))
-    (aset "isView" true)))
+    (aset "$reView" #js {})))
 
 (defn extends [child parent]
   (let [ReactView (aget child "constructor")]
@@ -340,7 +336,7 @@
 
 (defn is-react-element? [x]
   (and x
-       (or (.-isView x)
+       (or (.-$reView x)
            (js/React.isValidElement x))))
 
 (defn render-to-dom [component el-id]

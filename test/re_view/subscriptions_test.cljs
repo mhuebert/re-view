@@ -22,23 +22,24 @@
 
   (testing "Reactive subscription"
 
-    (binding [re-view.core/*use-render-loop* false]
-      (let [el (append-el)
-            render-to-dom #(js/ReactDOM.render (test-c {:db/id %}) el)]
+    (let [el (append-el)
+          render-to-dom #(js/ReactDOM.render (test-c {:db/id %}) el)]
 
-        (render-to-dom 1)
-        (is (= 1 (count @log)))
+      (render-to-dom 1)
+      (is (= 1 (count @log)))
 
-        (d/transact! [[:db/add 1 :name "Frank"]])
+      (d/transact! [[:db/add 1 :name "Frank"]])
+      (v/flush!)
 
-        (is (= 2 (count @log)))
-        (is (= "Frank" (last @log)))
+      (is (= 2 (count @log)))
+      (is (= "Frank" (last @log)))
 
-        (d/transact! [{:db/id 2 :name "Gertrude"}])
+      (d/transact! [{:db/id 2 :name "Gertrude"}])
+      (v/flush!)
 
-        (is (= 2 (count @log)))
+      (is (= 2 (count @log)))
 
-        (render-to-dom 2)
+      (render-to-dom 2)
 
-        (is (= 3 (count @log)))
-        (is (= "Gertrude" (last @log)))))))
+      (is (= 3 (count @log)))
+      (is (= "Gertrude" (last @log))))))
