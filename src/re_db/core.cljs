@@ -84,8 +84,7 @@
   [db-snap pattern]
   (let [[id attr val] (mapv #(if (= % '_) nil %) pattern)]
     (cond (and id attr) :entity-attr
-          (and attr val) (do (assert (unique? db-snap attr))
-                             :attr-val)
+          (and attr val) :attr-val
           id :id
           attr :attr
           :else nil)))
@@ -170,9 +169,16 @@
 
 (defn get-in
   "Get-in the entity with given id."
-  [db-snap id ks]
-  (when-let [id (resolve-id db-snap id)]
-    (apply get-in* (cons db-snap (cons id ks)))))
+  ([db-snap id ks]
+   (when-let [id (resolve-id db-snap id)]
+     (some-> *access-log*
+             (swap! update-in [:entity-attr id] (fnil conj #{}) (first ks)))
+     (get-in* db-snap (cons :data (cons id ks)))))
+  ([db-snap id ks not-found]
+   (when-let [id (resolve-id db-snap id)]
+     (some-> *access-log*
+             (swap! update-in [:entity-attr id] (fnil conj #{}) (first ks)))
+     (get-in* db-snap (cons :data (cons id ks)) not-found))))
 
 (defn select-keys
   "Select keys from entity of id"
@@ -358,10 +364,12 @@
        (mapv (fn [q]
                (set (cond (fn? q)
                           (reduce-kv (fn [s id entity] (if ^:boolean (q entity) (conj s id) s)) #{} (get* db-snap :data))
+
                           (keyword? q)
                           (do (some-> *access-log*
                                       (swap! update :attr conj [nil q nil]))
                               (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :data)))
+
                           :else
                           (let [[attr val] q]
                             (some-> *access-log*
