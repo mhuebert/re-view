@@ -270,33 +270,32 @@
 
 (defn factory
   [class]
-  (doto (fn view-f
-          [& children]
+  (doto (fn [& children]
           (let [[props children] (cond (empty? children) nil
                                        (or (map? (first children))
                                            (nil? (first children))) [(first children) (rest children)]
-                                       :else [nil children])
-                {:keys [ref key] :as props} props]
+                                       :else [nil children])]
             (js/React.createElement
               class
-              #js {"key"           (or
-                                     key
-                                     (let [key (aget class "prototype" "key")]
-                                       (cond (string? key) key
-                                             (fn? key) (.call key {:props    props
-                                                                   :children children})
-                                             :else nil)))
-                   "ref"           ref
+              #js {"key"           (get props :key
+                                        (if-let [key (aget class "prototype" "key")]
+                                          (cond (string? key) key
+                                                (keyword? key) (get props key)
+                                                (fn? key) (.call key {:props    props
+                                                                      :children children})
+                                                :else (throw (js/Error "Invalid key supplied to component")))
+                                          (aget class "prototype" "displayName")))
+                   "ref"           (get props :ref)
                    "cljs$props"    (dissoc props :ref :key)
                    "cljs$children" children})))
     (aset "$reView" #js {})))
 
 (defn extends [child parent]
-  (let [ReactView (aget child "constructor")]
+  (let [ReactView (.-constructor child)]
     (set! (.-prototype ReactView) (new parent))
+    (set! (.-displayName ReactView)  (.-displayName child))
     (doseq [k (.keys js/Object child)]
-      (let [f (aget child k)]
-        (aset ReactView "prototype" k f)))
+      (aset ReactView "prototype" k (aget child k)))
     ReactView))
 
 (specify-protocols (.-prototype js/React.Component))
