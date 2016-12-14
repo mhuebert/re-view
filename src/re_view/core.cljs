@@ -6,79 +6,15 @@
             [goog.object :as gobj]
             [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
+            [re-view.render-loop :as render-loop]
             [sablono.core :refer [html]]))
 
-;; todo
-;; - store component state in/on component atom (avoid cost of re-db transactions)
-;; - some kind of devtools? (show component hierarchy; show subscribed patterns for a component)
-;; - can we get accurate error messages from React, to show exactly which component hasn't declared :key properties?
-;; - spec? https://www.youtube.com/watch?v=oyLBGkS5ICk&feature=youtu.be
-;; - test perf of (empty? to-render) vs (= [] to-render)
-;; - look at :should-update behavior in core-test
+(defonce _ (render-loop/init))
+(def schedule! render-loop/schedule!)
+(def force-update render-loop/force-update)
+(def force-update! render-loop/force-update!)
 
 (def ^:dynamic *trigger-state-render* true)
-
-(def ^:private count-fps? false)
-(def ^:private last-fps-time 1)
-(def frame-rate 0)
-
-(defn count-fps!
-  [enable?]
-  (set! count-fps? enable?))
-
-(defn force-update! [this]
-  (when-not (true? (.-unmounted this))
-    (try (.forceUpdate this)
-         (catch js/Error e
-           (if-let [on-error (aget this "onError")]
-             (on-error e)
-             (do (.debug js/console "No :on-error method in component" this)
-                 (.error js/console e)))))))
-
-(defonce _raf-polyfill
-         (if-not (aget js/window "requestAnimationFrame")
-           (aset js/window "requestAnimationFrame"
-                 (or
-                   (aget js/window "webkitRequestAnimationFrame")
-                   (aget js/window "mozRequestAnimationFrame")
-                   (aget js/window "oRequestAnimationFrame")
-                   (aget js/window "msRequestAnimationFrame")
-                   (fn [cb]
-                     (.call (aget js/window "setTimeout") js/window cb (/ 1000 60)))))))
-
-(def to-render #{})
-(def to-run [])
-(def frame-count 0)
-
-(defn flush!
-  []
-  (when-not ^:boolean (empty? to-render)
-    (doseq [c to-render]
-      (force-update! c))
-    (set! to-render #{}))
-
-  (when-not ^:boolean (empty? to-run)
-    (doseq [f to-run] (f))
-    (set! to-run [])))
-
-(defn render-loop
-  [frame-ms]
-  (set! frame-count (inc frame-count))
-  (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
-    (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
-    (set! last-fps-time frame-ms))
-
-  (flush!)
-
-  (js/requestAnimationFrame render-loop))
-
-(defonce _render-loop (js/requestAnimationFrame render-loop))
-
-(defn force-update [this]
-  (set! to-render (conj to-render this)))
-
-(defn schedule! [f]
-  (set! to-run (conj to-run f)))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
 (defn ref
@@ -90,12 +26,6 @@
   "Return dom node for component"
   [component]
   (.findDOMNode js/ReactDOM component))
-
-(defn focus!
-  "Schedules a focus action for a component"
-  [component] (schedule! #(.focus (dom-node component))))
-
-;; State manipulation
 
 (declare update-state!)
 
@@ -356,3 +286,4 @@
               [:p (str "Hello, " first-name "!")]
               [:input {:value     first-name
                        :on-change #(swap! this assoc :first-name (-> % .-target .-value))}]])))
+

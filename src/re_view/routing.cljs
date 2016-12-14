@@ -1,16 +1,30 @@
 (ns re-view.routing
   (:require [goog.events]
             [goog.dom :as gdom]
-            [secretary.core :as secretary :refer [*routes* add-route!]]
-            [re-view.shared :as shared])
+            [clojure.string :as string])
   (:import
     [goog.history Html5History EventType]
     [goog History]))
 
-(defn get-token []
+(defn get-route []
   (if (Html5History.isSupported)
     (str js/window.location.pathname js/window.location.search)
     js/window.location.pathname))
+
+(defn tokenize
+  "Split route into tokens, ignoring leading and trailing slashes."
+  [route]
+  (let [segments (string/split route \/ -1)]
+    (cond-> segments
+            (= "" (first segments)) (subvec 1)
+            (= "" (last segments)) (pop))))
+
+(comment (assert (= (tokenize "/") []))
+         (assert (= (tokenize "//") [""]))
+         (assert (= (tokenize "///") ["" ""]))
+         (assert (= (tokenize "/a/b")
+                    (tokenize "a/b/")
+                    (tokenize "a/b") ["a" "b"])))
 
 (defn make-history []
   (if (Html5History.isSupported)
@@ -20,7 +34,7 @@
                            js/window.location.host))
       (.setUseFragment false))
     (if (not= "/" js/window.location.pathname)
-      (aset js/window "location" (str "/#" (get-token)))
+      (aset js/window "location" (str "/#" (get-route)))
       (History.))))
 
 (def history (make-history))
@@ -42,7 +56,7 @@
     (gdom/getAncestor el pred)))
 
 (defn intercept-clicks
-  "Intercept clicks to use push-state for local links."
+  "Intercept local links (handle with router instead of reloading page)"
   []
   (goog.events/listen js/document goog.events.EventType.CLICK
                       #(when-let [path (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
@@ -52,31 +66,7 @@
 
 (defonce _ (intercept-clicks))
 
-(defn compile-routes*
-  "Returns a list of compiled Secretary routes, for use with `match-route`"
-  [route-pairs]
-  (binding [*routes* (atom [])]
-    (doseq [[path matched-view] (partition 2 route-pairs)]
-      (add-route! path #(if (fn? matched-view)
-                          (shared/partial matched-view %)
-                          matched-view)))
-    @*routes*))
-
-(def compile-routes (memoize compile-routes*))
-
-(defn on-route [cb]
-  (cb (get-token))
-  (goog.events/listen history EventType.NAVIGATE #(cb (get-token))))
-
-(defn match-route*
-  "Matches a token (path) to a route in a list of compiled secretary routes"
-  [routes token]
-  (binding [*routes* (atom routes)]
-    (secretary/dispatch! token)))
-
-(defn router [token & pairs]
-  (let [pairs (if (even? (count pairs)) pairs (concat (drop-last pairs) (list "*" (last pairs))))
-        compiled-routes (compile-routes pairs)
-        view (match-route* compiled-routes token)]
-    (if (fn? view) (view) view)))
+(defn on-route-change [cb]
+  (cb (get-route))
+  (goog.events/listen history EventType.NAVIGATE #(cb (get-route))))
 
