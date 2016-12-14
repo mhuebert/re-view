@@ -133,8 +133,8 @@
                            (aset this "$reView" "children" (aget props "cljs$children"))
                            (aset this "$reView" "prev-children" prev-children)))})
 (def base-mixin-after
-  {
-   :should-update (fn [this] (not= (:props this) (:prev-props this)))
+  {:should-update (fn [this] (or (not= (:props this) (:prev-props this))
+                                 (not= (:children this) (:prev-children this))))
    :will-unmount  #(set! (.-unmounted %) true)})
 
 (def reactive-mixin
