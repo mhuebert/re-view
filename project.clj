@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-db "0.1.6-SNAPSHOT"
+(defproject org.clojars.mhuebert/re-db "0.1.6"
   :description "Tiny data store"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -14,6 +14,8 @@
   :source-paths ["src"]
 
   :doo {:build "test"}
+
+  :lein-release {:deploy-via :clojars}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
