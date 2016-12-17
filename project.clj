@@ -1,11 +1,11 @@
-(defproject org.clojars.mhuebert/re-view "0.2.7-SNAPSHOT"
+(defproject org.clojars.mhuebert/re-view "0.2.7"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.293"]
-                 [org.clojars.mhuebert/re-db "0.1.6-SNAPSHOT"]
+                 [org.clojars.mhuebert/re-db "0.1.6"]
                  [org.clojars.mhuebert/sablono "0.7.4"]
                  [cljsjs/react-with-addons "15.3.1-0"]
                  [cljsjs/react-dom-server "15.3.1-0" :exclusions [cljsjs/react]]
@@ -18,6 +18,8 @@
   :source-paths ["src"]
 
   :doo {:build "test"}
+
+  :lein-release {:deploy-via :clojars}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
