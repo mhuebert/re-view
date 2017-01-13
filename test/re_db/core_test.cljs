@@ -52,7 +52,7 @@
     (is (nil? (d/entity @db "herman"))
         "Entity with no attributes is removed")
 
-    (is (false? (contains? (get-in @db [:index :id]) "herman"))
+    (is (false? (contains? (get-in @db [:ave :id]) "herman"))
         "Index has been removed")
 
     (d/transact! db [{:db/id "me"
@@ -78,18 +78,47 @@
            (d/entity @db [:email "fred@example.com"]))
         "Can substitute unique attr for id (à la 'lookup refs')")))
 
+(deftest refs
+  (let [db (-> (d/create {:owner {:db/type :db.type/ref}})
+               (d/transact! [{:db/id "fred"
+                              :name  "Fred"}
+                             {:db/id "ball"
+                              :name  "Ball"
+                              :owner "fred"}]))]
+    (is (= {:db/id  "fred"
+            :name   "Fred"
+            :_owner #{"ball"}} (d/touch @db (d/entity @db "fred")))
+        "touch adds refs to entity"))
+
+  (let [db (-> (d/create {:authors {:db/type        :db.type/ref
+                                    :db/cardinality :db.cardinality/many}})
+               (d/transact! [{:db/id "fred"
+                              :name  "Fred"}
+                             {:db/id "mary"
+                              :name  "Mary"}
+                             {:db/id   "1"
+                              :name    "One"
+                              :authors #{"fred" "mary"}}]))]
+    (is (= {:db/id    "fred"
+            :name     "Fred"
+            :_authors #{"1"}} (d/touch @db (d/entity @db "fred")))
+        "refs with cardinality-many")
+    )
+
+  )
+
 (deftest cardinality-many
   (let [db (-> (d/create {:db/id    {:db/index :db.index/unique}
                           :children {:db/cardinality :db.cardinality/many
                                      :db/index       true}})
                (d/transact! [{:db/id    "fred"
-                              :children "pete"}]))]
+                              :children #{"pete"}}]))]
 
-    (is (true? (contains? (get-in @db [:index :children]) "pete"))
+    (is (true? (contains? (get-in @db [:ave :children]) "pete"))
         "cardinality/many attribute can be indexed")
 
     ;; second child
-    (d/transact! db [{:db/id "fred" :children "sally"}])
+    (d/transact! db [[:db/add "fred" :children "sally"]])
 
     (is (= #{"sally" "pete"} (d/get @db "fred" :children))
         "cardinality/many attribute returned as set")
@@ -98,7 +127,6 @@
            (d/entity-ids @db [:children "sally"])
            (d/entity-ids @db [:children "pete"]))
         "look up via cardinality/many index")
-
 
     (testing "remove value from cardinality/many attribute"
       (d/transact! db [[:db/retract-attr "fred" :children "sally"]])
@@ -134,11 +162,7 @@
                      {:db/id "john"
                       :name  "John"}])
 
-    (throws (d/listen! db '[_ :person/pets "fido"] (cb :val-listener-2))
-            "attr-val listener requires unique attribute")
-
-    (is (= "Mary" (d/get @db [:person/children "john"] :name))
-        )
+    (is (= "Mary" (d/get @db [:person/children "john"] :name)))
 
     (d/listen! db ["mary"] (cb :mary-entity))
 
