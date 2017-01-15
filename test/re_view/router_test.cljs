@@ -34,14 +34,14 @@
 (deftest routing-test
   (testing "Basic routing"
     (let [dom-el (append-el)
-          render-to-dom #(js/ReactDOM.render % dom-el)]
+          render #(view/render-to-node % dom-el)]
 
       ;; set initial route to root
       (r/nav! "/")
       (view/flush!)
 
       ;; first render
-      (render-to-dom (main))
+      (render (main))
 
       ;; route changes should trigger re-render
       (r/nav! "/jkdljfsljflskdjflksjls--obviously-this-route-does-not-exist")
@@ -54,7 +54,7 @@
                    [:page {:page-id "1001"}]])
           "Router render on pushstate change")
 
-      (render-to-dom (main {:db/id 2002}))
+      (render (main {:db/id 2002}))
 
       (is (= (last @log) [:page {:page-id "1001"}])
           "Router params are partially applied to view"))))

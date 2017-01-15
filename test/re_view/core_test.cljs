@@ -65,8 +65,8 @@
 
 (deftest basic
   (let [el (append-el)
-        render-to-dom #(js/ReactDOM.render (apple %1 %2) el)
-        c (render-to-dom init-props init-child)]
+        render #(v/render-to-node (apple %1 %2) el)
+        c (render init-props init-child)]
 
     (testing "initial state"
       (is (= {:eaten? false} (:state c)))
@@ -89,7 +89,7 @@
 
     (testing "render with new props"
 
-      (render-to-dom {:color "green"} nil)
+      (render {:color "green"} nil)
       (is (= "green" (get-in c [:props :color]))
           "Update Props")
       (is (= 3 @render-count)
@@ -97,17 +97,17 @@
 
     (testing "children"
 
-      (render-to-dom {} [:div "div"])
+      (render {} [:div "div"])
       (is (= 1 (count (:children c)))
           "Has one child")
       (is (= :div (ffirst (:children c)))
           "Read child")
 
-      (render-to-dom {} [:p "Paragraph"])
+      (render {} [:p "Paragraph"])
       (is (= :p (ffirst (:children c)))
           "New child - force render")
 
-      (render-to-dom nil [:span "Span"])
+      (render nil [:span "Span"])
       (is (= :span (ffirst (:children c)))
           "New child - normal render"))
 

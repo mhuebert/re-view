@@ -23,9 +23,9 @@
   (testing "Reactive subscription"
 
     (let [el (append-el)
-          render-to-dom #(js/ReactDOM.render (test-c {:db/id %}) el)]
+          render #(v/render-to-node (test-c {:db/id %}) el)]
 
-      (render-to-dom 1)
+      (render 1)
       (is (= 1 (count @log)))
 
       (d/transact! [[:db/add 1 :name "Frank"]])
@@ -39,7 +39,7 @@
 
       (is (= 2 (count @log)))
 
-      (render-to-dom 2)
+      (render 2)
 
       (is (= 3 (count @log)))
       (is (= "Gertrude" (last @log))))))

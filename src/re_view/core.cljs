@@ -1,4 +1,4 @@
-(ns ^:figwheel-always re-view.core
+(ns re-view.core
   (:require-macros [re-view.core])
   (:require [cljsjs.react]
             [cljsjs.react.dom]
@@ -13,6 +13,7 @@
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
 (def force-update! render-loop/force-update!)
+(def flush! render-loop/flush!)
 
 (def ^:dynamic *trigger-state-render* true)
 
@@ -26,8 +27,6 @@
   "Return dom node for component"
   [component]
   (.findDOMNode js/ReactDOM component))
-
-(declare update-state!)
 
 (defn reset-state! [this new-state]
   (when (not= new-state (aget this "$reView" "state"))
@@ -44,6 +43,9 @@
 
 (defn swap-state! [this f & args]
   (reset-state! this (apply f (cons (:state this) args))))
+
+(defn mounted? [this]
+  (not (true? (.-unmounted this))))
 
 (def base-mixin-before
   {"constructor"       (fn [this $props]
@@ -204,6 +206,7 @@
           (let [[props children] (cond (empty? children) nil
                                        (or (map? (first children))
                                            (nil? (first children))) [(first children) (rest children)]
+                                       (object? (first children)) [(js->clj (first children)) (rest children)]
                                        :else [nil children])]
             (js/React.createElement
               class
@@ -223,7 +226,7 @@
 (defn extends [child parent]
   (let [ReactView (.-constructor child)]
     (set! (.-prototype ReactView) (new parent))
-    (set! (.-displayName ReactView)  (.-displayName child))
+    (set! (.-displayName ReactView) (.-displayName child))
     (doseq [k (.keys js/Object child)]
       (aset ReactView "prototype" k (aget child k)))
     ReactView))
@@ -268,9 +271,12 @@
        (or (.-$reView x)
            (js/React.isValidElement x))))
 
-(defn render-to-dom [component el-id]
-  (when-let [element (.getElementById js/document el-id)]
-    (js/ReactDOM.render component element)))
+(defn render-to-node [component element]
+  (js/ReactDOM.render component element))
+
+(defn render-to-id [component id]
+  (some->> (.getElementById js/document id)
+           (js/ReactDOM.render component)))
 
 (comment
 
@@ -286,4 +292,22 @@
               [:p (str "Hello, " first-name "!")]
               [:input {:value     first-name
                        :on-change #(swap! this assoc :first-name (-> % .-target .-value))}]])))
+
+(defn update-attrs [el f & args]
+  (if-not (vector? el)
+    el
+    (let [attrs? (map? (second el))]
+      (into [(el 0) (apply f (cons (if attrs? (el 1) {}) args))]
+            (subvec el (if attrs? 2 1))))))
+
+(defn ensure-keys [forms]
+  (let [seen #{}]
+    (map-indexed #(update-attrs %2 update :key (fn [k]
+                                                 (if (or (nil? k) (contains? seen k))
+                                                   %1
+                                                   (do (swap! seen conj k)
+                                                       k)))) forms)))
+
+(defn map-with-keys [& args]
+  (ensure-keys (apply cljs.core/map args)))
 
