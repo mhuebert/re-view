@@ -9,10 +9,9 @@
 
 (def log (atom []))
 
-(defview test-c
-         (fn [{{:keys [db/id]} :props}]
-           (swap! log conj (d/get id :name))
-           [:div "hello"]))
+(defview test-c [{:keys [db/id]}]
+  (swap! log conj (d/get id :name))
+  [:div "hello"])
 
 (d/transact! [{:db/id         1
                :name       "Herbert"

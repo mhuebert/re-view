@@ -56,6 +56,41 @@ Important to know:
 
 ### Changelog
 
+
+0.3.0
+
+- Prop keys can now be looked up directly on components (`this`). In the case of :render and :key methods,
+   children are passed as additional arguments. This change has eliminated some common and
+   laborious patterns of method destructuring.
+
+   Eg, a single, non-map argument is interpreted as a child element, which can be read in the argslist:
+
+   `(my-component "1234")`
+
+   ...in my-component
+
+   `{:key (fn [_ id] id)}`
+
+   (the first argument is always reserved for `this`, a reference to the component itself, even
+    when no props are passed)
+
+   To read prop keys, previously we did this:
+
+   `(fn [{{:keys [title]} :props :as this}] ...)
+
+   now:
+
+    `(fn [{:keys [title] :as this}] ...)
+
+   Note that access to props and state is `mixed`, so it is not a good idea to re-use keys. If props
+    and state share keys, props are read first.
+
+- State is now an atom, accessed via the `:state` key on a component.
+  `:prev-state` will always contain the previous state of this atom, for comparison purposes.
+
+0.2.9
+- Remove/disambiguate render-to-dom, use render-to-node or render-to-id instead
+
 0.2.3
 
 - Use render loop by default

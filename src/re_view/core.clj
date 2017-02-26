@@ -1,10 +1,18 @@
-(ns ^:figwheel-always re-view.core)
+(ns ^:figwheel-always re-view.core
+  (:require [clojure.string :as string]))
+
+(defn parse-name [n]
+  (str (name (ns-name *ns*)) "/" n))
 
 (defmacro defview
-  ([name render] `(~'re-view.core/defview ~name {} ~render))
-  ([name methods render]
-   `(def ~name
+  ([view-name methods]
+   `(def ~view-name
       (~'re-view.core/view ~(assoc methods
-                              :render (if (#{'fn 'fn*} (first render))
-                                        render `(fn [] ~render))
-                              :display-name (str name))))))
+                              :display-name (str (name (ns-name *ns*)) "/" view-name)))))
+  ([view-name args render]
+   `(~'re-view.core/defview ~view-name
+      {}
+      ~args ~render))
+  ([view-name methods args render]
+   `(~'re-view.core/defview ~view-name
+      ~(assoc methods :render `(~'fn ~args (~'re-view.hiccup/element ~render))))))

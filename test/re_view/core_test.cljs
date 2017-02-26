@@ -12,11 +12,11 @@
     (reset! lifecycle-log args))
 
 (defn log-args [method this]
-  (swap! lifecycle-log assoc method (select-keys this [:props
-                                                       :state
-                                                       :prev-props
-                                                       :prev-state
-                                                       :children]))
+  (swap! lifecycle-log assoc method (assoc (select-keys this [:view/props
+                                                              :view/prev-props
+                                                              :view/prev-state
+                                                              :view/children])
+                                      :view/state @(:view/state this)))
   true)
 
 (def initial-state {:eaten? false})
@@ -42,23 +42,23 @@
    :did-update         (partial log-args :did-update)
 
    :will-unmount       (partial log-args :will-unmount)}
-  (fn [this]
-    (log-args :render this)
-    (swap! render-count inc)
-    [:div "I am an apple."
-     (when-not (get-in this [:state :eaten])
-       [:p {:ref   "apple-statement-of-courage"
-            :style {:font-weight "bold"}} " ...and I am brave and alive."])]))
+  [this]
+  (log-args :render this)
+  (swap! render-count inc)
+  [:div "I am an apple."
+   (when-not (:eaten @(:view/state this))
+     [:p {:ref   "apple-statement-of-courage"
+          :style {:font-weight "bold"}} " ...and I am brave and alive."])])
 
 
 ;; a heavily logged component
 
 (def util js/React.addons.TestUtils)
 (def init-props {:color "red"})
-(def init-child [:div {:style {:width         100
-                               :height        100
-                               :background    "red"
-                               :border-radius 100}}])
+(def init-child [:div {:style {:width        100
+                               :height       100
+                               :background   "red"
+                               :borderRadius 100}}])
 
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 
@@ -69,20 +69,20 @@
         c (render init-props init-child)]
 
     (testing "initial state"
-      (is (= {:eaten? false} (:state c)))
+      (is (= {:eaten? false} @(:view/state c)))
       (is (= 1 @render-count))
-      (is (= "red" (get-in @lifecycle-log [:get-initial-state :props :color]))
+      (is (= "red" (get-in @lifecycle-log [:get-initial-state :view/props :color]))
           "Read props from GetInitialState")
-      (is (= "red" (get-in c [:props :color]))
+      (is (= "red" (get-in c [:view/props :color]))
           "Read props"))
 
     (testing "update state"
 
       ;; Update State
-      (v/swap-state! c update :eaten? not)
+      (swap! (:state c) update :eaten? not)
       (v/flush!)
 
-      (is (true? (get-in c [:state :eaten?]))
+      (is (true? (:eaten @(:view/state c)))
           "State has changed")
       (is (= 2 @render-count)
           "Component was rendered"))
@@ -90,7 +90,7 @@
     (testing "render with new props"
 
       (render {:color "green"} nil)
-      (is (= "green" (get-in c [:props :color]))
+      (is (= "green" (get-in c [:view/props :color]))
           "Update Props")
       (is (= 3 @render-count)
           "Force rendered"))
@@ -98,17 +98,17 @@
     (testing "children"
 
       (render {} [:div "div"])
-      (is (= 1 (count (:children c)))
+      (is (= 1 (count (:view/children c)))
           "Has one child")
-      (is (= :div (ffirst (:children c)))
+      (is (= :div (ffirst (:view/children c)))
           "Read child")
 
       (render {} [:p "Paragraph"])
-      (is (= :p (ffirst (:children c)))
+      (is (= :p (ffirst (:view/children c)))
           "New child - force render")
 
       (render nil [:span "Span"])
-      (is (= :span (ffirst (:children c)))
+      (is (= :span (ffirst (:view/children c)))
           "New child - normal render"))
 
     (testing "refs"
@@ -132,36 +132,36 @@
       (render {:color "pink"})
       (render {:color "blue"})
 
-      (is (= "pink" (get-in this [:prev-props :color])))
-      (is (= "blue" (get-in this [:props :color])))
+      (is (= "pink" (get-in this [:view/prev-props :color])))
+      (is (= "blue" (get-in this [:view/props :color])))
 
 
       (render {:color "yellow"})
       (render {:color "mink"})
 
-      (is (= "yellow" (get-in this [:prev-props :color])))
-      (is (= "mink" (get-in this [:props :color])))
+      (is (= "yellow" (get-in this [:view/prev-props :color])))
+      (is (= "mink" (get-in this [:view/props :color])))
 
       (render {:color "bear"})
-      (is (= "mink" (get-in this [:prev-props :color])))
-      (is (= "bear" (get-in this [:props :color]))))
+      (is (= "mink" (get-in this [:view/prev-props :color])))
+      (is (= "bear" (get-in this [:view/props :color]))))
 
     (testing "state transition"
 
       (reset! this {:shiny? false})
       (v/flush!)
 
-      (is (false? (-> this :state :shiny?)))
+      (is (false? (:shiny? @(:view/state this))))
 
-      (v/swap-state! this update :shiny? not)
+      (swap! (:state this) update :shiny? not)
       (v/flush!)
 
-      (is (false? (get-in @lifecycle-log [:will-receive-state :prev-state :shiny?])))
-      (is (true? (get-in @lifecycle-log [:will-receive-state :state :shiny?])))
+      (is (false? (get-in @lifecycle-log [:will-receive-state :view/prev-state :shiny?])))
+      (is (true? (get-in @lifecycle-log [:will-receive-state :view/state :shiny?])))
 
       (render {:color "violet"})
-      (is (= (:state this)
-             (:prev-state this))
+      (is (= @(:view/state this)
+             (:view/prev-state this))
           "After a component lifecycle, prev-state and state are the same."))))
 
 

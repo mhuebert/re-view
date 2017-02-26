@@ -1,21 +1,30 @@
 (ns re-view.core
   (:require-macros [re-view.core])
-  (:require [cljsjs.react]
-            [cljsjs.react.dom]
-            [re-db.core :as d]
+  (:require [re-db.core :as d]
             [goog.object :as gobj]
             [re-view.shared :refer [*lookup-log*]]
             [re-view.subscriptions :as subs]
             [re-view.render-loop :as render-loop]
-            [sablono.core :refer [html]]))
+            [re-view.hiccup :as hiccup]
+            [sablono.core :refer-macros [html]]
+            [clojure.string :as string]))
 
-(defonce _ (render-loop/init))
+(defonce _ (when (js* "typeof window !== 'undefined'") (render-loop/init)))
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
 (def force-update! render-loop/force-update!)
 (def flush! render-loop/flush!)
 
 (def ^:dynamic *trigger-state-render* true)
+
+(defn camelCase
+  "Convert dash-ed and name/spaced-keywords to strings: dashEd and name_spacedKeywords"
+  [s]
+  (-> (if (keyword? s) (-> (str s)
+                           (subs 1)
+                           (string/replace "/" "_")) s)
+      (string/replace
+        #"([^\\-])-([^\\-])" (fn [[_ m1 m2]] (str m1 (clojure.string/upper-case m2))))))
 
 ;; https://github.com/omcljs/om/blob/master/src/main/om/next.cljs#L745
 (defn ref
@@ -28,64 +37,36 @@
   [component]
   (.findDOMNode js/ReactDOM component))
 
-(defn reset-state! [this new-state]
-  (when (not= new-state (aget this "$reView" "state"))
-    (aset this "$reView" "prev-state" (aget this "$reView" "state"))
-    (aset this "$reView" "state" new-state)
-    (when-let [will-receive (aget this "componentWillReceiveState")]
-      (.call will-receive this))
-
-    ;; we do not call shouldComponentUpdate here, choosing instead to always re-render
-    ;; on setState.
-    (when *trigger-state-render* (force-update this))
-
-    (aset this "$reView" "prev-state" new-state)))
-
-(defn swap-state! [this f & args]
-  (reset-state! this (apply f (cons (:state this) args))))
+(defn respond-to-changed-state [this]
+  (when-let [will-receive (aget this "componentWillReceiveState")]
+    (.call will-receive this))
+  (when *trigger-state-render* (force-update this)))
 
 (defn mounted? [this]
   (not (true? (.-unmounted this))))
 
-(def base-mixin-before
-  {"constructor"       (fn [this $props]
-                         (aset this "$reView" #js {"props"    (some-> $props (.-cljs$props))
-                                                   "children" (some-> $props (.-cljs$children))})
-                         ;; initialize state
-                         (when-let [initial-state-f (aget this "$getInitialState")]
-                           (let [initial-state (initial-state-f this)]
-                             (aset this "$reView" "state" initial-state)
-                             (aset this "$reView" "prev-state" initial-state)))
-                         this)
-   :will-receive-props (fn [this props]
-                         (let [{prev-props :props prev-children :children} this
-                               next-props (aget props "cljs$props")]
-                           (aset this "$reView" "props" next-props)
-                           (aset this "$reView" "prev-props" prev-props)
-                           (aset this "$reView" "children" (aget props "cljs$children"))
-                           (aset this "$reView" "prev-children" prev-children)))})
-(def base-mixin-after
-  {:should-update (fn [this] (or (not= (:props this) (:prev-props this))
-                                 (not= (:children this) (:prev-children this))))
-   :will-unmount  #(set! (.-unmounted %) true)})
+(defn init-props [this $props]
+  (doseq [[k v] (seq (.-re$class $props))]
+    (aset this (camelCase k) v))
+  (set! (.-re$state this) (if $props (.-re$class $props) {}))
+  (when $props
+    (set! (.-re$state this)
+          (assoc (.-re$state this)
+            :view/props (.-re$props $props)
+            :view/children (.-re$children $props))))
+  this)
 
-(def reactive-mixin
-  {:will-unmount #(some-> (.-reactiveUnsubscribe %) (.call))
-   :render       (fn [this f]
-                   (let [{:keys [patterns value]} (d/capture-patterns (f))
-                         prev-patterns (.-reactivePatterns this)]
-
-                     (when-not (= prev-patterns patterns)
-
-                       (when-let [unsub (.-reactiveUnsubscribe this)]
-                         (unsub))
-
-                       (set! (.-reactiveUnsubscribe this)
-                             (when-not (empty? patterns)
-                               (apply re-db.d/listen! (concat patterns (list #(force-update this))))))
-
-                       (set! (.-reactivePatterns this) patterns))
-                     value))})
+(defn reactive-render [this f]
+  (let [{:keys [patterns value]} (d/capture-patterns (f))
+        prev-patterns (.-reactivePatterns this)]
+    (when-not (= prev-patterns patterns)
+      (when-let [unsub (.-reactiveUnsubscribe this)]
+        (unsub))
+      (set! (.-reactiveUnsubscribe this)
+            (when-not (empty? patterns)
+              (apply re-db.d/listen! (concat patterns (list #(force-update this))))))
+      (set! (.-reactivePatterns this) patterns))
+    value))
 
 (def kmap {:initial-state      "$getInitialState"
            :will-mount         "componentWillMount"
@@ -99,9 +80,9 @@
            :render             "render"})
 
 (defn ensure-element [element]
-  (if-not (js/React.isValidElement element) (html element) element))
+  (if-not (js/React.isValidElement element) (hiccup/element element) element))
 
-(defn quash [method-k fns]
+(defn apply-all [method-k fns]
   (when-let [fns (->> (if (vector? fns) fns [fns])
                       (remove nil?)
                       seq)]
@@ -117,27 +98,27 @@
                  true)))
       :render
       (fn [this]
-        ;; support a single render-wrap fn
-        (let [render (last fns)]
-          (if (= 1 (count fns))
-            (ensure-element ((first fns) this))
-            ((first fns) this #(ensure-element (if (fn? render)
-                                                 (render this)
-                                                 render))))))
-      (fn [& args]
-        (doseq [f fns] (apply f args))))))
+        (reactive-render this #(apply (last fns) (cons this (get this :view/children)))))
+      (if (contains? kmap method-k)
+        (fn [& args]
+          (doseq [f fns] (apply f args)))
+        (last fns)))))
 
 (defn collect [methods]
   (->> (apply merge-with (cons (fn [a b] (if (vector? a) (conj a b) [a b])) methods))
        (reduce-kv (fn [m method-k fns]
                     (assoc m method-k (cond->> fns
                                                (contains? kmap method-k)
-                                               (quash method-k)))) {})))
+                                               (apply-all method-k)))) {})))
 
-(defn bind* [f]
-  (fn [& args]
-    (this-as this
-      (apply f (cons this args)))))
+(defn bind*
+  ([f]
+   (fn [& args]
+     (this-as this
+       (apply f (cons this args)))))
+  ([f this]
+   (fn [& args]
+     (apply f (cons this args)))))
 
 (defn bind-without-render* [f]
   (fn [& args]
@@ -145,39 +126,68 @@
       (this-as this (apply f (cons this args))))))
 
 (defn bind [method-k f]
-  (cond (= :initial-state method-k) f
-
-        (contains? #{:will-receive-props :will-mount :will-unmount :will-receive-state :will-update} method-k)
-        (bind-without-render* f)
-
-        (fn? f) (bind* f)
-
-        :else f))
-
-(defn camelCase
-  "Convert dash-ed and name/spaced-keywords to strings: dashEd and name_spacedKeywords"
-  [s]
-  (clojure.string/replace s #"([^\\-])-([^\\-])"
-                          (fn [[_ m1 m2]] (str m1 (clojure.string/upper-case m2)))))
+  (case method-k
+    (:initial-state
+      :key) f
+    (:will-receive-props :will-mount :will-unmount :will-receive-state :will-update)
+    (bind-without-render* f)
+    (if (and (fn? f)
+             (or (not (keyword? method-k))
+                 (not= "element" (namespace method-k))))
+      (bind* f)
+      f)))
 
 (defn update-keys
   "Update keys of map m with function f"
   [update-key-f m]
   (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
 
+(defn get-state-atom
+  ([this]
+   (or (get (.-re$state this) :view/state-atom)
+       (get-state-atom this {})))
+  ([this initial-state]
+   (let [a (atom initial-state)]
+     (set! (.-re$state this) (assoc (.-re$state this)
+                               :view/state-atom a
+                               :prev-state initial-state))
+     (add-watch a :state-changed (fn [_ _ old-state new-state]
+                                   (when (not= old-state new-state)
+                                     (set! (.-re$state this) (assoc (.-re$state this)
+                                                               :prev-state old-state))
+                                     (respond-to-changed-state this))))
+     a)))
+
 (defn wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
    and provide default behaviour."
   [methods]
-  (->> (collect [base-mixin-before
+  (->> (collect [{:constructor        (fn [this $props]
+                                        (init-props this $props)
+                                        (when-let [initial-state-f (aget this "$getInitialState")]
+                                          (get-state-atom this (initial-state-f this)))
+                                        this)
+                  :will-receive-props (fn [{prev-props :view/props prev-children :view/children :as this} props]
+                                        (let [next-props (aget props "re$props")]
+                                          (set! (.-re$state this)
+                                                (assoc (.-re$state this)
+                                                  :view/props next-props
+                                                  :view/prev-props prev-props
+                                                  :view/children (.-re$children props)
+                                                  :view/prev-children prev-children))))
+                  :will-unmount       #(some-> (.-reactiveUnsubscribe %) (.call))}
                  (when (contains? methods :subscriptions) subs/subscription-mixin)
-                 reactive-mixin
                  methods
-                 base-mixin-after])
-       (reduce-kv (fn [js-m method-k method]
-                    (doto js-m
-                      (aset (get kmap method-k (camelCase (name method-k)))
-                            (bind method-k method)))) #js {})))
+                 {:should-update (fn [this] (or (not= (:view/props this) (:view/prev-props this))
+                                                (not= (:view/children this) (:view/prev-children this))))
+                  :will-unmount  #(set! (.-unmounted %) true)}])
+       (reduce-kv (fn [m method-k method]
+                    (assoc m method-k (bind method-k method))) {})))
+
+(defn is-react-element? [x]
+  (and x
+       (or (boolean (.-re$state x))
+           (js/React.isValidElement x))))
 
 (defn specify-protocols [o]
   (specify! o
@@ -185,58 +195,67 @@
     (-lookup
       ([this k]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (gobj/getValueByKeys this #js ["$reView" (name k)]))
+       (if (keyword-identical? k :view/state)
+         (get-state-atom this)
+         (get-in (.-re$state this) [:view/props k]
+                 (get (.-re$state this) k))))
       ([this k not-found]
        (when-not ^:boolean (nil? *lookup-log*) (swap! *lookup-log* conj k))
-       (gobj/getValueByKeys this #js ["$reView" (name k)] not-found)))
+       (if (keyword-identical? k :view/state)
+         (get-state-atom this)
+         (get-in (.-re$state this) [:view/props k]
+                 (get (.-re$state this) k not-found)))))
 
     ISwap
     (-swap!
-      ([this f] (swap-state! this f))
-      ([this f a] (swap-state! this f a))
-      ([this f a b] (swap-state! this f a b))
-      ([this f a b xs] (apply swap-state! (concat (list this f a b) xs))))
+      ([this f] (.error js/console "no swapping of component!") #_(swap-state! this f))
+      ([this f a] (.error js/console "no swapping of component!") #_(swap-state! this f a))
+      ([this f a b] (.error js/console "no swapping of component!") #_(swap-state! this f a b))
+      ([this f a b xs] (.error js/console "no swapping of component!") #_(apply swap-state! (concat (list this f a b) xs))))
 
     IReset
-    (-reset! [this v] (reset-state! this v))))
-
-(defn factory
-  [class]
-  (doto (fn [& children]
-          (let [[props children] (cond (empty? children) nil
-                                       (or (map? (first children))
-                                           (nil? (first children))) [(first children) (rest children)]
-                                       (object? (first children)) [(js->clj (first children)) (rest children)]
-                                       :else [nil children])]
-            (js/React.createElement
-              class
-              #js {"key"           (get props :key
-                                        (if-let [key (aget class "prototype" "key")]
-                                          (cond (string? key) key
-                                                (keyword? key) (get props key)
-                                                (fn? key) (.call key {:props    props
-                                                                      :children children})
-                                                :else (throw (js/Error "Invalid key supplied to component")))
-                                          (aget class "prototype" "displayName")))
-                   "ref"           (get props :ref)
-                   "cljs$props"    (dissoc props :ref :key)
-                   "cljs$children" children})))
-    (aset "$reView" #js {})))
-
-(defn extends [child parent]
-  (let [ReactView (.-constructor child)]
-    (set! (.-prototype ReactView) (new parent))
-    (set! (.-displayName ReactView) (.-displayName child))
-    (doseq [k (.keys js/Object child)]
-      (aset ReactView "prototype" k (aget child k)))
-    ReactView))
+    (-reset! [this v] (.error js/console "no reset of component!") #_(reset-state! this v))))
 
 (specify-protocols (.-prototype js/React.Component))
 
-(defn react-class [methods]
-  (-> (wrap-lifecycle-methods methods)
-      (extends js/React.Component)))
+(defn element-get
+  "Get attribute from unmounted React Element"
+  [el k]
+  (let [mock-component (specify-protocols (init-props #js {} (.-props el)))
+        v (get mock-component k)]
+    (cond-> v
+            (fn? v) (bind* mock-component))))
 
+(defn extends [{:keys [constructor display-name] :as child} parent]
+  (let [ReactView constructor]
+    (set! (.-prototype ReactView) (reduce-kv (fn [m k v]
+                                               (doto m
+                                                 (aset (get kmap k (camelCase k)) v))) (new parent) child))
+    (set! (.-displayName ReactView) display-name)
+    ReactView))
+
+(defn factory
+  [{:keys [key display-name] :as methods}]
+  (let [class (extends methods js/React.Component)]
+    (fn [props & children]
+      (let [[{prop-key :key ref :ref :as props} children] (cond (or (map? props)
+                                                                    (nil? props)) [props children]
+                                                                (and (object? props)
+                                                                     (not (js/React.isValidElement props))) [(js->clj props :keywordize-keys true) children]
+                                                                :else [nil (cons props children)])]
+        (js/React.createElement class
+                                #js {"key"         (or prop-key
+                                                       ref
+                                                       (when key
+                                                         (cond (string? key) key
+                                                               (keyword? key) (get props key)
+                                                               (fn? key) (apply key (cons props children))
+                                                               :else (throw (js/Error "Invalid key supplied to component"))))
+                                                       display-name)
+                                     "ref"         ref
+                                     "re$props"    (dissoc props :ref :key :children)
+                                     "re$children" (or (get props :children) children)
+                                     "re$class"    methods})))))
 
 (defn view
   "Returns a React component factory for supplied lifecycle methods.
@@ -263,13 +282,9 @@
              (vector? methods) {:render (fn [] methods)}
              (fn? methods) {:render methods}
              :else (throw "re-view.core/view must be supplied with a map of lifecycl methods, a render function, or a hiccup vector."))
-       (react-class)
+       (wrap-lifecycle-methods)
        (factory)))
 
-(defn is-react-element? [x]
-  (and x
-       (or (.-$reView x)
-           (js/React.isValidElement x))))
 
 (defn render-to-node [component element]
   (js/ReactDOM.render component element))
@@ -287,11 +302,11 @@
 
   (defview greeting
            {:initial-state (fn [this] {:first-name "Herbert"})}
-           (fn [{{:keys [first-name]} :state :as this}]
+           (fn [{:keys [first-name] :as this}]
              [:div
               [:p (str "Hello, " first-name "!")]
-              [:input {:value     first-name
-                       :on-change #(swap! this assoc :first-name (-> % .-target .-value))}]])))
+              [:input {:value    first-name
+                       :onChange #(swap! this assoc :first-name (-> % .-target .-value))}]])))
 
 (defn update-attrs [el f & args]
   (if-not (vector? el)
@@ -310,4 +325,3 @@
 
 (defn map-with-keys [& args]
   (ensure-keys (apply cljs.core/map args)))
-

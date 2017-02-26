@@ -1,35 +1,32 @@
 (ns re-view.router-test
   (:require [cljs.test :refer [deftest is are testing]]
             [re-db.d :as d]
-            [re-view.routing :as r :refer [router]]
+            [re-view.routing :as r]
+            [cljs.core.match :refer-macros [match]]
             [re-view.core :as view :refer [defview]]))
 
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 (def log (atom []))
 
-(defonce _ (r/on-route #(d/transact! [[:db/add ::state :route (r/get-token)]])))
+(defonce _ (r/on-route-change #(d/transact! [[:db/add ::state :route (r/tokenize %)]])))
 
-(defview index
-  (fn []
-    (swap! log conj [:index])
-    [:div]))
+(defview index []
+  (swap! log conj [:index])
+  [:div])
 
-(defview not-found
-  (fn []
-    (swap! log conj [:not-found])
-    [:div]))
+(defview not-found []
+  (swap! log conj [:not-found])
+  [:div])
 
-(defview page
-  (fn [{props :props}]
-    (swap! log conj [:page props])
-    [:div]))
+(defview page [{props :view/props}]
+  (swap! log conj [:page props])
+  [:div])
 
-(defview main
-  (fn [_]
-    (r/router (d/get ::state :route)
-              "/" index
-              "/page/:page-id" page
-              not-found)))
+(defview main [_]
+  (match (d/get ::state :route)
+         [] (index)
+         ["page" page-id] (page {:page-id page-id})
+         :else (not-found)))
 
 (deftest routing-test
   (testing "Basic routing"

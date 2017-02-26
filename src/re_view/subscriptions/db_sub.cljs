@@ -6,7 +6,7 @@
   (fn [this st-key]
     (let [capture-patterns #(binding [*lookup-log* (atom #{})]
                               (assoc (d/capture-patterns (f this))
-                                :prop-fn? (contains? @*lookup-log* :props)))
+                                :prop-fn? (contains? @*lookup-log* :view/props)))
           pattern-result (atom (capture-patterns))
           unsub (atom)]
       {:default       #(:value @pattern-result)

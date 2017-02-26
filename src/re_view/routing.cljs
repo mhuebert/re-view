@@ -14,7 +14,9 @@
 (defn tokenize
   "Split route into tokens, ignoring leading and trailing slashes."
   [route]
-  (let [segments (string/split route \/ -1)]
+  (let [segments (-> route
+                     (string/replace #"[#?].*" "")
+                     (string/split \/ -1))]
     (cond-> segments
             (= "" (first segments)) (subvec 1)
             (= "" (last segments)) (pop))))
@@ -26,21 +28,28 @@
                     (tokenize "a/b/")
                     (tokenize "a/b") ["a" "b"])))
 
+(def browser? (exists? js/window))
+
 (defn make-history []
-  (if (Html5History.isSupported)
-    (doto (Html5History.)
-      (.setPathPrefix (str js/window.location.protocol
-                           "//"
-                           js/window.location.host))
-      (.setUseFragment false))
-    (if (not= "/" js/window.location.pathname)
-      (aset js/window "location" (str "/#" (get-route)))
-      (History.))))
+  (when browser?
+    (if (Html5History.isSupported)
+      (doto (Html5History.)
+        (.setPathPrefix (str js/window.location.protocol
+                             "//"
+                             js/window.location.host))
+        (.setUseFragment false))
+      (if (not= "/" js/window.location.pathname)
+        (aset js/window "location" (str "/#" (get-route)))
+        (History.)))))
 
-(def history (make-history))
 
-(doto history
-  (.setEnabled true))
+
+(def history
+  (make-history))
+
+(when history
+  (doto history
+    (.setEnabled true)))
 
 (defn nav!
   "Trigger pushstate navigation to token (path)"
@@ -58,11 +67,14 @@
 (defn intercept-clicks
   "Intercept local links (handle with router instead of reloading page)"
   []
-  (goog.events/listen js/document goog.events.EventType.CLICK
-                      #(when-let [path (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
-                         (when-not (.test #"http.*" path)
-                           (.preventDefault %)
-                           (nav! path)))))
+  (when browser?
+    (goog.events/listen js/document goog.events.EventType.CLICK
+                        #(when-let [href (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
+                           (when (or (not (string/starts-with? href "http"))
+                                     (string/starts-with? href
+                         (.. js/window -location -origin)))
+                             (.preventDefault %)
+                             (nav! href))))))
 
 (defonce _ (intercept-clicks))
 

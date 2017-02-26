@@ -15,19 +15,19 @@
   (reduce-kv (partial init-sub this) {} (aget this "subscriptions")))
 
 (defn end-subscriptions [this]
-  (doseq [{:keys [unsubscribe]} (vals (get-in this [:state :subscriptions/state]))]
+  (doseq [{:keys [unsubscribe]} (vals (:subscriptions/state this))]
     (when-not (nil? unsubscribe) (unsubscribe this))))
 
 (defn begin-subscriptions [this]
-  (doseq [{:keys [subscribe]} (vals (get-in this [:state :subscriptions/state]))]
+  (doseq [{:keys [subscribe]} (vals (:subscriptions/state this))]
     (subscribe)))
 
 (defn update-subscriptions [this]
-  (doseq [[st-key {:keys [should-update unsubscribe]}] (seq (get-in this [:state :subscriptions/state]))]
+  (doseq [[st-key {:keys [should-update unsubscribe]}] (seq (:subscriptions/state this))]
     (when (and (not (nil? should-update)) (should-update this))
       (when-not ^:boolean (nil? unsubscribe) (unsubscribe))
       (swap! this #(init-sub this % st-key (get (aget % "subscriptions") st-key)))
-      (let [subscribe (get-in this [:state :subscriptions/state st-key :subscribe])]
+      (let [subscribe (get-in this [:subscriptions/state st-key :subscribe])]
         (subscribe)))))
 
 (def subscription-mixin
