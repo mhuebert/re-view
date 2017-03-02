@@ -7,3 +7,4 @@ resources
 .lein-failures
 .local
 node_modules
+.nrepl-port

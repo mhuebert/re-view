@@ -118,7 +118,7 @@
         "cardinality/many attribute can be indexed")
 
     ;; second child
-    (d/transact! db [[:db/add "fred" :children "sally"]])
+    (d/transact! db [[:db/add "fred" :children #{"sally"}]])
 
     (is (= #{"sally" "pete"} (d/get @db "fred" :children))
         "cardinality/many attribute returned as set")
@@ -129,7 +129,7 @@
         "look up via cardinality/many index")
 
     (testing "remove value from cardinality/many attribute"
-      (d/transact! db [[:db/retract-attr "fred" :children "sally"]])
+      (d/transact! db [[:db/retract-attr "fred" :children #{"sally"}]])
 
       (is (= #{} (d/entity-ids @db [:children "sally"]))
           "index is removed on retraction")
@@ -143,11 +143,11 @@
       (d/merge-schema! db {:pets {:db/cardinality :db.cardinality/many
                                   :db/index       :db.index/unique}})
 
-      (d/transact! db [[:db/add "fred" :pets "fido"]])
+      (d/transact! db [[:db/add "fred" :pets #{"fido"}]])
 
       (is (= "fred" (:db/id (d/entity @db [:pets "fido"]))))
 
-      (throws (d/transact! db [[:db/add "herman" :pets "fido"]])
+      (throws (d/transact! db [[:db/add "herman" :pets #{"fido"}]])
               "some message"))))
 
 (deftest listeners
@@ -158,7 +158,8 @@
 
     (d/transact! db [{:db/id "mary"
                       :name  "Mary"}
-                     [:db/add "mary" :person/children "john"]
+                     [:db/add "mary"
+                      :person/children #{"john"}]
                      {:db/id "john"
                       :name  "John"}])
 
@@ -171,7 +172,8 @@
 
     (d/transact! db [{:db/id "peter"
                       :name  "Peter"}
-                     [:db/add "mary" :person/children "peter"]
+                     [:db/add "mary"
+                      :person/children #{"peter"}]
                      [:db/add "mary" :name "MMMary"]])
 
     (is (= "MMMary" (:name (d/entity @db (:mary-entity @log))))
@@ -180,7 +182,7 @@
     (is (= [:person/children "peter"] (:peter-children @log))
         "Lookup ref entity listener is called with lookup ref")
 
-    (d/transact! db [[:db/retract-attr "mary" :person/children "peter"]])
+    (d/transact! db [[:db/retract-attr "mary" :person/children #{"peter"}]])
 
     (is (and (= [:person/children "peter"] (:peter-children @log))
              (= nil (d/entity @db (:peter-children @log))))
