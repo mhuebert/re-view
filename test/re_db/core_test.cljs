@@ -1,6 +1,6 @@
 (ns re-db.core-test
   (:require [cljs.test :refer-macros [deftest is testing]]
-            [re-db.core :as d :include-macros true])
+            [re-db.core2 :as d :include-macros true])
   (:require-macros [tests.helpers :refer [throws]]))
 
 (deftest basic
@@ -102,10 +102,7 @@
     (is (= {:db/id    "fred"
             :name     "Fred"
             :_authors #{"1"}} (d/touch @db (d/entity @db "fred")))
-        "refs with cardinality-many")
-    )
-
-  )
+        "refs with cardinality-many")))
 
 (deftest cardinality-many
   (let [db (-> (d/create {:db/id    {:db/index :db.index/unique}

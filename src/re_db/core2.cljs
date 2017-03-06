@@ -1,24 +1,30 @@
-(ns re-db.core
+(ns re-db.core2
   (:refer-clojure
     :exclude [get get-in select-keys set! peek contains?]
     :rename {get         get*
              contains?   contains?*
              select-keys select-keys*})
   (:require [cljs-uuid-utils.core :as uuid-utils]
-            [clojure.set :as set])
-  (:require-macros [re-db.core :refer [capture-patterns
-                                       get-in*]]))
+            [clojure.set :as set]
+            [clojure.data.avl :as avl])
+  (:require-macros [re-db.core2 :refer [capture-patterns
+                                        get-in*]]))
 
 (enable-console-print!)
 
-(def ^:dynamic *db-log* nil)                                ;; maintains tx-report while bound
-(def ^:dynamic *mute* false)                                ;; ignore listeners
-(def ^:dynamic *access-log* nil)                            ;; capture access patterns
+
+(def ^:dynamic *notify* true)                               ;;  if false, datoms are not tracked & listeners are not notified
+(def ^:dynamic *index* true)
 (def ^:dynamic *debug* false)
+
+(def ^:dynamic *access-log* nil)                            ;; capture access patterns
+(def ^:dynamic *db-log* nil)                                ;; maintains tx-report while bound
+
 
 (def id-attr :db/id)
 
 (def fnil-conj-set (fnil conj #{}))
+(def fnil-into-set (fnil into #{}))
 
 (defn log-read [path f v]
   (when *access-log*
@@ -32,9 +38,9 @@
     :db/cardinality [:db.cardinality/many]"
   ([] (create {}))
   ([schema]
-   (atom {:eav    {}
-          :ave    {}
-          :schema schema})))
+   (atom {:eav    #_(sorted-map) (avl/sorted-map)
+          :ave                   {}
+          :schema                schema})))
 
 (defn merge-schema!
   "Merge additional schema options into a db. Indexes are not created for existing data."
@@ -213,30 +219,38 @@
     entity
     (get-in* db-snap [:vae id])))
 
-(defn- add-index [[db-snap datoms] id a v schema]
-  [(cond-> db-snap
-           (index? schema) (update-in [:ave a v] fnil-conj-set id)
-           (ref? schema) (update-in [:vae v a] fnil-conj-set id)) datoms])
+(defn- add-index [db-snap id a v schema]
+  (cond-> db-snap
+          (index? schema) (update-in [:ave a v] fnil-conj-set id)
+          (ref? schema) (update-in [:vae v a] fnil-conj-set id)))
 
-(defn- add-index-many [state id attr additions schema]
+(defn- add-index-many [db-snap id attr added schema]
   (reduce (fn [state v]
-            (add-index state id attr v schema)) state additions))
+            (add-index state id attr v schema)) db-snap added))
 
-(defn- remove-index [[db-snap datoms] id a v schema]
-  [(cond-> db-snap
-           (index? schema) (update-in [:ave a v] disj id)
-           (ref? schema) (update-in [:vae v a] disj id)) datoms])
+(defn- remove-index [db-snap id attr removed schema]
+  (cond-> db-snap
+          (index? schema) (update-in [:ave attr removed] disj id)
+          (ref? schema) (update-in [:vae removed attr] disj id)))
 
-(defn- remove-index-many [state id attr removals schema]
-  (reduce (fn [state v]
-            (remove-index state id attr v schema))
-          state
+(defn- remove-index-many [db-snap id attr removals schema]
+  (reduce (fn [db-snap v]
+            (remove-index db-snap id attr v schema))
+          db-snap
           removals))
 
-(defn- clear-empty-ent [[db-snap datoms] id]
-  [(cond-> db-snap
-           (empty? (get-in* db-snap [:eav id])) (update :eav dissoc id))
-   datoms])
+(defn- update-index [db-snap id attr added removed schema]
+  (if (many? schema)
+    (cond-> db-snap
+            added (add-index-many id attr added schema)
+            removed (remove-index-many id attr removed schema))
+    (cond-> db-snap
+            added (add-index id attr added schema)
+            removed (remove-index id attr added schema))))
+
+(defn- clear-empty-ent [db-snap id]
+  (cond-> db-snap
+          (#{{id-attr id} {}} (get-in* db-snap [:eav id])) (update :eav dissoc id)))
 
 (declare retract-attr)
 
@@ -253,11 +267,12 @@
           kill? (= removals prev-val)]
       (if (empty? removals)
         state
-        (-> [(if kill? (update-in db-snap [:eav id] dissoc attr)
-                       (update-in db-snap [:eav id attr] set/difference removals))
-             (conj! datoms [id attr nil removals])]
-            (remove-index-many id attr removals schema)
-            (clear-empty-ent id))))))
+        [(cond-> (if kill? (update-in db-snap [:eav id] dissoc attr)
+                           (update-in db-snap [:eav id attr] set/difference removals))
+                 (true? *index*) (update-index id attr nil removals schema)
+                 true (clear-empty-ent id))
+         (cond-> datoms
+                 (true? *notify*) (conj! [id attr nil removals]))]))))
 
 (defn- retract-attr
   ([state id attr] (retract-attr state id attr (get-in* (state 0) [:eav id attr])))
@@ -267,10 +282,11 @@
        (retract-attr-many state id attr value schema)
        (let [prev-val (if-not (nil? value) value (get-in* db-snap [:eav id attr]))]
          (if-not (nil? prev-val)
-           (-> [(update-in db-snap [:eav id] dissoc attr)
-                (conj! datoms [id attr nil prev-val])]
-               (remove-index id attr prev-val (get-schema db-snap attr))
-               (clear-empty-ent id))
+           [(cond-> (update-in db-snap [:eav id] dissoc attr)
+                    (true? *index*) (update-index id attr nil prev-val (get-schema db-snap attr))
+                    true (clear-empty-ent id))
+            (cond-> datoms
+                    (true? *notify*) (conj! [id attr nil prev-val]))]
            state))))))
 
 (defn- retract-entity [state id]
@@ -291,18 +307,60 @@
           (do
             (doseq [val additions]
               (assert (nil? (resolve-id db-snap attr val))))
-            (-> [(update-in db-snap [:eav id attr] set/union additions)
-                 (conj! datoms [id attr additions nil])]
-                (add-index-many id attr additions schema)))))
+            [(cond-> (update-in db-snap [:eav id attr] fnil-into-set additions)
+                     (true? *index*) (update-index id attr additions nil schema))
+             (cond-> datoms
+                     (true? *notify*) (conj! [id attr additions nil]))])))
       (if (= prev-val val)
         state
         (do
           (when (unique? schema)
             (assert (nil? (resolve-id db-snap attr val))))
-          (cond-> (-> [(assoc-in db-snap [:eav id attr] val)
-                       (conj! datoms [id attr val prev-val])]
-                      (add-index id attr val schema))
-                  prev-val (remove-index id attr prev-val schema)))))))
+          [(cond-> (assoc-in db-snap [:eav id attr] val)
+                   (true? *index*) (update-index id attr val prev-val schema))
+           (cond-> datoms
+                   (true? *notify*) (conj! [id attr val prev-val]))])))))
+
+(defn add-map-indexes [db-snap id m prev-m]
+  (reduce-kv
+    (fn [db-snap attr val]
+      (let [schema (get-schema db-snap attr)
+            prev-val (get* prev-m attr)]
+        (if (many? schema)
+          (update-index db-snap id attr
+                        (set/difference val prev-val)
+                        (set/difference prev-val val)
+                        schema)
+          (update-index db-snap id attr val prev-val schema))))
+    db-snap m))
+
+(defn add-map-datoms [datoms id m prev-m db-snap]
+  (reduce-kv
+    (fn [datoms attr val]
+      (let [prev-val (get* prev-m attr)]
+        (cond-> datoms
+                (not= val prev-val) (conj! (if (many? db-snap attr)
+                                             [id attr
+                                              (set/difference val prev-val)
+                                              (set/difference prev-val val)]
+                                             [id attr val prev-val])))))
+    datoms m))
+
+(defn- remove-nils [m]
+  (reduce-kv (fn [m k v]
+               (cond-> m
+                       (nil? v) (dissoc k))) m m))
+
+(defn- add-map
+  [[db-snap datoms] m]
+  (let [id (get* m id-attr)
+        m (dissoc m id-attr)
+        prev-m (get-in* db-snap [:eav id])]
+    [(-> (cond-> (assoc-in db-snap [:eav id] (remove-nils (merge prev-m m)))
+                 (true? *index*) (add-map-indexes id m prev-m))
+         (clear-empty-ent id))
+     (cond-> datoms
+             (true? *notify*) (add-map-datoms id m prev-m db-snap))]))
 
 (defn- update-attr [[db-snap datoms :as state] id attr f & args]
   (let [prev-val (get-in* db-snap [:eav id attr])
@@ -363,6 +421,7 @@
 (defn- commit-tx [state tx]
   (apply (case (tx 0)
            :db/add add
+           :db/add-map add-map
            :db/update-attr update-attr
            :db/assoc-in-attr assoc-in-attr
            :db/retract-entity retract-entity
@@ -375,7 +434,8 @@
         [db-after datoms] (reduce (fn [state tx]
                                     (if (vector? tx)
                                       (commit-tx state (update tx 1 resolve-id))
-                                      (reduce commit-tx state (map->txs! (update tx id-attr resolve-id)))))
+                                      (commit-tx state [:db/add-map (update tx id-attr resolve-id)])
+                                      #_(reduce commit-tx state (map->txs! (update tx id-attr resolve-id)))))
                                   [db-before (transient [])]
                                   new-txs)]
     {:db-before db-before
@@ -384,20 +444,27 @@
 
 (defn transact!
   ([db txs] (transact! db txs {}))
-  ([db txs options]
-   (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
-                                              (and (map? txs) (contains?* txs :datoms)) txs
-                                              (or (vector? txs)
-                                                  (list? txs)
-                                                  (seq? txs)) (transaction @db txs)
-                                              :else (throw (js/Error "Transact! was not passed a valid transaction")))]
-     (reset! db db-after)
-     (when-not (nil? *db-log*)
-       (reset! *db-log* (cond-> tx
-                                (:db-before @*db-log*) (assoc :db-before @*db-log*))))
-     (when-not (or (true? (get* options :mute)) (true? *mute*))
-       (notify-listeners tx))
-     db)))
+  ([db txs {:keys [notify
+                   index
+                   mute]
+            :or   {notify true
+                   index  true}}]
+   (when mute (.warn js/console "Mute is no longer a re-db option. Use `:notify false` instead."))
+   (binding [*notify* notify
+             *index* index]
+     (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
+                                                (and (map? txs) (contains?* txs :datoms)) txs
+                                                (or (vector? txs)
+                                                    (list? txs)
+                                                    (seq? txs)) (transaction @db txs)
+                                                :else (throw (js/Error "Transact! was not passed a valid transaction")))]
+       (reset! db db-after)
+       (when-not (nil? *db-log*)
+         (reset! *db-log* (cond-> tx
+                                  (:db-before @*db-log*) (assoc :db-before @*db-log*))))
+
+       (when *notify* (notify-listeners tx))
+       db))))
 
 (defn entity-ids
   [db-snap & qs]

@@ -9,7 +9,7 @@
   ([f] (prefix-atom f false))
   ([f read?] (fn [& args]
                (let [db (or *db* *db*)]
-                 (apply f (cons (cond-> db read? deref) args))))))
+                 (apply f (cond-> db read? deref) args)))))
 
 (def entity (prefix-atom d/entity true))
 (def contains? (prefix-atom d/contains? true))
