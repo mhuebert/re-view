@@ -1,5 +1,7 @@
 (ns re-view.core-test
   (:require [cljs.test :refer [deftest is are testing]]
+            [cljsjs.react]
+            [cljsjs.react.dom]
             [re-view.core :as v :refer [defview]]))
 
 
@@ -22,8 +24,7 @@
 (def initial-state {:eaten? false})
 
 (defview apple
-  {:initial-state
-                       (fn [& args]
+  {:initial-state      (fn [& args]
                          (apply (partial log-args :get-initial-state) args)
                          initial-state)
 
@@ -41,14 +42,16 @@
 
    :did-update         (partial log-args :did-update)
 
-   :will-unmount       (partial log-args :will-unmount)}
-  [this]
+   :will-unmount       (partial log-args :will-unmount)
+   :pRef               (fn [& args]
+                         (println "I am a ref that was called!" args))}
+  [{:keys [view/state] :as this}]
   (log-args :render this)
   (swap! render-count inc)
   [:div "I am an apple."
-   (when-not (:eaten @(:view/state this))
-     [:p {:ref   "apple-statement-of-courage"
-          :style {:font-weight "bold"}} " ...and I am brave and alive."])])
+   (when-not (:eaten? @state)
+     [:p {:ref   #(when % (swap! state assoc :p %))
+          :style {:fontWeight "bold"}} " ...and I am brave and alive."])])
 
 
 ;; a heavily logged component
@@ -69,7 +72,7 @@
         c (render init-props init-child)]
 
     (testing "initial state"
-      (is (= {:eaten? false} @(:view/state c)))
+      (is (false? (:eaten? @(:view/state c))))
       (is (= 1 @render-count))
       (is (= "red" (get-in @lifecycle-log [:get-initial-state :view/props :color]))
           "Read props from GetInitialState")
@@ -79,10 +82,10 @@
     (testing "update state"
 
       ;; Update State
-      (swap! (:state c) update :eaten? not)
+      (swap! (:view/state c) update :eaten? not)
       (v/flush!)
 
-      (is (true? (:eaten @(:view/state c)))
+      (is (true? (:eaten? @(:view/state c)))
           "State has changed")
       (is (= 2 @render-count)
           "Component was rendered"))
@@ -112,8 +115,7 @@
           "New child - normal render"))
 
     (testing "refs"
-      (is (= "bold" (-> c
-                        (v/ref "apple-statement-of-courage")
+      (is (= "bold" (-> (:p @(:view/state c))
                         .-style
                         .-fontWeight))
           "Read react ref"))))
@@ -148,16 +150,18 @@
 
     (testing "state transition"
 
-      (reset! this {:shiny? false})
+      (reset! (:view/state this) {:shiny? false})
       (v/flush!)
 
       (is (false? (:shiny? @(:view/state this))))
 
-      (swap! (:state this) update :shiny? not)
+      (swap! (:view/state this) update :shiny? not)
       (v/flush!)
 
-      (is (false? (get-in @lifecycle-log [:will-receive-state :view/prev-state :shiny?])))
-      (is (true? (get-in @lifecycle-log [:will-receive-state :view/state :shiny?])))
+      (is (false? (get-in @lifecycle-log [:will-receive-state :view/prev-state :shiny?]))
+          "Prev-state recalls previous state")
+      (is (true? (get-in @lifecycle-log [:will-receive-state :view/state :shiny?]))
+          "State has updated")
 
       (render {:color "violet"})
       (is (= @(:view/state this)

@@ -1,12 +1,12 @@
 (ns re-view.subscriptions.db-sub
-  (:require [re-view.shared :refer [*lookup-log*]]
+  (:require [re-view.shared :refer [*read-props?*]]
             [re-db.d :as d]))
 
 (defn db-fn [f should-update?]
   (fn [this st-key]
-    (let [capture-patterns #(binding [*lookup-log* (atom #{})]
+    (let [capture-patterns #(binding [*read-props?* false]
                               (assoc (d/capture-patterns (f this))
-                                :prop-fn? (contains? @*lookup-log* :view/props)))
+                                :prop-fn? (true? *read-props?*)))
           pattern-result (atom (capture-patterns))
           unsub (atom)]
       {:default       #(:value @pattern-result)

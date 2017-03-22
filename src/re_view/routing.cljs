@@ -4,7 +4,8 @@
             [clojure.string :as string])
   (:import
     [goog.history Html5History EventType]
-    [goog History]))
+    [goog History]
+    [goog Uri]))
 
 (defn get-route []
   (if (Html5History.isSupported)
@@ -20,6 +21,11 @@
     (cond-> segments
             (= "" (first segments)) (subvec 1)
             (= "" (last segments)) (pop))))
+
+(defn query [path]
+  (let [data (.getQueryData (Uri. path))]
+    (reduce (fn [m k]
+              (assoc m k (.get data k))) {} (.getKeys data))))
 
 (comment (assert (= (tokenize "/") []))
          (assert (= (tokenize "//") [""]))
@@ -70,15 +76,15 @@
   (when browser?
     (goog.events/listen js/document goog.events.EventType.CLICK
                         #(when-let [href (some-> (.-target %) (closest link?) .-attributes .-href .-value)]
-                           (when (or (not (string/starts-with? href "http"))
-                                     (string/starts-with? href
-                         (.. js/window -location -origin)))
-                             (.preventDefault %)
-                             (nav! href))))))
+                           (let [origin (.. js/window -location -origin)
+                                 href (if (= href origin) "/" (string/replace href origin ""))]
+                             (when-not (string/starts-with? href "http")
+                               (.preventDefault %)
+                               (nav! href)))))))
 
 (defonce _ (intercept-clicks))
 
-(defn on-route-change [cb]
-  (cb (get-route))
+(defn on-route-change [cb fire-now?]
+  (when fire-now? (cb (get-route)))
   (goog.events/listen history EventType.NAVIGATE #(cb (get-route))))
 

@@ -6,7 +6,6 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.293"]
                  [org.clojars.mhuebert/re-db "0.1.7-SNAPSHOT"]
-                 [sablono "0.7.7"]
                  [org.clojure/core.match "0.3.0-alpha4"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]

@@ -1,7 +1,7 @@
 (ns re-view.shared
   (:refer-clojure :exclude [partial]))
 
-(def ^:dynamic *lookup-log*)
+(def ^:dynamic *read-props?* nil)
 
 (defn partial
   "Partially apply props to a component"

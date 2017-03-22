@@ -7,92 +7,62 @@ Example:
 ```clj
 
 (ns app.core
-  (:require [re-view.core :as view]))
+  (:require [re-view.core :as v :refer [defview]]))
 
-(defcomponent my-first-component
-
-   :initial-state
-   (fn [_] {:color "purple"})
-
-   ;; put rendered height into state
-   :did-mount
-   (fn [this] (view/swap-state! this assoc :height
-                (.height (js/ReactDOM.findDOMNode this))))
-
-   :render
-   (fn [this] [:div "Hello, world"]))
+(defview my-first-component
+  {:initial-state {:height 0 }
+   :did-mount (fn [{:keys [view/state] :as this}] 
+                (swap! state assoc :height (.height (v/dom-node this))))}
+   [{:keys [view/state]}] 
+   [:div "Hello, world. I am " (:height @state) " pixels tall."])
 
 ```
 
-
-Pass `component` React lifecycle methods (names are auto-converted from :hyphenated-keywords to camelCase) and get back a factory.
-
-Important to know:
-
-* access state and props as keyword properties on `this`, eg. `(:props this)` or `(:state this)`
+Props can be looked up (& destructured) directly on a component:
 
 ```
-...
-  :render
-  (fn [this]
-    [:div "Hello, " (get-in this [:state :name])])
-...
+(defview greeting
+ [{:keys [user-name]}]
+  [:div "Hello, " user-name])
+  
+(greeting {:user-name "Fred"})  
 ```
 
-* define :react-key to assign unique keys to components based on props (required for React)
+Views which include :initial-state will have an additional `:view/state` atom on the component:
 
 ```
-...
-  :react-key
-  (fn [{:keys [props]}] (:id props))
-...
+(defview counter 
+  {:initial-state 0}
+  [{:keys [view/state]}] 
+  [:div {:onClick #(swap! state inc)} @state])
 ```
 
-* call `render-component` to re-render a component, optionally with new props. this can be any component, not only root components.
+Child elements are passed as additional arguments to the view function. 
+If the first argument to a view is not a map, it is passed as a child (only a map is passed via props).
 
 ```
-(view/render-component my-component {:id <some-id>})
+(defview show-the-number [_ n] 
+  [:div.number-view n])
+  
+(map display-number [1 2 3])
 ```
 
 ### Changelog
 
+0.3.1
+- A `:ref` must be a function, instead of a string (see: https://facebook.github.io/react/docs/refs-and-the-dom.html)
+- State is provided by an atom under the key `:view/state`, and only when `:initial-state` is present
+- DOM element properties must be camelCase, eg `:onClick`. (We now use `re-view.hiccup/element` instead of `sablono` for creating React elements.)
 
 0.3.0
-
-- Prop keys can now be looked up directly on components (`this`). In the case of :render and :key methods,
-   children are passed as additional arguments. This change has eliminated some common and
-   laborious patterns of method destructuring.
-
-   Eg, a single, non-map argument is interpreted as a child element, which can be read in the argslist:
-
-   `(my-component "1234")`
-
-   ...in my-component
-
-   `{:key (fn [_ id] id)}`
-
-   (the first argument is always reserved for `this`, a reference to the component itself, even
-    when no props are passed)
-
-   To read prop keys, previously we did this:
-
-   `(fn [{{:keys [title]} :props :as this}] ...)
-
-   now:
-
-    `(fn [{:keys [title] :as this}] ...)
-
-   Note that access to props and state is `mixed`, so it is not a good idea to re-use keys. If props
-    and state share keys, props are read first.
-
-- State is now an atom, accessed via the `:state` key on a component.
-  `:prev-state` will always contain the previous state of this atom, for comparison purposes.
+- Props are looked up (& destructured) directly on components (`this`). 
+- children are passed as additional args to the render function. 
+- State is now an ordinary Clojure atom.
 
 0.2.9
-- Remove/disambiguate render-to-dom, use render-to-node or render-to-id instead
+- Deprecated `render-to-dom` in favour of `render-to-node` and `render-to-id`
 
 0.2.3
-
 - Use render loop by default
 
 0.2.2
@@ -106,39 +76,8 @@ Important to know:
 
 - Removed pattern-based db subscriber. Use re-view.subscriptions/db (a macro) to create a reactive database subscription. When body of subs/db is executed, listeners are created on accessed db-patterns, and body is re-run when these entities/attributes change. If the body reads from :props, the subscription will be updated when props change.
 
-```
-(require '[re-view.subscriptions :as subs])
-
-(defcomponent x
-  :subscriptions {:name (subs/db [this] (d/get (get-in this [:props :uid]) :name))
-                                 ;;^^ optional binding of `this` for reading :props.
-                  :signed-in? (subs/db (d/get :app/state :signed-in?))}
-  :render
-  (fn [{{:keys [name signed-in?]} :state}]
-    ...))
-
-```
-
 0.2
-
-- `props` and `state` are keyword properties on `this`. Also available are `:prev-props, :prev-state, :children`. Destructuring on function arglist is encouraged:
-
-```clj
-(defcomponent x
-  :render
-  (fn [{:keys [props state] :as this}] ...))
-
-(defcomponent y
-  :render
-  (fn [{[a b c] :children
-        {:keys [id]} :props}] ...))
-
-;; state behaves like an atom, forcing a re-render when appropriate
-(v/swap-state! this assoc :x 10)
-(get-in this [:state :x]) ;; => 10
-
-;; list of relevant kw properties defined on `this`:
-[:props :state :children :prev-props :prev-state :prev-children]        
+- `props` and `state` are keyword properties on `this`. Also available are `:prev-props, :prev-state, :children`. Destructuring on function arglist is encouraged:      
 
 ```
 

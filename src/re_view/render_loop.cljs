@@ -1,5 +1,7 @@
 (ns re-view.render-loop)
 
+(set! *warn-on-infer* true)
+
 (def ^:private count-fps? false)
 (def ^:private last-fps-time 1)
 (def frame-rate 0)
@@ -19,15 +21,23 @@
                      (aget js/window "oRequestAnimationFrame")
                      (aget js/window "msRequestAnimationFrame")
                      (fn [cb]
-                       (.call (aget js/window "setTimeout") js/window cb (/ 1000 60))))))))
+                       (js/setTimeout cb (/ 1000 60))))))))
 
 (def to-render #{})
 (def to-run [])
 
-(defn force-update [this]
-  (set! to-render (conj to-render this)))
+(declare request-render)
 
-(defn force-update! [this]
+(defn schedule! [f]
+  (set! to-run (conj to-run f))
+  (request-render))
+
+(defn force-update [this]
+  (set! to-render (conj to-render this))
+  (request-render))
+
+(defn force-update! [^js/React.Component this]
+  (set! to-render (disj to-render this))
   (when-not (true? (.-unmounted this))
     (try (.forceUpdate this)
          (catch js/Error e
@@ -40,8 +50,7 @@
   []
   (when-not ^:boolean (empty? to-render)
     (doseq [c to-render]
-      (force-update! c))
-    (set! to-render #{}))
+      (force-update! c)))
 
   (when-not ^:boolean (empty? to-run)
     (doseq [f to-run] (f))
@@ -54,11 +63,9 @@
     (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
     (set! last-fps-time frame-ms))
 
-  (flush!)
+  (flush!))
 
+(defn request-render []
   (js/requestAnimationFrame render-loop))
 
-(defn schedule! [f]
-  (set! to-run (conj to-run f)))
 
-(defn init [] (js/requestAnimationFrame render-loop))
