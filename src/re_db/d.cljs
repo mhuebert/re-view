@@ -1,5 +1,5 @@
 (ns re-db.d
-  (:refer-clojure :exclude [get get-in contains? select-keys])
+  (:refer-clojure :exclude [get get-in contains? select-keys namespace])
   (:require [re-db.core :as d])
   (:require-macros [re-db.d]))
 
@@ -21,8 +21,10 @@
 (def select-keys (prefix-atom d/select-keys true))
 (def transaction (prefix-atom d/transaction true))
 
+
 (def transact! (prefix-atom d/transact!))
 (def listen! (prefix-atom d/listen!))
 (def unlisten! (prefix-atom d/unlisten!))
 (def merge-schema! (prefix-atom d/merge-schema!))
 (def squuid d/squuid)
+(def namespace (prefix-atom d/namespace true))
