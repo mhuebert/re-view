@@ -79,7 +79,7 @@
   "Returns id, resolving lookup refs (vectors of the form `[attribute value]`) to ids. Lookup refs are only supported for indexed attributes.
   Arity 3 is for known lookup refs, and does not check for uniqueness."
   ([db-snap attr val]
-   (log-read [:attr-val] conj [nil attr val])
+   (log-read [:_av] conj [nil attr val])
    (first (get-in* db-snap [:ave attr val])))
   ([db-snap id]
    (if ^:boolean (vector? id)
@@ -92,7 +92,9 @@
 (defn contains?
   "Returns true if entity with given id exists in db."
   [db-snap id]
-  (contains?* (get* db-snap :eav) (resolve-id db-snap id)))
+  (let [id (resolve-id db-snap id)]
+    (when id (log-read [:e__] conj [id]))
+    (true? (contains?* (get* db-snap :eav) id))))
 
 (defn- listen-path!
   [db path f]
@@ -106,24 +108,33 @@
 
 (declare get entity)
 
+(defn p-nil?
+  "Return true if value is nil or '_"
+  [x]
+  (or (nil? x) (= '_ x)))
+
 (defn pattern->idx
   "Returns type of listener pattern."
-  [pattern]
-  (let [[id attr val] (mapv #(if (= % '_) nil %) pattern)]
-    (cond (and id attr) :entity-attr
-          (and attr val) :attr-val
-          id :id
-          attr :attr
-          :else nil)))
+  [[e a v :as x]]
+  (let [pattern (keyword (str (if (p-nil? e) "_" "e")
+                              (if (p-nil? a) "_" "a")
+                              (if (p-nil? v) "_" "v")))]
+    (when-not (#{:e__ :ea_ :_av :_a_} pattern)
+      (println {:pattern pattern :x x})
+      (throw (js/Error. (str "Unsupported pattern: " " " pattern "e: " e "a: " a "v: " v))))
+    pattern))
+
+;; spec
+
 
 (defn- pattern->listener-path
   "Returns path to listener set for the given access pattern."
   [[id attr val :as pattern]]
   (case (pattern->idx pattern)
-    :entity-attr [:listeners :entity-attr id attr]
-    :attr-val [:listeners :attr-val attr val]
-    :id [:listeners :entity id]
-    :attr [:listeners :attr attr]
+    :e__ [:listeners :e__ id]
+    :ea_ [:listeners :ea_ id attr]
+    :_av [:listeners :_av attr val]
+    :_a_ [:listeners :_a_ attr]
     nil [:listeners :tx-log]))
 
 (declare listen! unlisten!)
@@ -155,10 +166,10 @@
 
 (defn listen!
   "Add pattern listeners. Supported patterns:
-   [id attr _]  => :entity-attr
-   [_ attr val] => :attr-val
-   [id _ _]     => :entity
-   [_ attr _]   => :attr"
+   [id attr _]  => :ea_
+   [_ attr val] => :_av
+   [id _ _]     => :e__
+   [_ attr _]   => :_a_"
   [db & patterns]
   (let [f (last patterns)]
     (doseq [pattern (seq (drop-last patterns))]
@@ -171,7 +182,7 @@
   "Returns entity for resolved id."
   [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (log-read [:id] conj [id])
+    (log-read [:e__] conj [id])
     (some-> (get-in* db-snap [:eav id])
             (assoc id-attr id))))
 
@@ -179,23 +190,23 @@
   "Get attribute in entity with given id."
   ([db-snap id attr]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:entity-attr id] fnil-conj-set [id attr])
+     (log-read [:ea_ id] fnil-conj-set [id attr])
      (get-in* db-snap [:eav id attr])))
   ([db-snap id attr not-found]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:entity-attr id] fnil-conj-set [id attr])
+     (log-read [:ea_ id] fnil-conj-set [id attr])
      (get-in* db-snap [:eav id attr] not-found))))
 
 (defn get-in
   "Get-in the entity with given id."
   ([db-snap id ks]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:entity-attr id] fnil-conj-set [id (first ks)])
+     (log-read [:ea_ id] fnil-conj-set [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks))))
   ([db-snap id ks not-found]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:entity-attr id] fnil-conj-set [id (first ks)])
+     (log-read [:ea_ id] fnil-conj-set [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks not-found)))))
 
@@ -203,7 +214,7 @@
   "Select keys from entity of id"
   [db-snap id ks]
   (when-let [id (resolve-id db-snap id)]
-    (log-read [:entity-attr id] into (mapv #(do [id %]) ks))
+    (log-read [:ea_ id] into (mapv #(do [id %]) ks))
     (-> (get-in* db-snap [:eav id])
         (assoc id-attr id)
         (select-keys* ks))))
@@ -321,12 +332,14 @@
     (fn [db-snap attr val]
       (let [schema (get-schema db-snap attr)
             prev-val (get* prev-m attr)]
-        (if (many? schema)
-          (update-index db-snap id attr
-                        (set/difference val prev-val)
-                        (set/difference prev-val val)
-                        schema)
-          (update-index db-snap id attr val prev-val schema))))
+        (cond (many? schema)
+              (update-index db-snap id attr
+                            (set/difference val prev-val)
+                            (set/difference prev-val val)
+                            schema)
+              (not= val prev-val)
+              (update-index db-snap id attr val prev-val schema)
+              :else db-snap)))
     db-snap m))
 
 (defn add-map-datoms [datoms id m prev-m db-snap]
@@ -383,21 +396,21 @@
         (swap! seen-ids conj (datom 0))
 
         ;; entity-attr listeners
-        (doseq [f (get-in* listeners [:entity-attr id a])]
+        (doseq [f (get-in* listeners [:ea_ id a])]
           (f datom))
 
         ;; attr-val listeners
         (doseq [v (cond-> (or v prev-v)
                           (not (many? a)) (list))]
-          (doseq [f (get-in* listeners [:attr-val a v])]
+          (doseq [f (get-in* listeners [:_av a v])]
             (f datom)))
 
         ;; attr listeners
-        (doseq [f (get-in* listeners [:attr a])]
+        (doseq [f (get-in* listeners [:_a_ a])]
           (f datom)))
 
       (doseq [id @seen-ids]
-        (doseq [f (get-in* listeners [:entity id])]
+        (doseq [f (get-in* listeners [:e__ id])]
           (f id)))
 
       ;; tx-log listeners
@@ -469,12 +482,12 @@
                           (reduce-kv (fn [s id entity] (if ^:boolean (q entity) (conj s id) s)) #{} (get* db-snap :eav))
 
                           (keyword? q)
-                          (do (log-read [:attr] conj [nil q nil])
+                          (do (log-read [:_a_] conj [nil q nil])
                               (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :eav)))
 
                           :else
                           (let [[attr val] q]
-                            (log-read [:attr-val] conj [nil attr val])
+                            (log-read [:_av] conj [nil attr val])
                             (if (index? db-snap attr)
                               (get-in* db-snap [:ave attr val])
                               (do (when ^:boolean (true? *debug*) (println (str "Not an indexed attribute: " attr)))
@@ -489,14 +502,14 @@
   (str (uuid-utils/make-random-uuid)))
 
 (def blank-access-log
-  {:id          #{}
-   :attr        #{}
-   :attr-val    #{}
-   :entity-attr {}})
+  {:e__ #{}
+   :_a_ #{}
+   :_av #{}
+   :ea_ {}})
 
 (defn access-log-patterns
   "Returns vector of access log patterns, pruning overlapping patterns"
-  [{ids :id attr-vals :attr-val entity-attrs :entity-attr attrs :attr }]
+  [{ids :e__ attr-vals :_av entity-attrs :ea_ attrs :_a_}]
   (apply set/union
          ids
          attr-vals
