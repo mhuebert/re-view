@@ -1,6 +1,7 @@
 (ns re-view.render-loop)
 
 (set! *warn-on-infer* true)
+(def ^:dynamic *immediate-state-update* false)
 
 (def ^:private count-fps? false)
 (def ^:private last-fps-time 1)
@@ -32,10 +33,6 @@
   (set! to-run (conj to-run f))
   (request-render))
 
-(defn force-update [this]
-  (set! to-render (conj to-render this))
-  (request-render))
-
 (defn force-update! [^js/React.Component this]
   (set! to-render (disj to-render this))
   (when-not (true? (.-unmounted this))
@@ -45,6 +42,13 @@
              (on-error e)
              (do (.debug js/console "No :on-error method in component" this)
                  (.error js/console e)))))))
+
+(defn force-update [this]
+  (if (true? *immediate-state-update*)
+    (force-update! this)
+    (do
+      (set! to-render (conj to-render this))
+      (request-render))))
 
 (defn flush!
   []

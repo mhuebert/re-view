@@ -7,19 +7,36 @@
     [goog History]
     [goog Uri]))
 
+
+(def browser? (exists? js/window))
+(def history-support? (when browser? (.isSupported Html5History)))
+
+;; from http://www.lispcast.com/mastering-client-side-routing-with-secretary-and-goog-history
+;; Replace this method:
+;;  https://closure-library.googlecode.com/git-history/docs/local_closure_goog_history_html5history.js.source.html#line237
+(aset js/goog.history.Html5History.prototype "getUrl_"
+      (fn [token]
+        (this-as this
+          (if (.-useFragment_ this)
+            (str "#" token)
+            (str (.-pathPrefix_ this) token)))))
+
 (defn get-route []
-  (if (Html5History.isSupported)
+  (if history-support?
     (str js/window.location.pathname js/window.location.search)
-    js/window.location.pathname))
+    (if (= js/window.location.pathname "/")
+      (.substring js/window.location.hash 1)
+      (str js/window.location.pathname js/window.location.search))))
 
 (defn tokenize
   "Split route into tokens, ignoring leading and trailing slashes."
   [route]
   (let [segments (-> route
                      (string/replace #"[#?].*" "")
-                     (string/split \/ -1))]
+                     (string/split \/ -1))
+        segments (cond-> segments
+                         (= "" (first segments)) (subvec 1))]
     (cond-> segments
-            (= "" (first segments)) (subvec 1)
             (= "" (last segments)) (pop))))
 
 (defn query [path]
@@ -34,11 +51,11 @@
                     (tokenize "a/b/")
                     (tokenize "a/b") ["a" "b"])))
 
-(def browser? (exists? js/window))
+
 
 (defn make-history []
   (when browser?
-    (if (Html5History.isSupported)
+    (if history-support?
       (doto (Html5History.)
         (.setPathPrefix (str js/window.location.protocol
                              "//"
@@ -47,8 +64,6 @@
       (if (not= "/" js/window.location.pathname)
         (aset js/window "location" (str "/#" (get-route)))
         (History.)))))
-
-
 
 (def history
   (make-history))

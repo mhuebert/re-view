@@ -16,6 +16,7 @@
 
 (def ^:dynamic *trigger-state-render* true)
 
+
 (defn camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
   [s]
@@ -38,7 +39,8 @@
   [this]
   (when-let [will-receive (aget this "componentWillReceiveState")]
     (.call will-receive this))
-  (when *trigger-state-render* (force-update this)))
+  (when *trigger-state-render*
+    (force-update this)))
 
 (defn mounted?
   "Manually tracks mounted state (to avoid async renders of unmounted components)"
@@ -105,7 +107,7 @@
     (:initial-state
       :key
       :constructor) f
-    (:will-mount :will-unmount :will-receive-state :will-update)
+    (:will-mount :will-unmount :will-receive-state :will-receive-props :will-update)
     (fn [& args]
       (binding [*trigger-state-render* false]
         (this-as this (apply f this args))))
@@ -128,7 +130,6 @@
 
     (add-watch a :state-changed (fn [_ _ old-state new-state]
                                   (when (not= old-state new-state)
-
                                     (aset this "re$view" "prevState" old-state)
                                     (respond-to-changed-state this))))
     a))
@@ -155,8 +156,9 @@
   (->> (collect [{:constructor        (fn ReView [$props]
                                         (this-as this
                                           (init-props this $props)
-                                          (when-let [initial-state (aget this "$getInitialState")]
-                                            (init-state this (if (fn? initial-state) (initial-state this) initial-state)))
+                                          (when-not (undefined? (aget this "$getInitialState"))
+                                            (let [initial-state (aget this "$getInitialState")]
+                                              (init-state this (if (fn? initial-state) (initial-state this) initial-state))))
                                           this))
                   :will-receive-props (fn [this props]
                                         (let [{prev-props :view/props prev-children :view/children :as this} this]
