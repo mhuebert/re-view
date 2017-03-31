@@ -14,7 +14,7 @@
 ;; from http://www.lispcast.com/mastering-client-side-routing-with-secretary-and-goog-history
 ;; Replace this method:
 ;;  https://closure-library.googlecode.com/git-history/docs/local_closure_goog_history_html5history.js.source.html#line237
-(aset js/goog.history.Html5History.prototype "getUrl_"
+(set! (.. js/goog -history -Html5History -prototype -getUrl_)
       (fn [token]
         (this-as this
           (if (.-useFragment_ this)
