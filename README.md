@@ -49,6 +49,9 @@ If the first argument to a view is not a map, it is passed as a child (only a ma
 
 ### Changelog
 
+0.3.3
+- Classes provided in props, eg. {:className "bg-black"}, are listed *after* classes provided in element keywords, eg. :div.bg-black, so that dynamically-provided classes take precedence over statically written classes.
+
 0.3.1
 - A `:ref` must be a function, instead of a string (see: https://facebook.github.io/react/docs/refs-and-the-dom.html)
 - State is provided by an atom under the key `:view/state`, and only when `:initial-state` is present

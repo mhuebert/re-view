@@ -46,7 +46,7 @@
   (if props
     (cond-> (if props (clj->js props) #js {})
             id (doto (aset "id" id))
-            classes (doto (aset "className" (str className classes))))))
+            classes (doto (aset "className" (str classes className))))))
 
 (defn clj-props
   "Apply id & classes to clj-map props"
