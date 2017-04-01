@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view "0.3.3"
+(defproject org.clojars.mhuebert/re-view "0.3.4-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
