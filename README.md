@@ -49,6 +49,9 @@ If the first argument to a view is not a map, it is passed as a child (only a ma
 
 ### Changelog
 
+0.3.4
+- Add 'swap-silently!' method to swap state without triggering re-render
+
 0.3.3
 - Classes provided in props, eg. {:className "bg-black"}, are listed *after* classes provided in element keywords, eg. :div.bg-black, so that dynamically-provided classes take precedence over statically written classes.
 

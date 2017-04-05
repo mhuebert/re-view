@@ -148,19 +148,11 @@
                               "children" nil}))
   this)
 
-
 (defn wrap-lifecycle-methods
   "Lifecycle methods are wrapped to manage CLJS props and state
    and provide default behaviour."
   [methods]
-  (->> (collect [{:constructor        (fn ReView [$props]
-                                        (this-as this
-                                          (init-props this $props)
-                                          (when-not (undefined? (aget this "$getInitialState"))
-                                            (let [initial-state (aget this "$getInitialState")]
-                                              (init-state this (if (fn? initial-state) (initial-state this) initial-state))))
-                                          this))
-                  :will-receive-props (fn [this props]
+  (->> (collect [{:will-receive-props (fn [this props]
                                         (let [{prev-props :view/props prev-children :view/children :as this} this]
                                           (let [next-props (aget props "re$props")]
                                             (aset this "re$view" "props" next-props)
@@ -215,7 +207,11 @@
     IReset
     (-reset! [this v] (.error js/console "[deprecated reset! of component - use :view/state atom]"))))
 
-
+(defn swap-silently!
+  "Swap state without causing component to re-render"
+  [& args]
+  (binding [*trigger-state-render* false]
+    (apply swap! args)))
 
 (def ^:export ReactComponent
   (do
@@ -235,12 +231,12 @@
   (or (some-> (aget element "type") (aget (camelCase (name k))))
       (get (mock element) k)))
 
-(defn extend-react-component [display-name {:keys [constructor] :as child}]
-  (let [ReactView constructor]
-    (aset ReactView "prototype" (reduce-kv (fn [m k v]
-                                             (doto m (aset (get kmap k) v))) (new ReactComponent) child))
-    (aset ReactView "displayName" display-name)
-    ReactView))
+(defn extend-react-component [constructor display-name child]
+  (let [proto (reduce-kv (fn [m k v]
+                           (doto m (aset (get kmap k) v))) (new ReactComponent) child)]
+    (doto constructor
+      (aset "prototype" proto)
+      (aset "displayName" display-name))))
 
 (defn factory
   [class key display-name element-keys]
@@ -263,7 +259,7 @@
                                    "re$children" children
                                    "re$element"  element-keys}))))
 
-(defn view
+(defn ^:export view
   "Returns a React component factory for supplied lifecycle methods.
    Expects a single map of functions, or any number of key-function pairs,
 
@@ -280,7 +276,7 @@
      (fn [this] [:div ...]))
 
    See other functions in this namespace for how to work with props and state.
-   Result of :render function is automatically wrapped in sablono.core/html,
+   Result of :render function is automatically passed through hiccup/element,
    unless it is already a valid React element.
    "
   [methods]
@@ -296,9 +292,16 @@
                                                   (assoc-in m [:static-keys (camelCase (name k))] v)
                                                   :else
                                                   (assoc-in m [:element-keys (camelCase (name k))] v))) {} methods)
+        constructor (fn Element [$props]
+                      (this-as this
+                        (init-props this $props)
+                        (when-not (undefined? (aget this "$getInitialState"))
+                          (let [initial-state (aget this "$getInitialState")]
+                            (init-state this (if (fn? initial-state) (initial-state this) initial-state))))
+                        this))
         class (->> lifecycle
                    (wrap-lifecycle-methods)
-                   (extend-react-component display-name))]
+                   (extend-react-component constructor display-name))]
     (doseq [[k v] (seq static-keys)]
       (aset class k v))
     (factory class key display-name element-keys)))
