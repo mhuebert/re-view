@@ -22,13 +22,6 @@
   [s]
   (clojure.string/replace s #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
 
-(defn ref
-  "[deprecated - no longer supported by React]
-  Returns the component associated with a component's React ref."
-  [component name]
-  (.warn js/console "Should not be calling 'ref'" name)
-  #_(some-> (aget component "refs") (aget name)))
-
 (defn dom-node
   "Return DOM node for component"
   [component]
@@ -107,10 +100,19 @@
     (:initial-state
       :key
       :constructor) f
-    (:will-mount :will-unmount :will-receive-state :will-receive-props :will-update)
-    (fn [& args]
+    :will-receive-props
+    (fn [props]
       (binding [*trigger-state-render* false]
-        (this-as this (apply f this args))))
+        (this-as this (f this props))))
+    (:will-mount :will-unmount :will-receive-state :will-update)
+    (fn []
+      (binding [*trigger-state-render* false]
+        (this-as this
+          (apply f this (get this :view/children)))))
+    (:did-mount :did-update)
+    (fn []
+      (this-as this
+        (apply f this (get this :view/children))))
     (if (fn? f)
       (fn [& args]
         (this-as this
@@ -195,17 +197,7 @@
                                  (= "view" (namespace k))
                                  (camelCase (name k)))]
          (aget this "re$view" re-view-var)
-         (get (aget this "re$view" "props") k not-found))))
-
-    ISwap
-    (-swap!
-      ([this f] (.error js/console "[deprecated calling swap! directly on component - use :view/state atom]"))
-      ([this f a] (.error js/console "[deprecated calling swap! directly on component - use :view/state atom]"))
-      ([this f a b] (.error js/console "[deprecated calling swap! directly on component - use :view/state atom]"))
-      ([this f a b xs] (.error js/console "[deprecated calling swap! directly on component - use :view/state atom]")))
-
-    IReset
-    (-reset! [this v] (.error js/console "[deprecated reset! of component - use :view/state atom]"))))
+         (get (aget this "re$view" "props") k not-found))))))
 
 (defn swap-silently!
   "Swap state without causing component to re-render"
