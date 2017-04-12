@@ -1,19 +1,23 @@
 (ns re-db.core
   (:refer-clojure :exclude [peek]))
 
-(defmacro capture-patterns [& body]
+(defmacro capture-patterns
+  "Evaluates body, returning map with evaluation result and read patterns."
+  [& body]
   `(binding [~'re-db.core/*access-log* ~'re-db.core/blank-access-log]
      (let [value# (do ~@body)
            patterns# ~'re-db.core/*access-log*]
        {:value    value#
         :patterns (~'re-db.core/access-log-patterns patterns#)})))
 
-(defmacro peek [& body]
+(defmacro peek
+  "Evaluates body without tracking read patterns."
+  [& body]
   `(binding [~'re-db.core/*access-log* nil]
      (do ~@body)))
 
 (defmacro get-in*
-  "Compile to threaded get expressions, small performance boost"
+  "Compiled version of get-in, small performance boost over the `get-in` function."
   ([m ks]
    (if-not (vector? ks)
      `(clojure.core/get-in ~m ~ks)

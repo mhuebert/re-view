@@ -1,6 +1,6 @@
 (ns re-db.core-test
   (:require [cljs.test :refer-macros [deftest is testing]]
-            [re-db.core2 :as d :include-macros true])
+            [re-db.core :as d :include-macros true])
   (:require-macros [tests.helpers :refer [throws]]))
 
 (deftest basic
@@ -135,17 +135,29 @@
       (is (= #{"pete"} (d/get @db "fred" :children))
           "attribute has correct value"))
 
-    (testing "unique cardinality/many attribute"
 
-      (d/merge-schema! db {:pets {:db/cardinality :db.cardinality/many
+
+    (testing "unique attrs, duplicates"
+
+      (d/merge-schema! db {:ssn  {:db/index :db.index/unique}
+                           :pets {:db/cardinality :db.cardinality/many
                                   :db/index       :db.index/unique}})
 
+
+      ;; cardinality single
+      (d/transact! db [[:db/add "fred" :ssn "123"]])
+      (is (= "fred" (:db/id (d/entity @db [:ssn "123"]))))
+      (throws (d/transact! db [[:db/add "herman" :ssn "123"]])
+              "Cannot have two entities with the same unique attr")
+
+      ;; cardinality many
       (d/transact! db [[:db/add "fred" :pets #{"fido"}]])
-
       (is (= "fred" (:db/id (d/entity @db [:pets "fido"]))))
-
-      (throws (d/transact! db [[:db/add "herman" :pets #{"fido"}]])
-              "some message"))))
+      #_(throws (d/transact! db [[:db/add "herman" :pets #{"fido"}]])
+              "Two entities with same unique :db.cardinality/many attr")
+      (throws (d/transact! db [{:db/id "herman"
+                                :pets  #{"fido"}}])
+              "Two entities with same unique :db.cardinality/many attr"))))
 
 (deftest listeners
   (let [db (d/create {:person/children {:db/cardinality :db.cardinality/many
