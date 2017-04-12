@@ -222,10 +222,17 @@
     entity
     (get-in* db-snap [:vae id])))
 
+(defn- assert-uniqueness [db-snap id attr val]
+  (when-not (empty? (get-in* db-snap [:ave attr val]))
+    (throw (js/Error. (str "Unique index on " attr "; attempted to write duplicate value " val " on id " id ".")))))
+
 (defn- add-index [db-snap id a v schema]
-  (cond-> db-snap
-          (index? schema) (update-in [:ave a v] fnil-conj-set id)
-          (ref? schema) (update-in [:vae v a] fnil-conj-set id)))
+  (let [index (get* schema :db/index)]
+    (when (keyword-identical? index :db.index/unique)
+      (assert-uniqueness db-snap id a v))
+    (cond-> db-snap
+            (not (nil? index)) (update-in [:ave a v] fnil-conj-set id)
+            (ref? schema) (update-in [:vae v a] fnil-conj-set id))))
 
 (defn- add-index-many [db-snap id attr added schema]
   (reduce (fn [state v]
@@ -291,10 +298,6 @@
           state
           (entity (state 0) id)))
 
-(defn- assert-uniqueness [ave-index id attr val]
-  (when-not (empty? (get-in* ave-index [attr val]))
-    (throw (js/Error. (str "Unique index on " attr "; attempted to write duplicate value " val " on id " id ".")))))
-
 (defn- add
   [[db-snap datoms :as state] id attr val]
   {:pre [(not (keyword-identical? attr :db/id))]}
@@ -304,23 +307,16 @@
       (let [additions (set/difference val prev-val)]
         (if (empty? additions)
           state
-          (do
-            (when (unique? schema) (let [index (get* db-snap :ave)]
-                                     (doseq [val additions]
-                                       (assert-uniqueness index id attr val))))
-            [(-> (update-in db-snap [:eav id attr] fnil-into-set additions)
-                 (update-index id attr additions nil schema))
-             (cond-> datoms
-                     (true? *notify*) (conj! [id attr additions nil]))])))
+          [(-> (update-in db-snap [:eav id attr] fnil-into-set additions)
+               (update-index id attr additions nil schema))
+           (cond-> datoms
+                   (true? *notify*) (conj! [id attr additions nil]))]))
       (if (= prev-val val)
         state
-        (do
-          (when (unique? schema)
-            (assert-uniqueness (get* db-snap :ave) id attr val))
-          [(-> (assoc-in db-snap [:eav id attr] val)
-               (update-index id attr val prev-val schema))
-           (cond-> datoms
-                   (true? *notify*) (conj! [id attr val prev-val]))])))))
+        [(-> (assoc-in db-snap [:eav id attr] val)
+             (update-index id attr val prev-val schema))
+         (cond-> datoms
+                 (true? *notify*) (conj! [id attr val prev-val]))]))))
 
 (defn add-map-indexes [db-snap id m prev-m]
   (reduce-kv
@@ -359,12 +355,6 @@
   (let [id (get* m :db/id)
         m (dissoc m :db/id)
         prev-m (get-in* db-snap [:eav id])]
-
-    (let [index (get* db-snap :ave)]
-      (doseq [[attr val] (seq m)]
-        (when (unique? db-snap attr)
-          (doseq [val (if (many? db-snap attr) val [val])]
-            (assert-uniqueness index id attr val)))))
     [(-> (assoc-in db-snap [:eav id] (remove-nils (merge prev-m m)))
          (add-map-indexes id m prev-m)
          (clear-empty-ent id))
