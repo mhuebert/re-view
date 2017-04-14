@@ -1,19 +1,21 @@
 (ns re-view.subscriptions-test
-  (:require [cljs.test :refer [deftest is are testing]]
-            [re-db.d :as d]
-            [re-view.core :as v :refer [defview]]
-            [re-view.subscriptions :as subs :include-macros true]))
+  (:require
+    [cljs.test :refer [deftest is are testing]]
+    [re-db.d :as d]
+    [re-view.core :as v :refer [defview]]
+    [re-view.subscriptions :as subs :include-macros true]))
 
 
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 
 (def log (atom []))
 
-(defview test-c [{:keys [db/id]}]
+(defview test-c
+  [{:keys [db/id]}]
   (swap! log conj (d/get id :name))
   [:div "hello"])
 
-(d/transact! [{:db/id         1
+(d/transact! [{:db/id      1
                :name       "Herbert"
                :occupation "Chimney Sweep"}])
 

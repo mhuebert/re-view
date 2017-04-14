@@ -6,6 +6,7 @@
             [re-view.render-loop :as render-loop]
             [re-view.hiccup :as hiccup]
             [clojure.string :as string]
+            [goog.dom :as gdom]
             [cljsjs.react]))
 
 
@@ -26,6 +27,16 @@
   "Return DOM node for component"
   [component]
   (.findDOMNode js/ReactDOM component))
+
+(defn focus
+  "Focus the first input|textarea in a component"
+  [component]
+  (let [node (dom-node component)
+        p #(#{"INPUT" "TEXTAREA"} (.-tagName %))]
+    (if (p node)
+      (.focus node)
+      (some-> (gdom/findNode node p)
+              (.focus)))))
 
 (defn respond-to-changed-state
   "Calls lifecycle method and triggers async render"

@@ -99,7 +99,12 @@
 
 (defonce _ (intercept-clicks))
 
-(defn on-route-change [cb fire-now?]
+(defn parse-route [x]
+  {:query  (query x)
+   :tokens (tokenize x)
+   :path   x})
+
+(defn on-location-change [cb fire-now?]
   (when fire-now? (cb (get-route)))
-  (goog.events/listen history EventType.NAVIGATE #(cb (get-route))))
+  (goog.events/listen history EventType.NAVIGATE #(cb (parse-route (get-route)))))
 

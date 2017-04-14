@@ -8,7 +8,7 @@
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 (def log (atom []))
 
-(defonce _ (r/on-route-change #(d/transact! [[:db/add ::state :route (r/tokenize %)]])))
+(defonce _ (r/on-location-change #(d/transact! [[:db/add ::state :route (:tokens %)]])))
 
 (defview index []
   (swap! log conj [:index])

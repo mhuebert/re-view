@@ -1,7 +1,6 @@
 (ns re-view.core-test
-  (:require [cljs.test :refer [deftest is are testing]]
-            [cljsjs.react]
-            [cljsjs.react.dom]
+  (:require [cljsjs.react.dom]
+            [cljs.test :refer [deftest is are testing]]
             [re-view.core :as v :refer [defview]]))
 
 
@@ -18,34 +17,34 @@
                                                               :view/prev-props
                                                               :view/prev-state
                                                               :view/children])
-                                      :view/state @(:view/state this)))
+                                      :view/state (some-> (:view/state this) (deref))))
   true)
 
 (def initial-state {:eaten? false})
 
 (defview apple
-  {:initial-state      (fn [& args]
-                         (apply (partial log-args :get-initial-state) args)
+  {:initial-state      (fn [this]
+                         (log-args :get-initial-state this)
                          initial-state)
 
-   :will-mount         (partial log-args :will-mount)
+   :will-mount         #(log-args :will-mount %1)
 
-   :did-mount          (partial log-args :did-mount)
+   :did-mount          #(log-args :did-mount %1)
 
-   :will-receive-props (partial log-args :will-receive-props)
+   :will-receive-props #(log-args :will-receive-props %1)
 
-   :will-receive-state (partial log-args :will-receive-state)
+   :will-receive-state #(log-args :will-receive-state %1)
 
-   :should-update      (partial log-args :should-update)
+   :should-update      #(log-args :should-update %1)
 
-   :will-update        (partial log-args :will-update)
+   :will-update        #(log-args :will-update %1)
 
-   :did-update         (partial log-args :did-update)
+   :did-update         #(log-args :did-update %1)
 
-   :will-unmount       (partial log-args :will-unmount)
+   :will-unmount       #(log-args :will-unmount %1)
    :pRef               (fn [& args]
                          (println "I am a ref that was called!" args))}
-  [{:keys [view/state] :as this}]
+  [{:keys [view/state] :as this} _]
   (log-args :render this)
   (swap! render-count inc)
   [:div "I am an apple."
@@ -56,7 +55,7 @@
 
 ;; a heavily logged component
 
-(def util js/React.addons.TestUtils)
+(def util (.. js/ReactDOM -__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED -ReactTestUtils))
 (def init-props {:color "red"})
 (def init-child [:div {:style {:width        100
                                :height       100
@@ -70,6 +69,7 @@
   (let [el (append-el)
         render #(v/render-to-node (apple %1 %2) el)
         c (render init-props init-child)]
+
 
     (testing "initial state"
       (is (false? (:eaten? @(:view/state c))))
@@ -93,7 +93,7 @@
     (testing "render with new props"
 
       (render {:color "green"} nil)
-      (is (= "green" (get-in c [:view/props :color]))
+      (is (= "green" (:color c))
           "Update Props")
       (is (= 3 @render-count)
           "Force rendered"))
@@ -135,18 +135,18 @@
       (render {:color "blue"})
 
       (is (= "pink" (get-in this [:view/prev-props :color])))
-      (is (= "blue" (get-in this [:view/props :color])))
+      (is (= "blue" (:color this)))
 
 
       (render {:color "yellow"})
       (render {:color "mink"})
 
       (is (= "yellow" (get-in this [:view/prev-props :color])))
-      (is (= "mink" (get-in this [:view/props :color])))
+      (is (= "mink" (:color this)))
 
       (render {:color "bear"})
       (is (= "mink" (get-in this [:view/prev-props :color])))
-      (is (= "bear" (get-in this [:view/props :color]))))
+      (is (= "bear" (:color this))))
 
     (testing "state transition"
 
