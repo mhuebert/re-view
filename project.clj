@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view "0.3.7"
+(defproject org.clojars.mhuebert/re-view "0.3.8-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -34,5 +34,8 @@
                         :compiler     {:output-to      "resources/public/js/test.js"
                                        :output-dir     "resources/public/js/test"
                                        :main           tests.runner
+                                       :asset-path     "js/test"
                                        :optimizations  :none
-                                       :source-map-dir "resources/public/js/"}}]})
+                                       :source-map-dir "resources/public/js/"}}]}
+  :profiles {:dev {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
+                                  [cljsjs/react-dom "15.5.0-0"]]}})
