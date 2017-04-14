@@ -105,6 +105,6 @@
    :path   x})
 
 (defn on-location-change [cb fire-now?]
-  (when fire-now? (cb (get-route)))
+  (when fire-now? (cb (parse-route (get-route))))
   (goog.events/listen history EventType.NAVIGATE #(cb (parse-route (get-route)))))
 

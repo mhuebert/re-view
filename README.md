@@ -49,6 +49,10 @@ If the first argument to a view is not a map, it is passed as a child (only a ma
 
 ### Changelog
 
+0.3.7
+- Rename routing/on-route-change -> routing/on-location-change, pass *parsed* route to callback
+- Fixed tests
+
 0.3.4
 - Add 'swap-silently!' method to swap state without triggering re-render
 
