@@ -1,0 +1,13 @@
+{
+  "name": "re_view_web",
+  "version": "1.0.0",
+  "main": " ",
+  "license": "MIT",
+  "dependencies": {
+    "firebaseui": "^1.0.1",
+    "material-components-web": "^0.9.1",
+    "node-sass": "^4.5.2",
+    "prosemirror-view": "^0.20.4",
+    "tachyons": "^4.7.1"
+  }
+}
