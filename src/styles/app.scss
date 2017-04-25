@@ -15,9 +15,15 @@
 @import '../../node_modules/@material/snackbar/mdc-snackbar';
 @import '../../node_modules/@material/switch/mdc-switch';
 @import '../../node_modules/@material/textfield/mdc-textfield';
+@import '../../node_modules/@material/typography/mdc-typography';
 @import '../../node_modules/@material/theme/mdc-theme';
 
 @import '../../node_modules/tachyons/css/tachyons';
+
+html, body, #app {
+  min-height: 100%;
+  margin: 0;
+}
 
 blockquote {
   border-left: 3px solid #ddd;
@@ -28,3 +34,29 @@ blockquote:after, blockquote:before {
   display: none;
 }
 
+@for $i from 1 through 10 {
+  .bg-darken-#{$i} {
+    background-color: rgba(0,0,0,0.025 * $i);
+  }
+}
+
+@for $i from 1 through 10 {
+  .hover-bg-darken-#{$i}:hover {
+    background-color: rgba(0,0,0,0.025 * $i);
+  }
+}
+
+@for $i from 1 through 10 {
+  .b--darken-#{$i} {
+    border-color: rgba(0,0,0,0.025 * $i);
+  }
+}
+
+@for $i from 1 through 10 {
+  .hover-o-#{$i * 10}:hover {
+    opacity: $i / 10;
+  }
+}
+input, textarea, select, button {
+  color: inherit;
+}
