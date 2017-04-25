@@ -46,7 +46,7 @@
   (if props
     (cond-> (if props (clj->js props) #js {})
             id (doto (aset "id" id))
-            classes (doto (aset "className" (str classes className))))))
+            classes (doto (aset "className" (str classes " " className))))))
 
 (defn clj-props
   "Apply id & classes to clj-map props"
@@ -80,7 +80,9 @@
           (apply (.-createElement js/React) k (js-props id classes props) children)))
     (catch js/Error e
       (when (exists? js/window)
-        (println :hiccup-render-fail form)))))
+        (try (println :hiccup-render-fail form)
+             (catch js/Error e
+               (.log js/console "hiccup-render-fail" form)))))))
 
 
 (defn element

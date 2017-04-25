@@ -49,6 +49,16 @@ If the first argument to a view is not a map, it is passed as a child (only a ma
 
 ### Changelog
 
+0.3.9
+- Support docstrings in `defview`
+- Pass children as add'l args to :initial-state
+- Better handling of links in router to allow scrolling on anchor/hash links
+- Do not include `ref` attribute in `props`
+- `re-view-example` namespace with helpers for preparing component examples
+
+0.3.8
+- Bugfix on-location-change 
+
 0.3.7
 - Rename routing/on-route-change -> routing/on-location-change, pass *parsed* route to callback
 - Fixed tests

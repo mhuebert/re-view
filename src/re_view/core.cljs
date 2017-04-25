@@ -7,7 +7,9 @@
             [re-view.hiccup :as hiccup]
             [clojure.string :as string]
             [goog.dom :as gdom]
-            [cljsjs.react]))
+            [goog.object :as gobj]
+            [cljsjs.react]
+            [cljsjs.react.dom]))
 
 
 (def schedule! render-loop/schedule!)
@@ -16,7 +18,6 @@
 (def flush! render-loop/flush!)
 
 (def ^:dynamic *trigger-state-render* true)
-
 
 (defn camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
@@ -83,6 +84,11 @@
     (seq (remove nil? items))
     [items]))
 
+(defn concat-fns [& fns]
+  (fn [& args]
+    (doseq [f fns]
+      (apply f args))))
+
 (defn wrap-methods
   [method-k f]
   (case method-k
@@ -94,10 +100,8 @@
                                     :when update?]
                                 true)))
                      f)
-    (if (vector? f)
-      (fn [& args]
-        (doseq [f f] (apply f args)))
-      f)))
+    (if (vector? f) (apply concat-fns f)
+                    f)))
 
 (defn collect [methods]
   (->> (apply merge-with (fn [a b] (if (vector? a) (conj a b) [a b])) methods)
@@ -200,7 +204,9 @@
        (if-let [re-view-var (and (keyword? k)
                                  (= "view" (namespace k))
                                  (camelCase (name k)))]
-         (aget this "re$view" re-view-var)
+         (do (when (and (= re-view-var "state") (not (gobj/containsKey (aget this "re$view") "state")))
+               (aset this "re$view" "state" (init-state this nil)))
+             (aget this "re$view" re-view-var))
          (get (aget this "re$view" "props") k)))
       ([this k not-found]
        (when ^:boolean (false? *read-props?*) (set! *read-props?* true))
@@ -258,11 +264,11 @@
                                                              :else (throw (js/Error "Invalid key supplied to component"))))
                                                      display-name)
                                    "ref"         ref
-                                   "re$props"    props
+                                   "re$props"    (dissoc props :ref)
                                    "re$children" children
                                    "re$element"  element-keys}))))
 
-(defn ^:export view
+(defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
    Expects a single map of functions, or any number of key-function pairs,
 
@@ -300,7 +306,7 @@
                         (init-props this $props)
                         (when-not (undefined? (aget this "$getInitialState"))
                           (let [initial-state (aget this "$getInitialState")]
-                            (init-state this (if (fn? initial-state) (initial-state this) initial-state))))
+                            (init-state this (if (fn? initial-state) (apply initial-state this (get this :view/children)) initial-state))))
                         this))
         class (->> lifecycle
                    (wrap-lifecycle-methods)

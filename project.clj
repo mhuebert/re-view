@@ -1,41 +1,48 @@
 (defproject org.clojars.mhuebert/re-view "0.3.9-SNAPSHOT"
-  :description "Tiny React wrapper"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.293"]
-                 [org.clojars.mhuebert/re-db "0.1.8"]
-                 [org.clojure/core.match "0.3.0-alpha4"]]
+            :description "Tiny React wrapper"
+            :url "http://example.com/FIXME"
+            :license {:name "Eclipse Public License"
+                      :url  "http://www.eclipse.org/legal/epl-v10.html"}
+            :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
+                           [org.clojure/clojurescript "1.9.293"]
+                           [org.clojars.mhuebert/re-db "0.1.8"]
+                           [org.clojure/core.match "0.3.0-alpha4"]
+                           [org.clojars.mhuebert/re-view-material "0.1.0-SNAPSHOT"]
 
-  :plugins [[lein-cljsbuild "1.1.2"]
-            [lein-figwheel "0.5.0-2"]
-            [lein-doo "0.1.6"]]
 
-  :source-paths ["src"]
+                           ]
 
-  :doo {:build "test"}
+            :plugins [[lein-cljsbuild "1.1.2"]
+                      [lein-figwheel "0.5.0-2"]
+                      [lein-doo "0.1.6"]]
 
-  :lein-release {:deploy-via :clojars}
+            :provided {:dependencies [] #_[[cljsjs/react-dom "15.5.0-0"]
+                                      [cljsjs/react "15.5.0-0"]]}
 
-  :cljsbuild {:builds [{:id           "dev"
-                        :source-paths ["src"]
-                        :figwheel     {:on-jsload "app.test/run"}
-                        :compiler     {:main                 app.core
-                                       ;:parallel-build       true
-                                       :asset-path           "/js/compiled/out"
-                                       :output-to            "resources/public/js/compiled/outliner.js"
-                                       :output-dir           "resources/public/js/compiled/out"
-                                       :source-map-timestamp true
-                                       :cache-analysis       true}}
+            :source-paths ["src" "example"]
 
-                       {:id           "test"
-                        :source-paths ["src" "test"]
-                        :compiler     {:output-to      "resources/public/js/test.js"
-                                       :output-dir     "resources/public/js/test"
-                                       :main           tests.runner
-                                       :asset-path     "js/test"
-                                       :optimizations  :none
-                                       :source-map-dir "resources/public/js/"}}]}
-  :profiles {:dev {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
-                                  [cljsjs/react-dom "15.5.0-0"]]}})
+            :doo {:build "test"}
+
+            :lein-release {:deploy-via :clojars}
+
+            :cljsbuild {:builds [{:id           "dev"
+                                  :source-paths ["src"]
+                                  :figwheel     {:on-jsload "app.test/run"}
+                                  :compiler     {:main                 app.core
+                                                 ;:parallel-build       true
+                                                 :asset-path           "/js/compiled/out"
+                                                 :output-to            "resources/public/js/compiled/outliner.js"
+                                                 :output-dir           "resources/public/js/compiled/out"
+                                                 :source-map-timestamp true
+                                                 :cache-analysis       true}}
+
+                                 {:id           "test"
+                                  :source-paths ["src" "test"]
+                                  :compiler     {:output-to      "resources/public/js/test.js"
+                                                 :output-dir     "resources/public/js/test"
+                                                 :main           tests.runner
+                                                 :asset-path     "js/test"
+                                                 :optimizations  :none
+                                                 :source-map-dir "resources/public/js/"}}]}
+            :profiles {:dev {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
+                                            [cljsjs/react-dom "15.5.0-0"]]}})
