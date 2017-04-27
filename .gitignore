@@ -1,6 +1,8 @@
+node_modules
 target
 .idea
 pom.xml*
 *.log
 *.iml
 resources
+doo*.html

@@ -38,9 +38,9 @@
   (when-not (true? (.-unmounted this))
     (try (.forceUpdate this)
          (catch js/Error e
-           (if-let [on-error (aget this "onError")]
-             (on-error e)
-             (do (.debug js/console "No :on-error method in component" this)
+           (if-let [catch-fn (aget this "catch")]
+             (catch-fn e)
+             (do (.debug js/console "No :catch method in component: " (.. this -type -displayName))
                  (.error js/console e)))))))
 
 (defn force-update [this]

@@ -8,4 +8,3 @@
     `(let [~atom-sym (atom {})]
        (reset! ~atom-sym ~(walk/postwalk-replace {name atom-sym} expr))
        ~atom-sym)))
-

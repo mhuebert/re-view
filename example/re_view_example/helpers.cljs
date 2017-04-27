@@ -7,7 +7,7 @@
 (defn key-field
   "View key in editor"
   [k]
-  (str k))
+  (str (some-> (namespace k) (str "/")) (name k)))
 
 (defn heading [level label]
   [(case level 1 :h1.f2.normal.bw2.bt.b--light-gray.pt3
@@ -20,24 +20,26 @@
   [prop-atom path]
   (let [v (get-in @prop-atom path)
         set-val! #(swap! prop-atom assoc-in path %)
-        id (string/join path)]
+        id (->> path
+                (map name)
+                (string/join "/"))]
     [:.dib {:key id}
-     (cond (fn? v) [:.i "fn"]
+     (cond (fn? v) [:.i.ph2 "fn"]
            (string? v) (ui/Input {:value     v
-                                  :className "ba bw1 b--moon-gray pv1 ph2 mh2"
+                                  :class     "ba bw1 f7 b--moon-gray ph1 lh-copy mh1"
                                   :id        id
-                                  :onChange  #(set-val! (.. % -target -value))})
-           (boolean? v) (ui/Checkbox {:checked  v
-                                      :id       id
-                                      :dense    true
-                                      :onChange #(set-val! (boolean (.. % -target -checked)))})
+                                  :on-change #(set-val! (.. % -target -value))})
+           (boolean? v) (ui/Checkbox {:checked   v
+                                      :id        id
+                                      :dense     true
+                                      :on-change #(set-val! (boolean (.. % -target -checked)))})
            (vector? v) (if (= :svg (first v))
-                         [:.i "svg"]
+                         [:.i.ph2 "svg"]
                          [:.ph2.relative
                           [:.absolute.top-0.left-0.di.b "["]
                           (interpose [:br] (map (fn [i] (value-field prop-atom (conj path i))) (range (count v))))
                           [:.absolute.bottom-0.right-0.di.b "]"]])
-           :else (str v))]))
+           :else [:.ph2 (str v)])]))
 
 (defview state-editor
   "Editor for atom containing Clojure map"
@@ -46,7 +48,7 @@
    :will-unmount (fn [_ a] (remove-watch a :prop-editor))}
   [{:keys [label]} prop-atom]
   (let [set-val! (fn [k v] (swap! prop-atom assoc k v))]
-    [:.br3.pa2
+    [:div
      (when label [:.f6.b.ph2.pv1 label])
      (if-let [props (some-> prop-atom deref seq)]
        [:table.f7
@@ -55,8 +57,8 @@
                :let [id (name k)]
                :when (not= k :key)]
            [:tr
-            [:td.b.pa1 (key-field k)]
-            [:td.pa1 (value-field prop-atom [k])]])]]
+            [:td.b.o-60 (key-field k)]
+            [:td.pl3 (value-field prop-atom [k])]])]]
        [:.gray.i.mv2.tc.f7 "No Props"])]))
 
 (defview with-prop-atom*
@@ -84,9 +86,9 @@
    (cond->> label
             (string? label) (heading 2))
    [:.mv3.flex.items-center
-    {:className (case orientation :horizontal "flex-row justify-around"
-                                  :vertical "flex-column items-stretch")}
+    {:class (case orientation :horizontal "flex-row justify-around"
+                              :vertical "flex-column items-stretch")}
     [:div (apply with-prop-atom* nil component @state children)]
     [:.order-1 (when (= orientation :vertical)
-                 {:className "mt3"}) (state-editor {:label label} @state)]]])
+                 {:class "mt3"}) (state-editor {:label label} @state)]]])
 

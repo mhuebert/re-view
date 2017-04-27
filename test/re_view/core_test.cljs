@@ -50,24 +50,24 @@
   [:div "I am an apple."
    (when-not (:eaten? @state)
      [:p {:ref   #(when % (swap! state assoc :p %))
-          :style {:fontWeight "bold"}} " ...and I am brave and alive."])])
+          :style {:font-weight "bold"}} " ...and I am brave and alive."])])
 
 
 ;; a heavily logged component
 
 (def util (.. js/ReactDOM -__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED -ReactTestUtils))
 (def init-props {:color "red"})
-(def init-child [:div {:style {:width        100
-                               :height       100
-                               :background   "red"
-                               :borderRadius 100}}])
+(def init-child [:div {:style {:width         100
+                               :height        100
+                               :background    "red"
+                               :border-radius 100}}])
 
 (def append-el #(js/document.body.appendChild (js/document.createElement "div")))
 
 
 (deftest basic
   (let [el (append-el)
-        render #(v/render-to-node (apple %1 %2) el)
+        render #(v/render-to-element (apple %1 %2) el)
         c (render init-props init-child)]
 
 

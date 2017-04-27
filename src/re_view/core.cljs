@@ -1,15 +1,14 @@
 (ns re-view.core
   (:require-macros [re-view.core])
   (:require [re-db.core :as d]
+            [re-view.react :as react]
             [re-view.shared :refer [*read-props?*]]
             [re-view.subscriptions :as subs]
             [re-view.render-loop :as render-loop]
-            [re-view.hiccup :as hiccup]
+            [re-view-hiccup.core :as hiccup]
             [clojure.string :as string]
             [goog.dom :as gdom]
-            [goog.object :as gobj]
-            [cljsjs.react]
-            [cljsjs.react.dom]))
+            [goog.object :as gobj]))
 
 
 (def schedule! render-loop/schedule!)
@@ -27,7 +26,7 @@
 (defn dom-node
   "Return DOM node for component"
   [component]
-  (.findDOMNode js/ReactDOM component))
+  (react/findDOMNode component))
 
 (defn focus
   "Focus the first input|textarea in a component"
@@ -77,14 +76,16 @@
            :render             "render"})
 
 (defn ensure-element [element]
-  (if-not (js/React.isValidElement element) (hiccup/element element) element))
+  (if-not (react/isValidElement element) (hiccup/element element) element))
 
 (defn as-list [items]
   (if (vector? items)
     (seq (remove nil? items))
     [items]))
 
-(defn concat-fns [& fns]
+(defn compseq
+  "Compose fns to execute sequentally over the same arguments"
+  [& fns]
   (fn [& args]
     (doseq [f fns]
       (apply f args))))
@@ -100,7 +101,7 @@
                                     :when update?]
                                 true)))
                      f)
-    (if (vector? f) (apply concat-fns f)
+    (if (vector? f) (apply compseq f)
                     f)))
 
 (defn collect [methods]
@@ -193,7 +194,7 @@
 (defn is-react-element? [x]
   (and x
        (or (boolean (aget x "re$view"))
-           (js/React.isValidElement x))))
+           (react/isValidElement x))))
 
 (defn specify-protocols [o]
   (specify! o
@@ -240,11 +241,12 @@
   (or (some-> (aget element "type") (aget (camelCase (name k))))
       (get (mock element) k)))
 
-(defn extend-react-component [constructor display-name child]
+(defn extend-react-component [constructor display-name docstring child]
   (let [proto (reduce-kv (fn [m k v]
                            (doto m (aset (get kmap k) v))) (new ReactComponent) child)]
     (doto constructor
       (aset "prototype" proto)
+      (aset "docstring" docstring)
       (aset "displayName" display-name))))
 
 (defn factory
@@ -253,20 +255,20 @@
     (let [[{prop-key :key ref :ref :as props} children] (cond (or (map? props)
                                                                   (nil? props)) [props children]
                                                               (and (object? props)
-                                                                   (not (js/React.isValidElement props))) [(js->clj props :keywordize-keys true) children]
+                                                                   (not (react/isValidElement props))) [(js->clj props :keywordize-keys true) children]
                                                               :else [nil (cons props children)])]
-      (js/React.createElement class
-                              #js {"key"         (or prop-key
-                                                     (when key
-                                                       (cond (string? key) key
-                                                             (keyword? key) (get props key)
-                                                             (fn? key) (apply key props children)
-                                                             :else (throw (js/Error "Invalid key supplied to component"))))
-                                                     display-name)
-                                   "ref"         ref
-                                   "re$props"    (dissoc props :ref)
-                                   "re$children" children
-                                   "re$element"  element-keys}))))
+      (react/createElement class
+                           #js {"key"         (or prop-key
+                                                  (when key
+                                                    (cond (string? key) key
+                                                          (keyword? key) (get props key)
+                                                          (fn? key) (apply key props children)
+                                                          :else (throw (js/Error "Invalid key supplied to component"))))
+                                                  display-name)
+                                "ref"         ref
+                                "re$props"    (dissoc props :ref)
+                                "re$children" children
+                                "re$element"  element-keys}))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -293,14 +295,15 @@
                 static-keys
                 element-keys
                 key
-                display-name]} (reduce-kv (fn [m k v]
-                                            (cond (contains? kmap k)
-                                                  (assoc-in m [:lifecycle k] v)
-                                                  (#{:key :display-name} k) (assoc m k v)
-                                                  (= "static" (namespace k))
-                                                  (assoc-in m [:static-keys (camelCase (name k))] v)
-                                                  :else
-                                                  (assoc-in m [:element-keys (camelCase (name k))] v))) {} methods)
+                display-name
+                docstring]} (reduce-kv (fn [m k v]
+                                         (cond (contains? kmap k)
+                                               (assoc-in m [:lifecycle k] v)
+                                               (#{:key :display-name :docstring} k) (assoc m k v)
+                                               (= "static" (namespace k))
+                                               (assoc-in m [:static-keys (camelCase (name k))] v)
+                                               :else
+                                               (assoc-in m [:element-keys (camelCase (name k))] v))) {} methods)
         constructor (fn Element [$props]
                       (this-as this
                         (init-props this $props)
@@ -310,17 +313,17 @@
                         this))
         class (->> lifecycle
                    (wrap-lifecycle-methods)
-                   (extend-react-component constructor display-name))]
+                   (extend-react-component constructor display-name docstring))]
     (doseq [[k v] (seq static-keys)]
       (aset class k v))
     (factory class key display-name element-keys)))
 
-(defn render-to-node [component element]
-  (js/ReactDOM.render component element))
-
-(defn render-to-id [component id]
-  (some->> (.getElementById js/document id)
-           (js/ReactDOM.render component)))
+(defn render-to-element
+  "Render views to page. Element should be HTML Element or ID."
+  [component element]
+  (react/render component (cond->> element
+                                   (string? element)
+                                   (.getElementById js/document))))
 
 (comment
 
@@ -334,8 +337,8 @@
            [{:keys [first-name view/state] :as this}]
            [:div
             [:p (str "Hello, " first-name "!")]
-            [:input {:value    first-name
-                     :onChange #(swap! state assoc :first-name (-> % .-target .-value))}]]))
+            [:input {:value     first-name
+                     :on-change #(swap! state assoc :first-name (-> % .-target .-value))}]]))
 
 (defn update-attrs [el f & args]
   (if-not (vector? el)

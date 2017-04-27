@@ -24,7 +24,7 @@
   (testing "Reactive subscription"
 
     (let [el (append-el)
-          render #(v/render-to-node (test-c {:db/id %}) el)]
+          render #(v/render-to-element (test-c {:db/id %}) el)]
 
       (render 1)
       (is (= 1 (count @log)))

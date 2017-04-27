@@ -5,13 +5,13 @@
 (defn parse-name [n]
   (str (name (ns-name *ns*)) "/" n))
 
-(defn parse-defview-args [args]
+(defn parse-view-args [args]
   (let [[prelim [args & body]] (split-with (complement vector?) args)]
     (match (vec prelim)
-           [] [{} args body]
-           [(docstring :guard string?)] [{:docstring docstring} args body]
+           [] [{} args body nil]
+           [(docstring :guard string?)] [{} args body docstring]
            [methods] [methods args body]
-           [(docstring :guard string?) methods] [`(~'assoc ~methods :docstring ~docstring) args body]
+           [(docstring :guard string?) methods] [methods args body docstring]
            :else (throw (Error. (str "Invalid arguments passed as view: " (vec prelim))))
            )))
 
@@ -21,23 +21,22 @@
    (str (last (string/split (name (ns-name ns)) #"\.")) "/" given-name)))
 
 (defn wrap-body [args body]
-  `(~'fn ~args (~'re-view.hiccup/element (do ~@body))))
+  `(~'fn ~args (~'re-view-hiccup.core/element (do ~@body))))
 
 (defmacro defview
   "Defines view with name, optional docstring, optional lifecycle methods, required arguments, and body."
-  ([view-name methods]
-   `(def ~view-name
-      (~'re-view.core/view* (assoc ~methods
-                              :display-name ~(display-name *ns* view-name)))))
-  ([view-name a1 & methods]
-   (let [[methods args body] (parse-defview-args (cons a1 methods))]
-     `(~'re-view.core/defview ~view-name
-        (~'assoc ~methods :render ~(wrap-body args body))))))
+  [view-name & methods]
+  (let [[methods args body docstring] (parse-view-args methods)]
+    `(def ~view-name ~docstring (~'re-view.core/view* ~(assoc methods
+                                                         :docstring docstring
+                                                         :render (wrap-body args body)
+                                                         :display-name (display-name *ns* view-name))))))
 
 (defmacro view
   "Returns anonymous view"
   [& args]
-  (let [[methods args body] (parse-defview-args args)]
-    `(~'re-view.core/view* (assoc ~methods
-                             :display-name ~(display-name *ns*)
-                             :render ~(wrap-body args body)))))
+  (let [[methods args body docstring] (parse-view-args args)]
+    `(~'re-view.core/view* ~(assoc methods
+                              :docstring docstring
+                              :display-name (display-name *ns*)
+                              :render (wrap-body args body)))))
