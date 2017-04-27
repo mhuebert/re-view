@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view-routing "0.1.0-SNAPSHOT"
+(defproject org.clojars.mhuebert/re-view-routing "0.1.0"
 
   :description "ClojureScript routing tools"
 
