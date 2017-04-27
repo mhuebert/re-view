@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view-hiccup "0.1.0"
+(defproject org.clojars.mhuebert/re-view-hiccup "0.1.1-SNAPSHOT"
 
   :description "Hiccup parser"
 
