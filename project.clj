@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view-routing "0.1.0"
+(defproject org.clojars.mhuebert/re-view-routing "0.1.1-SNAPSHOT"
 
   :description "ClojureScript routing tools"
 
@@ -18,6 +18,8 @@
                                    [cljsjs/react-dom "15.5.0-0"]
                                    [cljsjs/react "15.5.0-0"]]}}
 
+  :lein-release {:deploy-via :clojars}
+  
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
                         :compiler     {:output-to     "resources/public/js/test.js"
