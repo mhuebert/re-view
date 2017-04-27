@@ -84,7 +84,7 @@
     [items]))
 
 (defn compseq
-  "Compose fns to execute sequentally over the same arguments"
+  "Compose fns to execute sequentially over the same arguments"
   [& fns]
   (fn [& args]
     (doseq [f fns]
