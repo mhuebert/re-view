@@ -12,8 +12,9 @@ Include `re-view.core` like so:
   (:require [re-view.core :as v :refer [defview]]))
 ```
 
-`defview` is a macro that returns a view which can be rendered to the page using `v/render-to-element`. Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [hiccup](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax) or a React element. 
+`defview` is a macro that returns a view which can be rendered to the page using `v/render-to-element`. Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [hiccup syntax](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax) or a React element. 
 
+If you don't know what `hiccup syntax` is, that's totally fine -- but you should [read the guide](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax) before continuing.
 
 Create a view that returns a `div` with a 'hello, world!' greeting.
 
@@ -37,13 +38,24 @@ Render the view to the element on the page with the id "my-app". Greet someone y
 (v/render-to-element (say-hello "fred") "my-app")
 ```
 
-We created a view and passed it a string, "fred". This string was treated as a 'child' of the view, and passed as the second argument to the view.
+We created a view and passed it a string, "fred". This string was treated as a 'child' of the view, and passed as the second argument to the view. 
+
 
 ### Props
 
-If you pass a Clojure map as the first argument to a view, it will be treated as the component's [props](https://facebook.github.io/react/docs/components-and-props.html). Props are how we pass parameters to views. We read keys from the prop map by using `get` on the component itself.
+Recall that in [hiccup syntax](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax), we can _optionally_ pass a map of attributes to an element (in React, we call these attributes `props`):
+
+```clj
+;; element without attributes:
+[:label "First Name"]
+
+;; element with attributes:
+[:label {:for "first-name"} "Name"]
+```
+
+Similarly, if you pass a Clojure map as the first argument to a view, it will be treated as the component's [props](https://facebook.github.io/react/docs/components-and-props.html) map. We read keys from the prop map by using `get` on the component itself.
   
-Modify the component to expect a `:color` key to be passed as a prop. Use a `:style` map on the `div` to color the greeting.
+Modify the component to expect a `:color` key in the props map. Add a `:style` map on the `div`'s props to color the greeting text.
 
 ```clj
 (defview say-hello [this name] 
@@ -55,21 +67,17 @@ See how we used `(get this :color)` to read a prop key from the component?
 You can also use [destructuring](https://clojure.org/guides/destructuring) to get prop keys from the component. Here's what that looks like:
 
 ```clj
-(defview say-hello [{:keys [color]} name] 
+(defview say-hello [{:keys [color]}] 
   [:div {:style {:color color}} "hello, " name "!"])
 ```
-
   
-Render the component again, passing the color 'red' as a prop.
+Render the component again, passing "red" as the `:color` prop.
+
 ```clj 
-(say-hello {:color "red"} "fred")
+(v/render-to-element (say-hello {:color "red"}))
 ```  
   
-We read individual prop keys from the component. The `:view/props` key returns the props map itself. This is useful when you want to create a higher-order component, and pass its props down to a child view.
-
-### State
-
-To manage local state, we can read the `:view/state` key on a component. It will return a Clojure [atom](https://github.com/mhuebert/re-view/wiki/Atoms), unique to the component, that we can `swap!` and `reset!`. Whenever the value of this atom changes, the component will update (re-render).
+We've seen how to read individual prop keys from the component. The `:view/props` key returns the props map itself. The `:view/children` key returns a list of the component's children. This is useful when you want to create a higher-order component, and pass props or children down to a child view. 
 
 ### Lifecycle methods 
 
@@ -77,17 +85,26 @@ _Oops,_ we withheld information. There is another difference between `defview` a
 
 To save typing, we use shortcuts for lifecycle method names. Here they are:
 
-| Re-View name        | React Equivalent          |
-| ------------------- | ------------------------- |
-| :initial-state      | getInitialState           |
-| :will-mount         | componentWillMount        |
-| :did-mount          | componentDidMount         |
-| :will-receive-props | componentWillReceiveProps |
-| :should-update      | shouldComponentUpdate     |
-| :will-update        | componentWillUpdate       |
-| :did-update         | componentDidUpdate        |
-| :will-unmount       | componentWillUnmount      |
+| Re-View name        | React Equivalent          |                                                                                                                                                                                               |
+| ------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :initial-state      | getInitialState           | Returns an initial value for the `:view/state` atom of the component. If `:initial-state` is a function, it is called with the component and its children. Other values are left untouched.   |
+| :will-mount         | componentWillMount        |                                                                                                                                                                                               |
+| :did-mount          | componentDidMount         |                                                                                                                                                                                               |
+| :will-receive-props | componentWillReceiveProps |                                                                                                                                                                                               |
+| :should-update      | shouldComponentUpdate     |                                                                                                                                                                                               |
+| :will-update        | componentWillUpdate       |                                                                                                                                                                                               |
+| :did-update         | componentDidUpdate        |                                                                                                                                                                                               |
+| :will-unmount       | componentWillUnmount      |                                                                                                                                                                                               |                                                                             
 
+There are also two special keys we can add to the method map:
+
+| key           | React Equivalent |                                                                                                                                                                                                                              |
+| ------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| :key          | key              | A unique value for components which occur in lists. 
+
+`:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.   |
+| :display-name | displayName      | A friendly name for the component, which will show up in React Devtools.
+Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.  |
  
 ### Additional component methods
  
@@ -105,18 +122,20 @@ A component's methods map may contain any functions, not just lifecycle methods.
  
 See how we added a hint in the arguments list for `this`, in the function where we call the method. To use externs inference you also need to use the latest ClojureScript alpha and follow the [guide](https://clojurescript.org/guides/externs#externs-inference). 
 
-### Children
+### Local state
 
-In addition to the `props` map, we can pass additional arguments to a view. In React parlance, we call these the component's 'children'. They are passed as additional arguments to the render function, and all the other methods on the component. The list of children is also returned via the `:view/children` key on the component itself.
+To manage local state, the `:view/state` key on a component will return a Clojure [atom](https://github.com/mhuebert/re-view/wiki/Atoms), unique to the component. When the value of this atom changes, the component will update (re-render). If you're not sure what a Clojure atom is or how it works, please [read the guide](https://github.com/mhuebert/re-view/wiki/Atoms).
 
-### Reactivity and Re-DB
+The initial value of the state atom will be whatever is defined by the `:initial-state` key in the methods map, or `nil`.
 
-Re-View was written in tandem with [re-db](https://github.com/mhuebert/re-db). When a view renders, we track which data is read from `re-db.d`. After every re-db transaction, we update only views that match the new data.
+### Global state
+
+Re-View was written in tandem with [re-db](https://github.com/mhuebert/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes.
 
 ### Force updates
 
-`v/force-render` will force a component to re-render on the next animation frame. `v/force-render!` will force a component to render immediately.
+Views are rendered in a 'render loop' using `requestAnimationFrame`. `v/force-render` will force a component to re-render on the next animation frame, while `v/force-render!` will force an update immediately.
 
 ### Component display names
 
-Effort has been made to play well with the React Devtools browser add-on. Component names are composed of their immediate namespace, and name. So `my-app.views.layout/root` will show up as `layout/root`.
+To help with debugging, a [display name](https://facebook.github.io/react/docs/react-component.html#displayname) of a component is set by `defview`. The display name is composed of the last segment of the component's namespace, and its name, eg. `my-app.views.layout/root` will show up as `layout/root`. You can override this by including `:display-name` in the methods map.

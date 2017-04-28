@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [org.clojars.mhuebert/re-db "0.1.8"]
-                 [org.clojars.mhuebert/re-view-hiccup "0.1.0"]
+                 [org.clojars.mhuebert/re-view-hiccup "0.1.1-SNAPSHOT"]
                  [org.clojure/core.match "0.3.0-alpha4"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
