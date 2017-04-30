@@ -20,10 +20,10 @@ Require `re-view-routing.core` (by convention, aliased as `routing`):
 
 ```clj
 (ns my-app.core
-  (:require [re-view-routing :as routing])
+  (:require [re-view-routing.core :as routing])
 ```
 
-Listen for changes to the route with **`routing/on-location-change`**. The callback you supply will be passed a map including the route's `:path` string, `:segments` vector and `:query` map.
+Pass a callback to **`routing/on-location-change`**. When the route changes, it will be called with a map containing a `:path` string, `:segments` vector and `:query` map.
 
 ```clj
 (routing/on-location-change update-route-state)
@@ -37,7 +37,6 @@ Use `case` for static routes:
 
 ```clj
 (defview static-route-handler 
-  "Dispatch view based on the current route"
   [location]
   (case (:segments location) 
     [] (app-views/home)
@@ -48,10 +47,10 @@ Use `core.match` for wildcard segments or other patterns.
 
 ```clj
 (defview dynamic-route-handler 
-  "Dispatch view based on the current route"
   [location]
   (match (:segments location) 
     [] (app-views/home)
+    ;; bind `id` to the second path segment, eg. '8' in the path `/posts/8`
     ["post" id] (app-views/posts {:id id}))
 ```
  
