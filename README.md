@@ -1,6 +1,14 @@
 # Re-View Hiccup
 
+![badge](https://img.shields.io/clojars/v/re-view-hiccup.svg)
+
 [Hiccup](https://github.com/weavejester/hiccup) is a representation of HTML in Clojure. `re-view hiccup` parses hiccup and returns React elements. Its goal is to be relatively small (~100 lines) and fast, and offer some additional flexibility (eg. the `:wrap-props` option) over alternatives. It should work fine in self-hosted ClojureScript.
+
+---- 
+
+New to Hiccup? Read the **[syntax guide](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax)**.
+
+---
 
 ### Usage
 
