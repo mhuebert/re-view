@@ -1,6 +1,5 @@
-(defproject org.clojars.mhuebert/re-view-hiccup "0.1.1-SNAPSHOT"
-
-  :description "Hiccup parser"
+(defproject re-view-hiccup "0.1.1-SNAPSHOT"
+  :description "Hiccup parser for re-view"
 
   :url "https://www.github.com/mhuebert/re-view-hiccup"
 
@@ -12,13 +11,13 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]]
 
-  :profiles {:test {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                   [cljsjs/react "15.5.0-0"]]}
+  :profiles {:test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
+                                       [cljsjs/react "15.5.0-0"]]}
              :provided {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                                [cljsjs/react "15.5.0-0"]]}}
+                                       [cljsjs/react "15.5.0-0"]]}}
 
   :lein-release {:deploy-via :clojars}
-  
+
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
                         :compiler     {:output-to     "resources/public/js/test.js"

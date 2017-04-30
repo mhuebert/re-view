@@ -1,19 +1,14 @@
 (ns re-view-hiccup.core
-  (:require [clojure.string :as string]
-            [cljsjs.react]
-            [cljsjs.react.dom]))
+  (:require [clojure.string :as string]))
 
 (enable-console-print!)
 (set! *warn-on-infer* true)
 
-(defn safe-print
-  "Catch `println` errors and fall back to console.log
-  (`println` throws errors when printing javascript symbols)."
-  [& args]
-  (try (apply println args)
-       (catch js/Error e
-         (when (exists? js/console)
-           (apply (.-log js/console) args)))))
+(when (exists? js/Symbol)
+  (extend-protocol IPrintWithWriter
+    js/Symbol
+    (-pr-writer [sym writer _]
+      (-write writer (str "\"" (.toString sym) "\"")))))
 
 (defn parse-key
   "Parses a hiccup key like :div#id.class1.class2 to return the base name, id, and classes.
@@ -47,7 +42,7 @@
           :else [{} (subvec form 1 len)])))
 
 (defn camelCase [s]
-  (string/replace s #"-(.)" (fn [[_ s]] (string/upper-case s))))
+  (string/replace s #"-([a-z])" (fn [[_ s]] (string/upper-case s))))
 
 (defn key->react-attr
   "CamelCase keys, except for aria- and data- attributes"
@@ -82,7 +77,8 @@
   allowing for key renaming without an extra loop through every prop map."
   [k-id k-classes {:keys [class class-name classes] :as props}]
   (when props
-    (let [prop-js (cond-> (js-obj "id" k-id)
+    (let [prop-js (cond-> (js-obj)
+                          k-id (doto (aset "id" k-id))
                           (or k-classes class class-name classes) (doto (aset "className" (concat-classes k-classes (or class class-name) classes))))]
       (doseq [[k v] (cond-> props (not (nil? *wrap-props*)) (*wrap-props*))]
         (cond
@@ -102,12 +98,14 @@
                                          :aria-label    "hello"
                                          :class         "bg-black"
                                          :classes       ["white"]
-                                         :style         {:font-family "serif"}})
+                                         :style         {:font-family "serif"
+                                                         :font-size   12}})
                  (js->clj :keywordize-keys true))
              {:data-collapse true
               :aria-label    "hello"
               :className     "pink bg-black white"
-              :style         {:fontFamily "serif"}
+              :style         {:fontFamily "serif"
+                              :fontSize   12}
               :id            "el"})))
 
 
@@ -118,11 +116,10 @@
     (let [[_ k id classes] (parse-key-memoized (form 0))
           [props children] (parse-args form)
           args (reduce-concat conj render-hiccup-node [k (props->js id classes props)] children)]
-      (apply js/React.createElement args))
+      (apply (.-createElement js/React) args))
     (catch js/Error e
-      (safe-print "hiccup-render-fail" form)
-      (safe-print "hiccup-render-fail a1" (first form))
-      (safe-print "hiccup-render-fail a2" (second form)))))
+      (println "Error in render-hiccup-node:")
+      (println form))))
 
 
 (defn element
