@@ -52,7 +52,7 @@
 
 (deftest routing-test
   (testing "Basic routing"
-    (let [render #(view/render-to-node % test-element)]
+    (let [render #(view/render-to-element % test-element)]
 
       ;; set initial route to root
       (routing/nav! "/")

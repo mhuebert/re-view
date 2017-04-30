@@ -1,8 +1,8 @@
-(defproject org.clojars.mhuebert/re-view-routing "0.1.1-SNAPSHOT"
+(defproject re-view-routing "0.1.1"
 
   :description "ClojureScript routing tools"
 
-  :url "https://www.github.com/mhuebert/re-view-prosemirror"
+  :url "https://www.github.com/mhuebert/re-view-routing"
 
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}

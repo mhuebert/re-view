@@ -1,6 +1,6 @@
 *.iml
 target
 .idea
-pom.xml
+pom.xml*
 doo*
 resources
