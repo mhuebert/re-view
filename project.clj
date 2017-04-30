@@ -1,4 +1,4 @@
-(defproject org.clojars.mhuebert/re-view "0.3.10"
+(defproject re-view "0.3.10-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
@@ -6,14 +6,11 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [org.clojars.mhuebert/re-db "0.1.8"]
-                 [org.clojars.mhuebert/re-view-hiccup "0.1.1-SNAPSHOT"]
-                 [org.clojure/core.match "0.3.0-alpha4"]]
+                 [re-view-hiccup "0.1.1"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.0-2"]
             [lein-doo "0.1.6"]]
-
-
 
   :source-paths ["src" "example"]
 

@@ -2,6 +2,18 @@
 ### Changelog
 
 0.3.10
+- Custom keys in method maps are added using `set!` (& camelCase) to play well with advanced compilation, so
+  the following should 'just work':
+  
+  ```clj
+  (defview my-app
+    {:my-greeting (fn [this] "hello, world!")}
+    [this]
+    [:div (.myGreeting this)])
+  ```
+- Remove `core.match` dependency
+- Remove unused/deprecated namespaces, `re-view.subscriptions` and `re-view.shared`
+- Remove `re-view.react` namespace, call React functions directly
 
 0.3.9
 - Support docstrings in `defview`

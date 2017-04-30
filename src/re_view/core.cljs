@@ -1,15 +1,12 @@
 (ns re-view.core
   (:require-macros [re-view.core])
   (:require [re-db.core :as d]
-            [re-view.react :as react]
-            [re-view.shared :refer [*read-props?*]]
-            [re-view.subscriptions :as subs]
             [re-view.render-loop :as render-loop]
             [re-view-hiccup.core :as hiccup]
             [clojure.string :as string]
             [goog.dom :as gdom]
-            [goog.object :as gobj]))
-
+            [goog.object :as gobj]
+            [cljsjs.react]))
 
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
@@ -26,7 +23,7 @@
 (defn dom-node
   "Return DOM node for component"
   [component]
-  (react/findDOMNode component))
+  (.findDOMNode js/ReactDOM component))
 
 (defn focus
   "Focus the first input|textarea in a component"
@@ -47,7 +44,8 @@
     (force-update this)))
 
 (defn mounted?
-  "Manually tracks mounted state (to avoid async renders of unmounted components)"
+  "Return false if component has unmounted.
+  (necessary to track mounted state to avoid async render of unmounted component)"
   [this]
   (not (true? (aget this "unmounted"))))
 
@@ -76,7 +74,7 @@
            :render             "render"})
 
 (defn ensure-element [element]
-  (if-not (react/isValidElement element) (hiccup/element element) element))
+  (if-not (.isValidElement js/React element) (hiccup/element element) element))
 
 (defn as-list [items]
   (if (vector? items)
@@ -109,9 +107,9 @@
        (reduce-kv (fn [m method-k f]
                     (assoc m method-k (wrap-methods method-k f))) {})))
 
-
-
-(defn bind [method-k f]
+(defn bind
+  "Bind methods to be called with their component and its children."
+  [method-k f]
   (case method-k
     (:initial-state
       :key
@@ -135,17 +133,12 @@
           (apply f this args)))
       f)))
 
-(defn update-keys
-  "Update keys of map m with function f"
-  [update-key-f m]
-  (reduce-kv (fn [m key val] (assoc m (update-key-f key) val)) {} m))
-
 (defn init-state
+  "Returns a new state atom for component."
   [this initial-state]
   (let [a (atom initial-state)]
     (aset this "re$view" "state" a)
     (aset this "re$view" "prevState" initial-state)
-
     (add-watch a :state-changed (fn [_ _ old-state new-state]
                                   (when (not= old-state new-state)
                                     (aset this "re$view" "prevState" old-state)
@@ -157,11 +150,13 @@
   (if $props
     (do (aset this "re$view" #js {"props"    (aget $props "re$props")
                                   "children" (aget $props "re$children")})
-        (doseq [[k v] (seq (aget $props "re$element"))]
-          (aset this k (if (fn? v)
-                         (fn [& args]
-                           (apply v this args))
-                         v))))
+        (when-let [element-obj (aget $props "re$element")]
+          (doseq [k (.keys js/Object element-obj)]
+            (let [v (aget element-obj k)]
+              (aset this k (if (fn? v)
+                             (fn [& args]
+                               (apply v this args))
+                             v))))))
     (aset this "re$view" #js {"props"    nil
                               "children" nil}))
   this)
@@ -176,14 +171,18 @@
                                             (aset this "re$view" "props" next-props)
                                             (aset this "re$view" "prevProps" prev-props)
                                             (aset this "re$view" "children" (aget props "re$children"))
-                                            (aset this "re$view" "prevChildren" prev-children))))
-                  :will-unmount       #(some-> (aget % "reactiveUnsubscribe") (.call))}
-                 (when (contains? methods :subscriptions) subs/subscription-mixin)
+                                            (aset this "re$view" "prevChildren" prev-children))))}
                  methods
-                 {:should-update (fn [this]
-                                   (or (not= (:view/props this) (:view/prev-props this))
-                                       (not= (:view/children this) (:view/prev-children this))))
-                  :will-unmount  #(aset % "unmounted" true)
+                 {:should-update (fn [{:keys [view/props
+                                              view/prev-props
+                                              view/children
+                                              view/prev-children]}]
+                                   (or (not= props prev-props)
+                                       (not= children prev-children)))
+                  :will-unmount  (fn [{:keys [view/state] :as this}]
+                                   (aset this "unmounted" true)
+                                   (some-> (aget this "reactiveUnsubscribe") (.call))
+                                   (some-> state (remove-watch :state-changed)))
                   :did-update    (fn [this]
                                    (aset this "re$view" "prevState"
                                          (some-> (aget this "re$view" "state")
@@ -194,14 +193,13 @@
 (defn is-react-element? [x]
   (and x
        (or (boolean (aget x "re$view"))
-           (react/isValidElement x))))
+           (.isValidElement js/React x))))
 
 (defn specify-protocols [o]
   (specify! o
     ILookup
     (-lookup
       ([this k]
-       (when ^:boolean (false? *read-props?*) (set! *read-props?* true))
        (if-let [re-view-var (and (keyword? k)
                                  (= "view" (namespace k))
                                  (camelCase (name k)))]
@@ -210,7 +208,6 @@
              (aget this "re$view" re-view-var))
          (get (aget this "re$view" "props") k)))
       ([this k not-found]
-       (when ^:boolean (false? *read-props?*) (set! *read-props?* true))
        (if-let [re-view-var (and (keyword? k)
                                  (= "view" (namespace k))
                                  (camelCase (name k)))]
@@ -255,20 +252,20 @@
     (let [[{prop-key :key ref :ref :as props} children] (cond (or (map? props)
                                                                   (nil? props)) [props children]
                                                               (and (object? props)
-                                                                   (not (react/isValidElement props))) [(js->clj props :keywordize-keys true) children]
+                                                                   (not (.isValidElement js/React props))) [(js->clj props :keywordize-keys true) children]
                                                               :else [nil (cons props children)])]
-      (react/createElement class
-                           #js {"key"         (or prop-key
-                                                  (when key
-                                                    (cond (string? key) key
-                                                          (keyword? key) (get props key)
-                                                          (fn? key) (apply key props children)
-                                                          :else (throw (js/Error "Invalid key supplied to component"))))
-                                                  display-name)
-                                "ref"         ref
-                                "re$props"    (dissoc props :ref)
-                                "re$children" children
-                                "re$element"  element-keys}))))
+      (.createElement js/React class
+                      #js {"key"         (or prop-key
+                                             (when key
+                                               (cond (string? key) key
+                                                     (keyword? key) (get props key)
+                                                     (fn? key) (apply key props children)
+                                                     :else (throw (js/Error "Invalid key supplied to component"))))
+                                             display-name)
+                           "ref"         ref
+                           "re$props"    (dissoc props :ref)
+                           "re$children" children
+                           "re$element"  element-keys}))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -290,29 +287,20 @@
    Result of :render function is automatically passed through hiccup/element,
    unless it is already a valid React element.
    "
-  [methods]
-  (let [{:keys [lifecycle
-                static-keys
-                element-keys
-                key
-                display-name
-                docstring]} (reduce-kv (fn [m k v]
-                                         (cond (contains? kmap k)
-                                               (assoc-in m [:lifecycle k] v)
-                                               (#{:key :display-name :docstring} k) (assoc m k v)
-                                               (= "static" (namespace k))
-                                               (assoc-in m [:static-keys (camelCase (name k))] v)
-                                               :else
-                                               (assoc-in m [:element-keys (camelCase (name k))] v))) {} methods)
-        constructor (fn Element [$props]
+  [{:keys [lifecycle-methods
+           static-keys
+           element-keys
+           key
+           display-name
+           docstring]}]
+  (let [constructor (fn Element [$props]
                       (this-as this
                         (init-props this $props)
                         (when-not (undefined? (aget this "$getInitialState"))
                           (let [initial-state (aget this "$getInitialState")]
                             (init-state this (if (fn? initial-state) (apply initial-state this (get this :view/children)) initial-state))))
                         this))
-        class (->> lifecycle
-                   (wrap-lifecycle-methods)
+        class (->> (wrap-lifecycle-methods lifecycle-methods)
                    (extend-react-component constructor display-name docstring))]
     (doseq [[k v] (seq static-keys)]
       (aset class k v))
@@ -321,9 +309,9 @@
 (defn render-to-element
   "Render views to page. Element should be HTML Element or ID."
   [component element]
-  (react/render component (cond->> element
-                                   (string? element)
-                                   (.getElementById js/document))))
+  (.render js/ReactDOM component (cond->> element
+                                          (string? element)
+                                          (.getElementById js/document))))
 
 (comment
 
