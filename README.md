@@ -10,13 +10,13 @@ Full details on the **[wiki](https://github.com/mhuebert/re-view/wiki/Re-View-Ro
 
 ## Usage
 
-Include the library
+Include the dependency in `project.clj`:
 
 ```clj
-[re-view-routing "xx"]
+[re-view-routing "0.1.1"]
 ```
 
-Require `re-view-routing.core` (by convention, aliased as `routing`):
+Require **`re-view-routing.core`**:
 
 ```clj
 (ns my-app.core
