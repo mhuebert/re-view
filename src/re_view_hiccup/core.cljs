@@ -1,9 +1,12 @@
 (ns re-view-hiccup.core
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [re-view-hiccup.react-html :as react-html]))
 
 (enable-console-print!)
 (set! *warn-on-infer* true)
 
+
+;; patch IPrintWithWriter to print javascript symbols without throwing errors
 (when (exists? js/Symbol)
   (extend-protocol IPrintWithWriter
     js/Symbol
@@ -15,23 +18,23 @@
    If base-name is ommitted, defaults to 'div'. Class names are padded with spaces."
   [x]
   (-> (re-find #":([^#.]*)(?:#([^.]+))?(.*)?" (str x))
-      (update 1 #(if (= "" %) "div" %))
+      (update 1 #(if (= "" %) "div" (string/replace % "/" ":")))
       (update 3 #(when %
                    (str (string/replace % "." " ") " ")))))
 
-;; parse-key is an ideal target for memoization, because composite keyword forms are
-;; frequently reused (eg. in lists) and are rarely, if ever, generated dynamically.
+;; parse-key is an ideal target for memoization, because keyword forms are
+;; frequently reused (eg. in lists) and almost never generated dynamically.
 (def parse-key-memoized (memoize parse-key))
 
 (defn reduce-concat
-  "Recursively parse nested vectors. Like recursive `mapcat` but returns a vector."
-  [add f init coll]
-  (reduce (fn my-f [^js/Array c x]
+  "Recursively apply f to nested vectors. Lists are unwrapped, other forms left untouched. Similar to recursive `mapcat` but returns a vector."
+  [f init coll]
+  (reduce (fn my-f [c x]
             (cond (vector? x)
-                  (add c (f x))
+                  (conj c (f x))
                   (seq? x)
-                  (reduce-concat add f c x)
-                  :else (add c x))) init coll))
+                  (reduce-concat f c x)
+                  :else (conj c x))) init coll))
 
 (defn parse-args
   "Return props and children for a hiccup form. If the second element is not a map, supplies an empty map as props."
@@ -45,13 +48,14 @@
   (string/replace s #"-([a-z])" (fn [[_ s]] (string/upper-case s))))
 
 (defn key->react-attr
-  "CamelCase keys, except for aria- and data- attributes"
+  "CamelCase react keys, except for aria- and data- attributes"
   [k]
   (if (keyword-identical? k :for)
     "htmlFor"
-    (let [k (name k)]
-      (cond-> k
-              (nil? (re-find #"^(?:data-|aria-).+" k))
+    (let [k-str (name k)]
+      (cond-> k-str
+              (or (contains? react-html/attrs k)
+                  (string/starts-with? k-str "on-"))
               (camelCase)))))
 
 (defn map->js
@@ -93,33 +97,18 @@
           :else (aset prop-js (key->react-attr k) v)))
       prop-js)))
 
-(comment
-  (assert (= (-> (props->js "el" "pink" {:data-collapse true
-                                         :aria-label    "hello"
-                                         :class         "bg-black"
-                                         :classes       ["white"]
-                                         :style         {:font-family "serif"
-                                                         :font-size   12}})
-                 (js->clj :keywordize-keys true))
-             {:data-collapse true
-              :aria-label    "hello"
-              :className     "pink bg-black white"
-              :style         {:fontFamily "serif"
-                              :fontSize   12}
-              :id            "el"})))
-
-
 (defn render-hiccup-node
   "Recursively create React elements from Hiccup vectors."
   [form]
   (try
     (let [[_ k id classes] (parse-key-memoized (form 0))
           [props children] (parse-args form)
-          args (reduce-concat conj render-hiccup-node [k (props->js id classes props)] children)]
+          args (reduce-concat render-hiccup-node [k (props->js id classes props)] children)]
       (apply (.-createElement js/React) args))
     (catch js/Error e
       (println "Error in render-hiccup-node:")
-      (println form))))
+      (println form)
+      (.error js/console e))))
 
 
 (defn element
@@ -134,3 +123,18 @@
   ([form {:keys [wrap-props]}]
    (binding [*wrap-props* wrap-props]
      (element form))))
+
+(comment
+  (assert (= (-> (props->js "el" "pink" {:data-collapse true
+                                         :aria-label    "hello"
+                                         :class         "bg-black"
+                                         :classes       ["white"]
+                                         :style         {:font-family "serif"
+                                                         :font-size   12}})
+                 (js->clj :keywordize-keys true))
+             {:data-collapse true
+              :aria-label    "hello"
+              :className     "pink bg-black white"
+              :style         {:fontFamily "serif"
+                              :fontSize   12}
+              :id            "el"})))
