@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+- Added `:create-element` option to override `React.createElement`
+
+## 0.1.3
+- Added HTML string output in the `react/html` (client-side) and `react/server` (server-side) namespaces
+- Added tests
+
 ## 0.1.2
 
 - Support namespaced custom elements, such that `:amazon/effect` becomes `<amazon:effect />`

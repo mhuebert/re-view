@@ -98,6 +98,7 @@
       prop-js)))
 
 
+(def ^:dynamic *create-element* (.-createElement js/React))
 
 (defn render-hiccup-node
   "Recursively create React elements from Hiccup vectors."
@@ -106,7 +107,7 @@
     (let [[_ k id classes] (parse-key-memoized (form 0))
           [props children] (parse-args form)
           args (reduce-concat render-hiccup-node [k (props->js id classes props)] children)]
-      (apply (.-createElement js/React) args))
+      (apply *create-element* args))
     (catch js/Error e
       (println "Error in render-hiccup-node:")
       (println form)
@@ -114,14 +115,18 @@
 
 
 (defn element
-  "Converts a `hiccup` vector into a React element. If a non-vector form
-   is supplied, it is returned untouched. You may also pass an options map
-   with `:wrap-props`, which will be applied to all props maps during parsing.
-   Attribute and style keys are converted from `dashed-names` to `camelCase`
-   where required by React."
+  "Converts Hiccup form into a React element. If a non-vector form
+   is supplied, it is returned untouched. Attribute and style keys
+   are converted from `dashed-names` to `camelCase` as spec'd by React.
+
+   - optional -
+   :wrap-props (fn) is applied to all props maps during parsing.
+   :create-element (fn) overrides React.createElement."
   ([form]
    (cond-> form
            (vector? form) (render-hiccup-node)))
-  ([form {:keys [wrap-props]}]
-   (binding [*wrap-props* wrap-props]
+  ([form {:keys [wrap-props
+                 create-element]}]
+   (binding [*wrap-props* wrap-props
+             *create-element* create-element]
      (element form))))
