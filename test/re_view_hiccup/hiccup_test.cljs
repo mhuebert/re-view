@@ -82,16 +82,25 @@
   "Client-side HTML strings from React elements"
 
   (is (= "<div class=\"red\">abc</div>"
-         (html/string (hiccup/element [:div {:class "red"} "abc"]))))
+         (html/string (hiccup/element [:div {:class "red"} "abc"])))
+      "div with class")
+
+  (is (= "<div style=\"font-size: 10px;\">abc</div>"
+         (html/string (hiccup/element [:div {:style {:font-size 10}} "abc"])))
+      "div with inline style")
 
   (is (= "<amazon>abc</amazon>"
-         (html/string (hiccup/element [:amazon "abc"]))))
+         (html/string (hiccup/element [:amazon "abc"])))
+      "custom element")
 
   (is (= "<amazon:effect name=\"whispered\">abc</amazon:effect>"
-         (html/string (hiccup/element [:amazon/effect {:name "whispered"} "abc"]))))
+         (html/string (hiccup/element [:amazon/effect {:name "whispered"} "abc"])))
+      "custom element with namespace")
 
   (is (= "<span></span>"
-         (html/string (hiccup/element [:span {:onClick #()}]))))
+         (html/string (hiccup/element [:span {:onClick #()}])))
+      "element with event handler (handler is elided)")
 
   (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
-         (html/string (hiccup/element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))))
+         (html/string (hiccup/element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
+      "nested custom elements with custom attributes"))
