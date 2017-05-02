@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [org.clojars.mhuebert/re-db "0.1.8"]
-                 [re-view-hiccup "0.1.1"]]
+                 [re-view-hiccup "0.1.3"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.0-2"]
@@ -38,8 +38,11 @@
                                        :infer-externs true
                                        :optimizations :none}}]}
   :profiles {:provided {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]]}
+                                       [cljsjs/react "15.5.0-0"]
+                                       [cljsjs/react-dom-server "15.5.0-0"]]}
              :dev      {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
-                                       [cljsjs/react-dom "15.5.0-0"]]}
+                                       [cljsjs/react-dom "15.5.0-0"]
+                                       [cljsjs/react-dom-server "15.5.0-0"]]}
              :test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]]}})
+                                       [cljsjs/react "15.5.0-0"]
+                                       [cljsjs/react-dom-server "15.5.0-0"]]}})

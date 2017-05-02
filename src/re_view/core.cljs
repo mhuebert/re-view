@@ -1,4 +1,5 @@
 (ns re-view.core
+  (:refer-clojure :exclude [partial])
   (:require-macros [re-view.core])
   (:require [re-db.core :as d]
             [re-view.render-loop :as render-loop]
@@ -91,7 +92,7 @@
 (defn wrap-methods
   [method-k f]
   (case method-k
-    :render (partial reactive-render f)
+    :render (clojure.core/partial reactive-render f)
     :should-update (if (vector? f)
                      (fn [this]
                        (first (for [f (if (vector? f) f [f])
@@ -312,6 +313,14 @@
   (.render js/ReactDOM component (cond->> element
                                           (string? element)
                                           (.getElementById js/document))))
+
+(defn partial
+  "Partially apply props to a component. (Props specified here will be overwritten by props at runtime.)"
+  [component props]
+  (fn [& args]
+    (let [[user-props & children] (cond->> args
+                                           (not (map? (first args))) (cons {}))]
+      (apply component (merge props user-props) children))))
 
 (comment
 
