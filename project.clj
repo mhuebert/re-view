@@ -1,4 +1,4 @@
-(defproject re-view "0.3.12"
+(defproject re-view "0.3.13-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
