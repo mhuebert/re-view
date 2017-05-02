@@ -4,7 +4,7 @@
             [cljs.spec.test :as t]
             [clojure.test.check.generators]
             [clojure.string :as string]
-            [re-view-hiccup.react-html :as attrs]))
+            [re-view-hiccup.react.attrs :as attrs]))
 
 
 (defn gen-wrap

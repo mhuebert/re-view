@@ -11,10 +11,13 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]]
 
-  :profiles {:test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]]}
-             :provided {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]]}}
+  :profiles {:test     {:dependencies [[cljsjs/react "15.5.0-0"]
+                                       [cljsjs/react-dom "15.5.0-0"]
+                                       [cljsjs/react-dom-server "15.5.0-0"]
+                                       [org.clojure/test.check "0.9.0"]]}
+             :provided {:dependencies [[cljsjs/react "15.5.0-0"]
+                                       [cljsjs/react-dom "15.5.0-0"]
+                                       [cljsjs/react-dom-server "15.5.0-0"]]}}
 
   :lein-release {:deploy-via :clojars}
 

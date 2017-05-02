@@ -1,10 +1,9 @@
 (ns re-view-hiccup.core
   (:require [clojure.string :as string]
-            [re-view-hiccup.react-html :as react-html]))
+            [re-view-hiccup.react.attrs :as react-html]))
 
 (enable-console-print!)
 (set! *warn-on-infer* true)
-
 
 ;; patch IPrintWithWriter to print javascript symbols without throwing errors
 (when (exists? js/Symbol)
@@ -20,7 +19,7 @@
   (-> (re-find #":([^#.]*)(?:#([^.]+))?(.*)?" (str x))
       (update 1 #(if (= "" %) "div" (string/replace % "/" ":")))
       (update 3 #(when %
-                   (str (string/replace % "." " ") " ")))))
+                   (string/replace (subs % 1) "." " ")))))
 
 ;; parse-key is an ideal target for memoization, because keyword forms are
 ;; frequently reused (eg. in lists) and almost never generated dynamically.
@@ -67,12 +66,13 @@
     style-js))
 
 (defn concat-classes
-  "Concatenate the various attributes which may contain classes
-   for the element. "
+  "Build className from keyword classes, :class and :classes."
   [^js/String k-classes ^js/String class classes]
-  (cond-> k-classes
-          class (str " " class)
-          classes (str " " (string/join " " classes))))
+  (->> (cond-> []
+               k-classes (conj k-classes)
+               class (conj class)
+               classes (into classes))
+       (string/join " ")))
 
 (def ^:dynamic *wrap-props* nil)
 
@@ -96,6 +96,8 @@
           ;; passthrough all other values
           :else (aset prop-js (key->react-attr k) v)))
       prop-js)))
+
+
 
 (defn render-hiccup-node
   "Recursively create React elements from Hiccup vectors."
@@ -123,18 +125,3 @@
   ([form {:keys [wrap-props]}]
    (binding [*wrap-props* wrap-props]
      (element form))))
-
-(comment
-  (assert (= (-> (props->js "el" "pink" {:data-collapse true
-                                         :aria-label    "hello"
-                                         :class         "bg-black"
-                                         :classes       ["white"]
-                                         :style         {:font-family "serif"
-                                                         :font-size   12}})
-                 (js->clj :keywordize-keys true))
-             {:data-collapse true
-              :aria-label    "hello"
-              :className     "pink bg-black white"
-              :style         {:fontFamily "serif"
-                              :fontSize   12}
-              :id            "el"})))
