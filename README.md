@@ -1,7 +1,8 @@
-This is a packaging of [ProseMirror](http://prosemirror.net/) for use with [re-view](github.com/mhuebert/re-view).
+# Re-View ProseMirror
 
-ALPHA
+![badge](https://img.shields.io/clojars/v/re-view-prosemirror.svg)
 
-For now, `lein npm install` and `rollup -c` to build the necessary Prosemirror bundle. (In the future we will load these libs directly.)
+Rich text views for [Re-View](github.com/mhuebert/re-view), built with [ProseMirror](http://prosemirror.net/).
 
-`re-view-prosemirror.core` has an editor configured with serialization to Markdown.
+----
+

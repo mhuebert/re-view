@@ -577,6 +577,7 @@ if (typeof navigator != "undefined") {
   var ie = result.ie = !!(ie_upto10 || ie_11up || ie_edge)
   result.ie_version = ie_upto10 ? document.documentMode || 6 : ie_11up ? +ie_11up[1] : ie_edge ? +ie_edge[1] : null
   result.gecko = !ie && /gecko\/\d/i.test(navigator.userAgent)
+  result.chrome = !ie && /Chrome\//.test(navigator.userAgent)
   result.ios = !ie && /AppleWebKit/.test(navigator.userAgent) && /Mobile\/\w+/.test(navigator.userAgent)
   result.webkit = !ie && 'WebkitAppearance' in document.documentElement.style
 }
@@ -615,12 +616,14 @@ exports.isEquivalentPosition = function(node, off, targetNode, targetOff) {
                         scanFor(node, off, targetNode, targetOff, 1))
 }
 
+var atomElements = /^(img|br|input|textarea|hr)$/i
+
 function scanFor(node, off, targetNode, targetOff, dir) {
   for (;;) {
     if (node == targetNode && off == targetOff) { return true }
     if (off == (dir < 0 ? 0 : nodeSize(node))) {
       var parent = node.parentNode
-      if (parent.nodeType != 1 || hasBlockDesc(parent)) { return false }
+      if (parent.nodeType != 1 || hasBlockDesc(node) || atomElements.test(node.nodeName)) { return false }
       off = domIndex(node) + (dir < 0 ? 0 : 1)
       node = parent
     } else if (node.nodeType == 1) {
@@ -1744,8 +1747,8 @@ SelectionReader.prototype.readFromDOM = function (origin) {
   if (selectionCollapsed(domSel)) {
     $anchor = $head
     while (nearestDesc && !nearestDesc.node) { nearestDesc = nearestDesc.parent }
-    if (nearestDesc && nearestDesc.node.isAtom && NodeSelection.isSelectable(nearestDesc.node)) {
-      var pos = nearestDesc.posAtStart
+    if (nearestDesc && nearestDesc.node.isAtom && NodeSelection.isSelectable(nearestDesc.node) && nearestDesc.parent) {
+      var pos = nearestDesc.posBefore
       selection = new NodeSelection(head == pos ? $head : doc.resolve(pos))
     }
   } else {
@@ -10280,9 +10283,9 @@ function getMods(event) {
 
 function captureKeyDown(view, event) {
   var code = event.keyCode, mods = getMods(event)
-  if (code == 8) { // Backspace
+  if (code == 8 || (browser.mac && code == 72 && mods == "c")) { // Backspace, Ctrl-h on Mac
     return stopNativeHorizontalDelete(view, -1) || skipIgnoredNodesLeft(view)
-  } else if (code == 46) { // Delete
+  } else if (code == 46 || (browser.mac && code == 68 && mods == "c")) { // Delete, Ctrl-d on Mac
     return stopNativeHorizontalDelete(view, 1) || skipIgnoredNodesRight(view)
   } else if (code == 13 || code == 27) { // Enter, Esc
     return true
@@ -10297,10 +10300,6 @@ function captureKeyDown(view, event) {
   } else if (mods == (browser.mac ? "m" : "c") &&
              (code == 66 || code == 73 || code == 89 || code == 90)) { // Mod-[biyz]
     return true
-  } else if (browser.mac && // Ctrl-[dh] and Alt-d on Mac
-             ((code == 68 || code == 72) && mods == "c") ||
-              (code == 68 && mods == "a")) {
-    return stopNativeHorizontalDelete(view, code == 68 ? 1 : -1) || skipIgnoredNodesRight(view)
   }
   return false
 }
@@ -10682,10 +10681,13 @@ function posAtCoords(view, coords) {
       ((assign$1 = range, node = assign$1.startContainer, offset = assign$1.startOffset)) }
   }
 
-  var elt = root.elementFromPoint(coords.left, coords.top + 1)
+  var elt = root.elementFromPoint(coords.left, coords.top + 1), pos
   if (!elt) { return null }
-  var pos = node ? posFromCaret(view, node, offset, coords) : posFromElement(view, elt, coords)
-  if (pos == null) { return null }
+  if (node) { pos = posFromCaret(view, node, offset, coords) }
+  if (pos == null) {
+    pos = posFromElement(view, elt, coords)
+    if (pos == null) { return null }
+  }
 
   var desc = view.docView.nearestDesc(elt, true)
   return {pos: pos, inside: desc ? desc.posAtStart - desc.border : -1}
@@ -11796,6 +11798,9 @@ ViewDesc.prototype.parseRange = function (from, to, base) {
     var this$1 = this;
     if ( base === void 0 ) base = 0;
 
+  if (this.children.length == 0)
+    { return {node: this.contentDOM, from: from, to: to, fromOffset: 0, toOffset: this.contentDOM.childNodes.length} }
+
   var fromOffset = -1, toOffset = -1
   for (var offset = 0, i = 0;; i++) {
     var child = this$1.children[i], end = offset + child.size
@@ -12217,7 +12222,8 @@ var TextViewDesc = (function (NodeViewDesc) {
   TextViewDesc.prototype.constructor = TextViewDesc;
 
   TextViewDesc.prototype.parseRule = function () {
-    return {skip: this.nodeDOM.parentNode}
+    var parent = this.nodeDOM.parentNode
+    return parent ? {skip: parent} : {ignore: true}
   };
 
   TextViewDesc.prototype.update = function (node, outerDeco) {

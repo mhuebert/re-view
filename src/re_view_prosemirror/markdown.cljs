@@ -1,6 +1,6 @@
 (ns re-view-prosemirror.markdown
   (:require [re-view.core :as v]
-            [bundle.prosemirror-markdown]
+            [pack.prosemirror-markdown]
             [re-view-prosemirror.core :as core]))
 
 (def pmMarkdown (.-pmMarkdown js/window))

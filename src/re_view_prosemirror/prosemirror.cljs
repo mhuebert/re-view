@@ -1,5 +1,5 @@
 (ns re-view-prosemirror.prosemirror
-  (:require [bundle.prosemirror]
+  (:require [pack.prosemirror]
             [cljsjs.markdown-it]
             [clojure.set :as set]
             [clojure.string :as string]))

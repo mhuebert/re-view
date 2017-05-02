@@ -1,5 +1,5 @@
 {:foreign-libs [{:file     "js/pm.pack.js"
-                 :provides ["bundle.prosemirror"]}
+                 :provides ["pack.prosemirror"]}
                 {:file     "js/pmMarkdown.pack.js"
-                 :requires ["bundle.prosemirror" "cljsjs.markdown-it"]
-                 :provides ["bundle.prosemirror-markdown"]}]}
+                 :requires ["pack.prosemirror" "cljsjs.markdown-it"]
+                 :provides ["pack.prosemirror-markdown"]}]}
