@@ -1,4 +1,4 @@
-(defproject re-view-prosemirror "0.1.2"
+(defproject re-view-prosemirror "0.1.3-SNAPSHOT"
   :description "prosemirror editor in re-view"
   :url "https://www.github.com/mhuebert/re-view-prosemirror"
   :license {:name "MIT License"
