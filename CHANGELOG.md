@@ -1,7 +1,14 @@
 
 ### Changelog
 
-0.3.10
+0.3.13
+- Fix bug in debug log for errors in component render
+
+
+0.3.12
+- Add `re-view.core/partial` to partially apply props to a view
+
+0.3.11
 - Custom keys in method maps are added using `set!` (& camelCase) to play well with advanced compilation, so
   the following should 'just work':
   

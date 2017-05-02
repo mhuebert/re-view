@@ -40,7 +40,7 @@
          (catch js/Error e
            (if-let [catch-fn (aget this "catch")]
              (catch-fn e)
-             (do (.debug js/console "No :catch method in component: " (.. this -type -displayName))
+             (do (.debug js/console "No :catch method in component: " this)
                  (.error js/console e)))))))
 
 (defn force-update [this]

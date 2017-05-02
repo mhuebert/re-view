@@ -20,9 +20,7 @@
   [prop-atom path]
   (let [v (get-in @prop-atom path)
         set-val! #(swap! prop-atom assoc-in path %)
-        id (->> path
-                (map name)
-                (string/join "/"))]
+        id (string/join "/" path)]
     [:.dib {:key id}
      (cond (fn? v) [:.i.ph2 "fn"]
            (string? v) (ui/Input {:value     v
