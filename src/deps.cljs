@@ -1,2 +1,2 @@
-{:foreign-libs [{:file     "js/material.min.js"
-                 :provides ["material-mdl"]}]}
+{:foreign-libs [{:file     "js/mdc.pack.js"
+                 :provides ["pack.mdc"]}]}
