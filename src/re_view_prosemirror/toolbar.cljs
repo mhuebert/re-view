@@ -1,0 +1,107 @@
+(ns re-view-prosemirror.toolbar
+  (:require [re-view-prosemirror.prosemirror :as pm]
+            [re-view-material.core :as ui]
+            [re-view-material.icons :as icons]))
+
+
+(def menu-item-element :.dib.pa2.serif)
+
+(defn menu-item
+  "Renders a menu item with icon"
+  [key pm-state dispatch cmd active? icon]
+  (let [enabled? (cmd pm-state)]
+    [menu-item-element (-> (if (false? enabled?)
+                             {:class "o-30"}
+                             {:class         (str "pointer hover-bg-near-white "
+                                                  (when active? "blue"))
+                              :on-mouse-down (fn [^js/Event e]
+                                               (.preventDefault e)
+                                               (cmd pm-state dispatch))})
+                           (assoc :key key))
+     (update icon 1 assoc :width 18)]))
+
+(defn mark-strong [state dispatch]
+  (menu-item :strong state dispatch (pm/toggle-mark state :strong) (pm/has-mark? state :strong) icons/FormatBold))
+
+(defn mark-em [state dispatch]
+  (menu-item :em state dispatch (pm/toggle-mark state :em) (pm/has-mark? state :em) icons/FormatItalic))
+
+
+(defn list-bullet [state dispatch]
+  (let [in-bullet-list? (pm/in-list? state "bullet_list")]
+    (menu-item :bullet-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :bullet_list))
+                                                    in-bullet-list? (pm/chain
+                                                                      pm/lift
+                                                                      (pm/lift-list-item (pm/get-node state :list_item))))
+               in-bullet-list? icons/FormatListBulleted)))
+
+(defn list-ordered [state dispatch]
+  (let [in-ordered-list? (pm/in-list? state "ordered_list")]
+    (menu-item :ordered-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :ordered_list))
+                                                     in-ordered-list? (pm/chain
+                                                                        pm/lift
+                                                                        (pm/lift-list-item (pm/get-node state :list_item))))
+               in-ordered-list? icons/FormatListOrdered)))
+
+(defn tab-outdent [state dispatch]
+  (menu-item :outdent state dispatch (pm/chain
+                                       (pm/lift-list-item (pm/get-node state :list_item))
+                                       pm/lift) false icons/FormatOutdent))
+
+(defn tab-indent [state dispatch]
+  (menu-item :indent state dispatch (pm/sink-list-item (pm/get-node state :list_item)) false icons/FormatIndent))
+
+(defn block-code [state dispatch]
+  (menu-item :code-block state dispatch (pm/chain
+                                          (pm/set-block-type (pm/get-node state :code_block) nil)
+                                          (pm/set-block-type (pm/get-node state :paragraph) nil)) (pm/is-block-type? state :code_block nil) icons/Code))
+
+(defn wrap-quote [state dispatch]
+  (menu-item :blockquote state dispatch (pm/wrap-in state :blockquote) false icons/FormatQuote))
+
+(defn block-heading
+  "Dropdown menu with paragraph and header block types"
+  [heading-n]
+  (fn [state dispatch]
+    (let [set-p (pm/set-block-type (pm/get-node state :paragraph) nil)
+          set-h1 (pm/set-block-type (pm/get-node state :heading) #js {"level" 1})
+          active? (or (set-p state) (set-h1 state))]
+      (ui/DropDown nil
+                   [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
+                                                  {:class "o-30"}) (update icons/FormatSize 1 assoc :width 18)]
+                   (when active?
+                     (ui/Menu {:direction [:right :down]}
+                              [:div
+                               (ui/MenuItem {:key          "p"
+                                             :primary-text "Paragraph"
+                                             :disabled     (false? (set-p state))
+                                             :on-click     #(set-p state dispatch)})
+                               (for [i (range 1 (inc heading-n))
+                                     :let [cmd (pm/set-block-type (pm/get-node state :heading) #js {"level" i})]]
+                                 (ui/MenuItem {:key          i
+                                               :disabled     (false? (cmd state))
+                                               :on-click     #(cmd state dispatch)
+                                               :primary-text [:div {:class (str "f" i)} (str "Heading " i)]}))]))))))
+
+(def all-toolbar-items
+  [mark-strong
+   mark-em
+   list-bullet
+   list-ordered
+   tab-outdent
+   tab-indent
+   block-code
+   wrap-quote
+   (block-heading 6)])
+
+(comment
+
+  (defn toolbar-example
+    "Render a list of toolbar items"
+    [state dispatch]
+    [:div
+     (for [menu-item [mark-strong
+                      mark-em
+                      list-bullet
+                      wrap-quote]]
+       (menu-item state dispatch))]))

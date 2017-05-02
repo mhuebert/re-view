@@ -1,12 +1,13 @@
-(defproject org.clojars.mhuebert/re-view-prosemirror "0.1.0-SNAPSHOT"
+(defproject re-view-prosemirror "0.1.0"
             :description "prosemirror editor in re-view"
             :url "https://www.github.com/mhuebert/re-view-prosemirror"
             :license {:name "MIT License"
                       :url  "http://www.opensource.org/licenses/mit-license.php"}
             :min-lein-version "2.7.1"
             :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                           [org.clojure/clojurescript "1.9.518"]]
-            :provided {:dependencies [[org.clojars.mhuebert/re-view "0.3.7"]
+                           [org.clojure/clojurescript "1.9.518"]
+                           [cljsjs/markdown-it "7.0.0-0"]]
+            :provided {:dependencies [[org.clojars.mhuebert/re-view "0.3.9"]
                                       [org.clojars.mhuebert/re-view-material "0.1.0-SNAPSHOT"]]}
             :cljsbuild {:builds []}
             :plugins [[lein-npm "0.6.2"]]
@@ -20,11 +21,11 @@
                                  [prosemirror-transform "0.20.0"]
                                  [prosemirror-schema-list "0.20.0"]
                                  [prosemirror-inputrules "0.20.0"]
-                                 [markdown-it "6.0.4"]
 
                                  [rollup-plugin-commonjs "8.0.2"]
                                  [rollup-plugin-json "2.1.1"]
                                  [rollup-plugin-node-builtins "2.1.0"]
                                  [rollup-plugin-node-resolve "3.0.0"]
+                                 [rollup-plugin-uglify "1.0.2"]
                                  [rollup-watch "3.2.2"]]}
-            :source-paths ["src"])
+            :source-paths ["src" "example"])
