@@ -7,13 +7,16 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
 
-                 [org.clojars.mhuebert/re-view "0.3.7"]
-                 [org.clojars.mhuebert/re-view-material "0.1.0-SNAPSHOT"]
-                 [org.clojars.mhuebert/re-view-prosemirror "0.1.0-SNAPSHOT"]
+                 [re-view "0.3.12"]
+                 [re-view-routing "0.1.1"]
+                 [re-view-prosemirror "0.1.2-SNAPSHOT"]
+                 [re-view-material "0.1.0"]
 
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [cljsjs/react "15.5.0-0"]
-                 [cljsjs/react-dom "15.5.0-0"]]
+                 [cljsjs/react-dom "15.5.0-0"]
+                 [cljsjs/react-dom-server "15.5.0-0"]
+                 [cljsjs/markdown-it "7.0.0-0"]]
 
   :plugins [[lein-figwheel "0.5.10"]
             [lein-cljsbuild "1.1.5" :exclusions [org.clojure/clojure]]]
@@ -21,6 +24,8 @@
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
                                     "target"]
 
+
+  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]} }
   :source-paths ["src"]
 
   :cljsbuild {:builds [{:id           "dev"
@@ -31,7 +36,10 @@
                                        :output-dir           "resources/public/js/out"
                                        :asset-path           "/js/out"
                                        :source-map-timestamp true
-                                       :source-map true
+                                       :source-map           true
+
+                                       :language-in          :es5
+
 
                                        :optimizations        :none}}
                        {:id           "prod"

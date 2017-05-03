@@ -1,10 +1,13 @@
 
+
+
 @import '../../node_modules/prosemirror-view/style/prosemirror';
 
 @import '../../node_modules/@material/animation/mdc-animation';
 @import '../../node_modules/@material/button/mdc-button';
 @import '../../node_modules/@material/checkbox/mdc-checkbox';
 @import '../../node_modules/@material/drawer/mdc-drawer';
+@import '../../node_modules/@material/dialog/mdc-dialog';
 //@import '../../node_modules/@material/elevation/mdc-elevation';
 @import '../../node_modules/@material/form-field/mdc-form-field';
 @import '../../node_modules/@material/list/mdc-list';
@@ -59,4 +62,14 @@ blockquote:after, blockquote:before {
 }
 input, textarea, select, button {
   color: inherit;
+}
+
+a {
+  color: var(--mdc-theme-primary, darkblue);
+}
+.mdc-theme--dark a {
+  color: white; //var(--mdc-theme-accent, white);
+}
+.mdc-simple-menu .mdc-list-item.mdc-ripple-upgraded {
+  left: 0;
 }

@@ -4,10 +4,29 @@
   "main": " ",
   "license": "MIT",
   "dependencies": {
+    "autoprefixer": "^6.7.7",
+    "css-loader": "^0.28.1",
+    "extract-text-webpack-plugin": "^2.1.0",
     "firebaseui": "^1.0.1",
-    "material-components-web": "^0.9.1",
+    "global": "^4.3.2",
+    "left-pad": "^1.1.3",
+    "material-components-web": "0.10.0",
+    "module-deps": "^4.1.1",
     "node-sass": "^4.5.2",
+    "postcss": "^5.2.17",
+    "postcss-cli": "^3.2.0",
+    "postcss-loader": "^1.3.3",
     "prosemirror-view": "^0.20.4",
-    "tachyons": "^4.7.1"
+    "react": "^15.5.4",
+    "react-dom": "^15.5.4",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-json": "^2.1.1",
+    "rollup-plugin-node-builtins": "^2.1.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-replace": "^1.1.1",
+    "sass-loader": "^6.0.3",
+    "style-loader": "^0.17.0",
+    "tachyons": "^4.7.1",
+    "webpack": "^2.4.1"
   }
 }
