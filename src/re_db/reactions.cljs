@@ -9,7 +9,7 @@
      (cond (false? fresh-f)
            (do
              ;; remove computed value
-             (apply unlisten! db (concat prev-patterns (list prev-listener)))
+             (unlisten! db prev-patterns prev-listener)
              (swap! db update-in [:listeners :computed] dissoc [id attr])
              true)
 
@@ -27,9 +27,9 @@
              (when (not= prev-patterns next-patterns)
                (swap! db assoc-in [:listeners :computed [id attr] :patterns next-patterns])
                (when (seq prev-patterns)
-                 (apply unlisten! db (concat prev-patterns (list prev-listener))))
+                 (apply unlisten! db prev-patterns prev-listener))
                (when (seq next-patterns)
-                 (apply listen! db (concat next-patterns (list prev-listener)))))
+                 (apply listen! db next-patterns prev-listener)))
              (re-db.core/transact! db [[:db/add id attr value]])
              value)))))
 

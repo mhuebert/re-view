@@ -1,6 +1,6 @@
-(defproject org.clojars.mhuebert/re-db "0.1.9-SNAPSHOT"
-  :description "Tiny data store"
-  :url "http://example.com/FIXME"
+(defproject re-db "0.1.9-SNAPSHOT"
+  :description "in-memory javascript key-value store inspired by Datomic and DataScript"
+  :url "https://www.github.com/mhuebert/re-db"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
@@ -12,7 +12,7 @@
             [lein-figwheel "0.5.0-2"]
             [lein-doo "0.1.6"]]
 
-  :source-paths ["src"]
+  :source-paths ["src" "example"]
 
   :doo {:build "test"}
 

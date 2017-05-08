@@ -5,26 +5,27 @@
 
 (defonce ^:dynamic *db* (d/create {}))
 
-(defn prefix-atom
-  ([f] (prefix-atom f false))
-  ([f read?] (fn [& args]
-               (let [db (or *db* *db*)]
-                 (apply f (cond-> db read? deref) args)))))
+(defn partial-deref
+  "Partially apply a (an atom) to f, but deref the atom at time of application."
+  [a f deref?]
+  (fn [& args]
+    (apply f @a args)))
 
-(def entity (prefix-atom d/entity true))
-(def contains? (prefix-atom d/contains? true))
-(def entities (prefix-atom d/entities true))
-(def entity-ids (prefix-atom d/entity-ids true))
-(def get (prefix-atom d/get true))
-(def get-in (prefix-atom d/get-in true))
-(def touch (prefix-atom d/touch true))
-(def select-keys (prefix-atom d/select-keys true))
-(def transaction (prefix-atom d/transaction true))
+(def entity (partial-deref *db* d/entity true))
+(def get (partial-deref *db* d/get true))
+(def get-in (partial-deref *db* d/get-in true))
+(def select-keys (partial-deref *db* d/select-keys true))
 
+(def entity-ids (partial-deref *db* d/entity-ids true))
+(def entities (partial-deref *db* d/entities true))
 
-(def transact! (prefix-atom d/transact!))
-(def listen! (prefix-atom d/listen!))
-(def unlisten! (prefix-atom d/unlisten!))
-(def merge-schema! (prefix-atom d/merge-schema!))
+(def contains? (partial-deref *db* d/contains? true))
+(def touch (partial-deref *db* d/touch true))
+
+(def transact! (partial *db* d/transact!))
+(def listen! (partial *db* d/listen!))
+(def unlisten! (partial *db* d/unlisten!))
+(def merge-schema! (partial *db* d/merge-schema!))
+
 (def squuid d/squuid)
-(def namespace (prefix-atom d/namespace true))
+(def capture-patterns* d/capture-patterns*)

@@ -31,3 +31,5 @@
           ~@(for [k (drop-last ks)]
               (list 'clojure.core/get k))
           (clojure.core/get ~(last ks) ~not-found)))))
+
+add-watch

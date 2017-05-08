@@ -10,7 +10,7 @@
     (is (satisfies? cljs.core/IDeref db)
         "DB is an atom")
 
-    (d/listen! db :tx-log #(swap! tx-log conj %))
+    (d/listen! db [:tx-log] #(swap! tx-log conj (:datoms %)))
 
     (d/transact! db [{:db/id "herman"}])
 
@@ -32,12 +32,12 @@
     (is (= "teacher" (d/get @db "herman" :occupation))
         "d/get an attribute of an entity")
 
-    (is (= 1 (count (d/entities @db [:occupation "teacher"])))
+    (is (= 1 (count (d/entities @db [[:occupation "teacher"]])))
         "Query on non-indexed attr")
 
     (d/transact! db [{:db/id "fred" :occupation "teacher"}])
 
-    (is (= 2 (count (d/entities @db [:occupation "teacher"])))
+    (is (= 2 (count (d/entities @db [[:occupation "teacher"]])))
         "Verify d/insert! and query on non-indexed field")
 
     (d/transact! db [[:db/retract-attr "herman" :occupation]])
@@ -45,7 +45,7 @@
     (is (nil? (d/get @db "herman" :occupation))
         "Retract attribute")
 
-    (is (= 1 (count (d/entities @db [:occupation "teacher"])))
+    (is (= 1 (count (d/entities @db [[:occupation "teacher"]])))
         "Retract non-indexed field")
 
     (d/transact! db [[:db/retract-attr "herman" :id]])
@@ -121,16 +121,16 @@
         "cardinality/many attribute returned as set")
 
     (is (= #{"fred"}
-           (d/entity-ids @db [:children "sally"])
-           (d/entity-ids @db [:children "pete"]))
+           (d/entity-ids @db [[:children "sally"]])
+           (d/entity-ids @db [[:children "pete"]]))
         "look up via cardinality/many index")
 
     (testing "remove value from cardinality/many attribute"
       (d/transact! db [[:db/retract-attr "fred" :children #{"sally"}]])
 
-      (is (= #{} (d/entity-ids @db [:children "sally"]))
+      (is (= #{} (d/entity-ids @db [[:children "sally"]]))
           "index is removed on retraction")
-      (is (= #{"fred"} (d/entity-ids @db [:children "pete"]))
+      (is (= #{"fred"} (d/entity-ids @db [[:children "pete"]]))
           "index remains for other value")
       (is (= #{"pete"} (d/get @db "fred" :children))
           "attribute has correct value"))
@@ -154,7 +154,7 @@
       (d/transact! db [[:db/add "fred" :pets #{"fido"}]])
       (is (= "fred" (:db/id (d/entity @db [:pets "fido"]))))
       #_(throws (d/transact! db [[:db/add "herman" :pets #{"fido"}]])
-              "Two entities with same unique :db.cardinality/many attr")
+                "Two entities with same unique :db.cardinality/many attr")
       (throws (d/transact! db [{:db/id "herman"
                                 :pets  #{"fido"}}])
               "Two entities with same unique :db.cardinality/many attr"))))
@@ -174,30 +174,21 @@
 
     (is (= "Mary" (d/get @db [:person/children "john"] :name)))
 
-    (d/listen! db ["mary"] (cb :mary-entity))
+    (d/listen! db [["mary"]] (cb :mary-entity))
 
-    (d/listen! db [[:person/children "peter"]] (fn [& args]
-                                                 (apply (cb :peter-children) args)))
+    (d/transact! db [[:db/add "mary" :name "MMMary"]])
+    (is (= [["mary" :name "MMMary" "Mary"]] (:datoms (:mary-entity @log)))
+        "Entity listener called when attribute changes")
 
-    (d/transact! db [{:db/id "peter"
-                      :name  "Peter"}
-                     [:db/add "mary"
-                      :person/children #{"peter"}]
-                     [:db/add "mary" :name "MMMary"]])
+    (d/transact! db [{:db/id "peter" :name "Peter"}])
+    (d/listen! db [[[:person/children "peter"]]] (cb :peter-as-child))
+    (d/transact! db [[:db/add "mary" :person/children #{"peter"}]])
 
-    (is (= "MMMary" (:name (d/entity @db (:mary-entity @log))))
-        "Entity listener called with entity id")
-
-    (is (= [:person/children "peter"] (:peter-children @log))
-        "Lookup ref entity listener is called with lookup ref")
+    (is (= [["mary" :person/children #{"peter"} nil]] (:datoms (:peter-as-child @log)))
+        "Lookup ref entity listener is called when attr-val pair changes")
 
     (d/transact! db [[:db/retract-attr "mary" :person/children #{"peter"}]])
 
-    (is (and (= [:person/children "peter"] (:peter-children @log))
-             (= nil (d/entity @db (:peter-children @log))))
-        "Lookup ref entity listener is called with lookup ref")
-
-
-    ;; attr-val listeners - look for `nil` on retraction, id on added
-
-    ))
+    (is (and (= [["mary" :person/children nil #{"peter"}]] (:datoms (:peter-as-child @log)))
+             (= nil (d/entity @db [:person/children "peter"])))
+        "Lookup ref listener is called when lookup reference is retracted")))
