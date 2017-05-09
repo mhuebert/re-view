@@ -12,4 +12,4 @@ In Re-View, each component has a [state atom](../re-view/getting-started#state-a
 
 ## In ClojureScript
 
-In ClojureScript we use [atoms](atoms) to keep track of state. 
+In ClojureScript we use [atoms](atoms) to keep track of state.

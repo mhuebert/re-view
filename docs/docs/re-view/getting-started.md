@@ -137,7 +137,7 @@ There are two other special keys:
 
 ## State
 
-Re-View supports two ways of managing state.
+Re-View supports two ways of managing [state](../explainers/state).
 
 ### State Atom
 
