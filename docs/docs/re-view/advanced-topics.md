@@ -1,13 +1,13 @@
-:toc:
+# Re-View: Advanced Topics
 
 
 ## Advanced compilation
 
-For trouble-free https://github.com/clojure/clojurescript/wiki/Advanced-Compilation[advanced compilation], items defined in the method map should be accessed in camelCase with dot syntax (eg. `(.-someProperty this)` or `(.someFunction this "my-arg")`, **not** using `aset` or `goog.object/get`. Keys are added via `set!` for Closure Compiler compatibility, so trying to read them by string will fail.
+For trouble-free [advanced compilation](https://github.com/clojure/clojurescript/wiki/Advanced-Compilation), items defined in the method map should be accessed in camelCase with dot syntax (eg. `(.-someProperty this)` or `(.someFunction this "my-arg")`, **not** using `aset` or `goog.object/get`. Keys are added via `set!` for Closure Compiler compatibility, so trying to read them by string will fail.
 
 ## Keys on the component
 
-Re-View components implement https://cljs.github.io/api/cljs.core/ILookup[ILookup] for succinct access to items in the props map. Because a component is always passed as the first argument to all of its methods, we can read the props we need by destructuring on `this`, pass in child elements as additional arguments, and still have access to the component itself:
+Re-View components implement [ILookup](https://cljs.github.io/api/cljs.core/ILookup) for succinct access to items in the props map. Because a component is always passed as the first argument to all of its methods, we can read the props we need by destructuring on `this`, pass in child elements as additional arguments, and still have access to the component itself:
 
 ```clj
 (defview Post
@@ -30,7 +30,7 @@ We can also `get` three additional keys on `this`:
 
 ## Mixins
 
-Mixins are https://facebook.github.io/react/blog/2016/07/13/mixins-considered-harmful.html[not supported] by `defview`. 
+Mixins are [not supported](https://facebook.github.io/react/blog/2016/07/13/mixins-considered-harmful.html) by `defview`.
 
 **`v/compseq`** composes functions to execute sequentially on the same arguments, useful for composing lifecycle methods:
 

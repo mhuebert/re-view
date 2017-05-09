@@ -1,11 +1,10 @@
-:toc:
+## Re-View: Getting Started
 
 ## Your First View 
 
 Add re-view to your `:dependencies` in `project.clj`: 
 
-image::https://img.shields.io/clojars/v/re-view.svg[badge]
-
+![badge](https://img.shields.io/clojars/v/re-view.svg)
 
 Require `re-view.core` like so:
 
@@ -107,18 +106,17 @@ Remember, the first argument to the view function always the component itself (`
 
 React https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle[lifecycle methods] are supported via the following keys:
 
-|===
-| Method key        | React equivalent  |         
 
-| :initial-state      | getInitialState         | Initial value for the `:view/state` atom. Can be function (of `this`) or other value.   
-| :will-mount         | componentWillMount             
-| :did-mount          | componentDidMount            
-| :will-receive-props | componentWillReceiveProps 
-| :should-update      | shouldComponentUpdate     
-| :will-update        | componentWillUpdate       
-| :did-update         | componentDidUpdate        
-| :will-unmount       | componentWillUnmount  |                                                                                                                                                                                     
-|===
+| Method key          | React equivalent          ||
+|---|---|
+| :initial-state      | getInitialState           | Initial value for the `:view/state` atom. Can be function (of `this`) or other value. |
+| :will-mount         | componentWillMount        ||
+| :did-mount          | componentDidMount         ||
+| :will-receive-props | componentWillReceiveProps ||
+| :should-update      | shouldComponentUpdate     ||
+| :will-update        | componentWillUpdate       ||
+| :did-update         | componentDidUpdate        ||
+| :will-unmount       | componentWillUnmount      ||
 
 **Example:**
 
@@ -132,12 +130,11 @@ React https://facebook.github.io/react/docs/react-component.html#the-component-l
 
 There are two other special keys:
 
-|===
-| key | React Equivalent |
 
-| :key          | key | A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
+| key | React Equivalent ||
+|---|---|---|
+| :key          | key | A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number. |
 | :display-name | displayName | A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.  |
-|===
 
 ## State
 

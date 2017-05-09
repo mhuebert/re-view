@@ -1,3 +1,5 @@
+# Clojure Atoms
+
 A Clojure [atom](https://clojure.org/reference/atoms) is a thing that can change. It is a container, which can hold any kind of Clojure value (eg. a string, a vector, a map). Change an atom by calling `swap!` or `reset!` on it.
 
 Create an atom by passing `atom` an initial value (or nothing, for an empty atom).

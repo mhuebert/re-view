@@ -1,9 +1,7 @@
-:toc:
-:toc-placement!:
+# Re-View Routing
 
-**https://github.com/mhuebert/re-view-routing[re-view-routing]** provides an API to listen for changes to a browser's location, and parses routes into simple Clojure data structures. The current route is 'just another fact' that views can depend on. 
+**[re-view-routing](https://github.com/mhuebert/re-view-routing)** provides an API to listen for changes to a browser's location, and parses routes into simple Clojure data structures. The current route is 'just another fact' that views can depend on.
 
-toc::[]
 
 ## API
 

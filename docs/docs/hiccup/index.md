@@ -1,11 +1,8 @@
-:toc:
-:toc-placement!:
+# Hiccup
 
 If you're new to hiccup, check out the **link:Hiccup-Syntax[Hiccup Syntax]** guide.
 
-''''
-
-toc::[]
+----
 
 # API
 
@@ -23,7 +20,7 @@ toc::[]
 
 = Syntax Notes
 
-=== Attributes 
+### Attributes
 
 Unlike React, we support `:for` and `:class` attributes, instead of `:html-for`, and `:className`. This is to be more consistent with HTML syntax (vs. the javascript DOM api).
 
@@ -31,7 +28,7 @@ The `:classes` attribute accepts a collection (eg. a vector or set) of classes, 
 
 Use dashed prop and style keys, eg. `:font-size`; keys are converted to `camelCase` as necessary (`data-` and `aria-` attributes remain hyphenated as required by React).
 
-=== Element names
+### Element names
 
 Element names must be keywords, and support CSS selector syntax for adding IDs and classes. If no element name is provided, a `div` is returned. For example:
 
@@ -41,7 +38,7 @@ Element names must be keywords, and support CSS selector syntax for adding IDs a
 
 Anything in the second position of a hiccup vector that is not a Clojure `map` is passed as a child element.   
 
-= React dependency
+# React dependency
 
 `cljsjs.react` and `cljsjs.react.dom` namespaces are required, but not included. They must be provided separately. You can use any version of React you like. We only expect `React.createElement` to be in the global environment.
   

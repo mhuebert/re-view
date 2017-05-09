@@ -1,4 +1,6 @@
-:toc:
+## Hiccup Syntax
+
+Introduction for first-timers.
 
 ## Get started
 
