@@ -131,10 +131,13 @@ React https://facebook.github.io/react/docs/react-component.html#the-component-l
 There are two other special keys:
 
 
-| key | React Equivalent ||
-|---|---|---|
-| :key          | key | A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number. |
-| :display-name | displayName | A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.  |
+**:key** (_key_ in React)
+
+A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
+
+**:display-name** (_displayName_ in React)
+
+A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.
 
 ## State
 
