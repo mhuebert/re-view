@@ -1,6 +1,6 @@
 # Differences
 
-## Reagent
+## Compared to Reagent
 
 It should be said that Reagent is beautiful and simple for many use cases.
 
@@ -9,7 +9,9 @@ It should be said that Reagent is beautiful and simple for many use cases.
 Reagent uses 'reactive atoms' to handle state.
 
 - Components track which atoms are read (dereferenced) during render, and when those atoms change, the view is re-rendered. There are no other rules about which atoms will trigger which components to render. Without reading a lot of code, it's not obvious which views will update when atoms change. Atoms and cursors can be `def`'d in namespaces and bound in closures all across your app.
-- A common pattern is to put all of an app's state in a single atom, and then use [cursors](https://github.com/reagent-project/reagent-cookbook/tree/master/basics/cursors) to 'break up' the atom into smaller pieces to pass to components. A cursor behaves exactly like an atom itself, but it is derived from a parent atom, and can only read & write a particular path into its parent. Every time an atom changes, it must perform an equality check for each of its child cursors to determine which have changed. This is usually no problem, but in some cases can cause performance issues (eg. if you have hundreds or more cursors into the same atom).
+- A common pattern is to put all of an app's state in a single atom, and then use [cursors](https://github.com/reagent-project/reagent-cookbook/tree/master/basics/cursors) to 'break up' the atom into smaller pieces to pass to components.
+
+    A cursor behaves exactly like an atom itself, but it is derived from a parent atom, and can only read & write a particular path into its parent. Every time an atom changes, it must perform an equality check for each of its child cursors to determine which have changed. This is usually no problem, but in some cases can cause performance issues (eg. if you have hundreds or more cursors into the same atom).
 
 Re-View has two ways of managing state.
 
