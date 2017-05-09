@@ -19,7 +19,7 @@
 (defn camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
   [s]
-  (clojure.string/replace s #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
+  (clojure.string/replace (name s) #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
 
 (defn dom-node
   "Return DOM node for component"
@@ -52,15 +52,17 @@
 
 (defn reactive-render
   "Wraps a render function to record database reads and listen to accessed patterns."
-  [f this]
-  (let [{:keys [patterns value]} (d/capture-patterns (apply f this (get this :view/children)))
-        prev-patterns (aget this "reactivePatterns")]
-    (when-not (= prev-patterns patterns)
-      (some-> (aget this "reactiveUnsubscribe") (.call))
-      (aset this "reactiveUnsubscribe" (when-not (empty? patterns)
-                                         (apply re-db.d/listen! (conj (vec patterns) #(force-update this)))))
-      (aset this "reactivePatterns" patterns))
-    value))
+  [f]
+  (fn []
+    (this-as this
+      (let [{:keys [patterns value]} (d/capture-patterns (apply f this (aget this "re$view" "children")))
+            prev-patterns (aget this "reDbPatterns")]
+        (when-not (= prev-patterns patterns)
+          (some-> (aget this "reactiveUnsubscribe") (.call))
+          (aset this "reactiveUnsubscribe" (when-not (empty? patterns)
+                                             (re-db.d/listen! patterns #(force-update this))))
+          (aset this "reDbPatterns" patterns))
+        value))))
 
 (def kmap {:constructor        "constructor"
            :initial-state      "$getInitialState"
@@ -92,7 +94,7 @@
 (defn wrap-methods
   [method-k f]
   (case method-k
-    :render (clojure.core/partial reactive-render f)
+    :render (reactive-render f)
     :should-update (if (vector? f)
                      (fn [this]
                        (first (for [f (if (vector? f) f [f])
@@ -114,24 +116,22 @@
   (case method-k
     (:initial-state
       :key
-      :constructor) f
+      :constructor
+      :render) f
     :will-receive-props
     (fn [props]
       (binding [*trigger-state-render* false]
-        (this-as this (f this props))))
+        (f (js-this) props)))
     (:will-mount :will-unmount :will-receive-state :will-update)
     (fn []
       (binding [*trigger-state-render* false]
-        (this-as this
-          (apply f this (get this :view/children)))))
+        (apply f (js-this) (aget (js-this) "re$view" "children"))))
     (:did-mount :did-update)
     (fn []
-      (this-as this
-        (apply f this (get this :view/children))))
+      (apply f (js-this) (aget (js-this) "re$view" "children")))
     (if (fn? f)
       (fn [& args]
-        (this-as this
-          (apply f this args)))
+        (apply f (js-this) args))
       f)))
 
 (defn init-state
@@ -203,7 +203,7 @@
       ([this k]
        (if-let [re-view-var (and (keyword? k)
                                  (= "view" (namespace k))
-                                 (camelCase (name k)))]
+                                 (camelCase k))]
          (do (when (and (= re-view-var "state") (not (gobj/containsKey (aget this "re$view") "state")))
                (aset this "re$view" "state" (init-state this nil)))
              (aget this "re$view" re-view-var))
@@ -211,7 +211,7 @@
       ([this k not-found]
        (if-let [re-view-var (and (keyword? k)
                                  (= "view" (namespace k))
-                                 (camelCase (name k)))]
+                                 (camelCase k))]
          (aget this "re$view" re-view-var)
          (get (aget this "re$view" "props") k not-found))))))
 
@@ -221,10 +221,7 @@
   (binding [*trigger-state-render* false]
     (apply swap! args)))
 
-(def ^:export ReactComponent
-  (do
-    (specify-protocols (.-prototype js/React.Component))
-    js/React.Component))
+
 
 (defn mock
   "Initialize an unmounted element, from which props and instance methods can be read."
@@ -236,37 +233,55 @@
 (defn element-get
   "'Get' from an unmounted element"
   [element k]
-  (or (some-> (aget element "type") (aget (camelCase (name k))))
+  (or (some-> (aget element "type") (aget (camelCase k)))
       (get (mock element) k)))
 
-(defn extend-react-component [constructor display-name docstring child]
-  (let [proto (reduce-kv (fn [m k v]
-                           (doto m (aset (get kmap k) v))) (new ReactComponent) child)]
-    (doto constructor
-      (aset "prototype" proto)
-      (aset "docstring" docstring)
-      (aset "displayName" display-name))))
+(defn init-element
+  "Body of constructor function for ReView component."
+  [this $props]
+  (init-props this $props)
+  (when-let [initial-state (aget this "$getInitialState")]
+    (init-state this (cond-> initial-state
+                             (fn? initial-state) (apply this (aget this "re$view" "children")))))
+  this)
+
+(specify-protocols (.-prototype js/React.Component))
+
+(defn react-component
+  "Extends ReViewComponent with lifecycle methods"
+  [lifecycle-methods]
+  (doto (fn ReView [$props]
+          (init-element (js-this) $props))
+    (aset "prototype" (->> lifecycle-methods
+                           (reduce-kv (fn [m k v]
+                                        (doto m (aset (get kmap k) v))) (new js/React.Component))))))
 
 (defn factory
-  [class key display-name element-keys]
+  [constructor element-keys]
   (fn [props & children]
-    (let [[{prop-key :key ref :ref :as props} children] (cond (or (map? props)
-                                                                  (nil? props)) [props children]
-                                                              (and (object? props)
-                                                                   (not (.isValidElement js/React props))) [(js->clj props :keywordize-keys true) children]
-                                                              :else [nil (cons props children)])]
-      (.createElement js/React class
-                      #js {"key"         (or prop-key
-                                             (when key
-                                               (cond (string? key) key
-                                                     (keyword? key) (get props key)
-                                                     (fn? key) (apply key props children)
-                                                     :else (throw (js/Error "Invalid key supplied to component"))))
-                                             display-name)
-                           "ref"         ref
-                           "re$props"    (dissoc props :ref)
-                           "re$children" children
-                           "re$element"  element-keys}))))
+    (let [[{prop-key :key
+            ref      :ref
+            :as      props} children] (cond (or (map? props)
+                                                (nil? props)) [props children]
+                                            (and (object? props)
+                                                 (not (.isValidElement js/React props))) [(js->clj props :keywordize-keys true) children]
+                                            :else [nil (cons props children)])]
+      (.createElement js/React constructor
+                      (cond-> #js {"key"         (or prop-key
+                                                     (when-let [class-key (.-key constructor)]
+                                                       (cond (string? class-key) class-key
+                                                             (keyword? class-key) (get props class-key)
+                                                             (fn? class-key) (apply class-key props children)
+                                                             :else (throw (js/Error "Invalid key supplied to component"))))
+                                                     (.-displayName constructor))
+                                   "ref"         ref
+                                   "re$props"    (dissoc props :ref)
+                                   "re$children" children
+                                   "re$element"  element-keys}
+                              )))))
+
+(defn react-class [methods]
+  )
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -289,23 +304,14 @@
    unless it is already a valid React element.
    "
   [{:keys [lifecycle-methods
-           static-keys
-           element-keys
-           key
-           display-name
-           docstring]}]
-  (let [constructor (fn Element [$props]
-                      (this-as this
-                        (init-props this $props)
-                        (when-not (undefined? (aget this "$getInitialState"))
-                          (let [initial-state (aget this "$getInitialState")]
-                            (init-state this (if (fn? initial-state) (apply initial-state this (get this :view/children)) initial-state))))
-                        this))
-        class (->> (wrap-lifecycle-methods lifecycle-methods)
-                   (extend-react-component constructor display-name docstring))]
-    (doseq [[k v] (seq static-keys)]
-      (aset class k v))
-    (factory class key display-name element-keys)))
+           class-keys
+           element-keys] :as re-view-base}]
+  (let [class (->> (wrap-lifecycle-methods lifecycle-methods)
+                   (react-component))]
+    (doseq [[k v] (seq class-keys)]
+      (aset class (camelCase k) v))
+    (doto (factory class element-keys)
+      (aset "reViewBase" re-view-base))))
 
 (defn render-to-element
   "Render views to page. Element should be HTML Element or ID."
@@ -315,12 +321,17 @@
                                           (.getElementById js/document))))
 
 (defn partial
-  "Partially apply props to a component. (Props specified here will be overwritten by props at runtime.)"
-  [component props]
-  (fn [& args]
-    (let [[user-props & children] (cond->> args
-                                           (not (map? (first args))) (cons {}))]
-      (apply component (merge props user-props) children))))
+  "Partially apply props and optional class-keys to base view. Props specified at runtime will overwrite those given here."
+  ([base props]
+   (fn [& args]
+     (let [[user-props & children] (cond->> args
+                                            (not (map? (first args))) (cons {}))]
+       (apply base (merge props user-props) children))))
+  ([base class-keys props]
+   (partial (view* (-> (aget base "reViewBase")
+                       (update :class-keys merge class-keys))) props)))
+
+
 
 (comment
 

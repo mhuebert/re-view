@@ -16,7 +16,7 @@
 (defn- camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
   [s]
-  (clojure.string/replace s #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
+  (clojure.string/replace (name s) #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
 
 (defn- js-obj-with-set!
   "Return a javascript object for m using `(set! (.-someKey the-obj))`, to play well with Closure Compiler.
@@ -42,9 +42,9 @@
   (-> (reduce-kv (fn [m k v]
                    (cond (contains? lifecycle-keys k)
                          (assoc-in m [:lifecycle-methods k] v)
-                         (#{:key :display-name :docstring} k) (assoc m k v)
-                         (= "static" (namespace k))
-                         (assoc-in m [:static-keys (camelCase (name k))] v)
+                         (or (= "static" (namespace k))
+                             (#{:key :display-name :docstring} k))
+                         (assoc-in m [:class-keys k] v)
                          :else
                          (assoc-in m [:element-keys k] v))) {} methods)
       (update :element-keys js-obj-with-set!)))
@@ -104,9 +104,18 @@
 (defmacro view
   "Returns anonymous view, same args as `defview`."
   [& args]
-  (let [[docstring methods args body] (parse-view-args args)]
-    `(~'re-view.core/view* ~(-> methods
-                                (merge {:docstring    docstring
-                                        :display-name (display-name *ns*)
-                                        :render       (wrap-body args body)})
-                                (group-methods)))))
+  (let [[docstring methods args body] (parse-view-args args)
+        methods (-> methods
+                    (merge {:docstring    docstring
+                            :display-name (display-name *ns*)
+                            :render       (wrap-body args body)})
+                    (group-methods))]
+    `(~'re-view.core/view* ~methods)))
+
+(defmacro defpartial
+  "Returns partially applied view with given name & optional docstring."
+  ([name base-view props]
+    `(~'re-view.core/defpartial ~name nil ~base-view ~props))
+  ([name docstring base-view props]
+   `(~'re-view.core/partial ~base-view ~(cond-> {:name (str name)}
+                                           docstring (assoc :docstring docstring)) ~props)))

@@ -5,8 +5,8 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
-                 [org.clojars.mhuebert/re-db "0.1.8"]
-                 [re-view-hiccup "0.1.3"]]
+                 [re-db "0.1.9-SNAPSHOT"]
+                 [re-view-hiccup "0.1.4-SNAPSHOT"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.0-2"]
@@ -45,4 +45,5 @@
                                        [cljsjs/react-dom-server "15.5.0-0"]]}
              :test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
                                        [cljsjs/react "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]]}})
+                                       [cljsjs/react-dom-server "15.5.0-0"]
+                                       [org.clojure/test.check "0.9.0"]]}})
