@@ -1,5 +1,8 @@
 ----
 layout: null
 ----
-
-{{ site.posts | jsonify }}
+[
+{% for post in site.posts %}
+{{ post | jsonify }}
+{% endfor %}
+]
