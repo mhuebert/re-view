@@ -1,10 +1,25 @@
-[
-{% for post in site.posts %}
-{ "title"    : "{{ post.title | escape }}",
-"url"     : "{{ post.url }}",
-"date"     : "{{ post.date | date: "%B %d, %Y" }}",
-"content"  : "{{ post.content | escape }}"
-}
-{% if forloop.last %}{% else %},{% endif %}
-{% endfor %}
-]
+# Re-View
+
+[Source on GitHub](/mhuebert/re-view)
+
+## Docs
+
+- [Getting Started](Getting-Started)
+- [Routing](Re-View-Routing)
+- [Hiccup Syntax](Hiccup-Syntax)
+- [Advanced Topics](Advanced-Topics)
+
+## View Libraries
+
+- [Re-View Material](/mhuebert/re-view-material), views for Google's [Material Design Components](https://github.com/material-components/material-components-web)
+- [Re-View ProseMirror](/mhuebert/re-view-prosemirror), rich text editor that (de)serializes to Markdown
+
+## Explainers
+
+- [Hiccup](./Hiccup-Syntax), HTML in Clojure
+- [Atoms](../Atoms), things that change
+
+## Related Projects
+
+- [Re-DB](/mhuebert/re-db)
+
