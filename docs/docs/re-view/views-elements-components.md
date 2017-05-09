@@ -1,6 +1,6 @@
 # Views, Elements, and Components
 
-Composing and mounting a tree of React components is a multi-stage process.
+Rendering a React interface to the screen is a multi-step process.
 
 First, we define **view functions** using `defview`. These are functions which accept props and children as arguments, and return React **elements**.
 
