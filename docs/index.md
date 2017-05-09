@@ -1,3 +1,6 @@
+----
+index: {% for page in site.pages %} {{page | jsonify}} {% endfor %}
+----
 # Re-View
 
 [Source on GitHub](/mhuebert/re-view)
