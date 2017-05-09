@@ -65,7 +65,7 @@ Change the view to include the `:name` prop in the greeting text.
 
 We have created a view and passed it a `props` map, `{:name "fred"}`. We accessed the `:name` prop by reading it from the component, which is passed in as the first argument to the view. 
 
-There is one more way to read prop keys from the component. That is, Clojure https://clojure.org/guides/destructuring[destructuring]:
+There is one more way to read prop keys from the component. That is, Clojure [destructuring](https://clojure.org/guides/destructuring):
 
 ```clj
 (defview say-hello [{:keys [name] :as this}]
