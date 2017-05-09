@@ -141,11 +141,9 @@ Re-View supports two ways of managing [state](../explainers/state).
 
 ### State Atom
 
-For handling local state, the `:view/state` key on a component will return a Clojure [Atom](../explainers/atoms), unique to the component. When the value of this atom changes, the component will update (re-render). The initial value of the state atom is determined by the `:initial-state` key in the methods map, or `nil` if not present. During each component update, the previous state value is accessible via the `:view/prev-state` key.
+For local state, the `:view/state` key on a component returns a Clojure [Atom](../explainers/atoms) unique to the component. When the value of this atom changes, the component will update (re-render). The initial value of the state atom is determined by the `:initial-state` key in the methods map, or `nil` if not present. During each component update, the previous state value is accessible via the `:view/prev-state` key.
 
-____
 If you're not sure what a Clojure atom is, check out the [atoms explainer](../explainers/atoms).
-____
 
 ### Global state
 
