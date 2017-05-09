@@ -13,7 +13,7 @@ Require `re-view.core` like so:
   (:require [re-view.core :as v :refer [defview]]))
 ```
 
-**`defview`** is a macro that returns a [view function](views-elements-components). Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [Hiccup-Syntax](../hiccup/syntax) or a React element.
+**`defview`** is a macro that returns a [view function](../explainers/views-elements-components). Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [Hiccup-Syntax](../hiccup/syntax) or a React element.
 
 Create a view that returns a `div` with a 'hello, world!' greeting.
 
