@@ -13,7 +13,7 @@ Require `re-view.core` like so:
   (:require [re-view.core :as v :refer [defview]]))
 ```
 
-**`defview`** is a macro that returns a view. Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid link:Hiccup-Syntax[hiccup syntax] or a React element. 
+**`defview`** is a macro that returns a view. Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [Hiccup-Syntax](../hiccup/syntax) or a React element.
 
 Create a view that returns a `div` with a 'hello, world!' greeting.
 
@@ -141,10 +141,10 @@ Re-View supports two ways of managing state.
 
 ### Local state
 
-The `:view/state` key on a component will return a Clojure link:Atoms[atom], unique to the component. When the value of this atom changes, the component will update (re-render). The initial value of the state atom is determined by the `:initial-state` key in the methods map, or `nil` if not present.
+The `:view/state` key on a component will return a Clojure [Atoms](../explainers/atoms), unique to the component. When the value of this atom changes, the component will update (re-render). The initial value of the state atom is determined by the `:initial-state` key in the methods map, or `nil` if not present.
 
 ____
-If you're not sure what a Clojure atom is, check out the link:Atoms[atom explainer].
+If you're not sure what a Clojure atom is, check out the [Atoms](../explainers/atoms).
 ____
 
 ### Global state
