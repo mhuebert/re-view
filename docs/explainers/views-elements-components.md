@@ -1,4 +1,4 @@
-# Views, Elements, and Components
+# Explainer: Views, Elements, and Components
 
 How does a React component get rendered to the screen?
 

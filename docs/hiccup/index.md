@@ -1,4 +1,4 @@
-# Hiccup
+# Hiccup: Intro
 
 If you're new to hiccup, check out the **link:Hiccup-Syntax[Hiccup Syntax]** guide.
 

@@ -1,4 +1,4 @@
-## Hiccup Syntax
+## Hiccup: Syntax
 
 Introduction for first-timers.
 
