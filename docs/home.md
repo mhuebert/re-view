@@ -1,6 +1,6 @@
 # Re-View: Home
 
-[Source on GitHub](/mhuebert/re-view)
+[Source on GitHub](https://www.github.com/mhuebert/re-view)
 
 ## Docs
 
@@ -11,13 +11,14 @@
 
 ## View Libraries
 
-- [Re-View Material](/mhuebert/re-view-material), views for Google's [Material Design Components](https://github.com/material-components/material-components-web)
-- [Re-View ProseMirror](/mhuebert/re-view-prosemirror), rich text editor that (de)serializes to Markdown
+- [Re-View Material](https://www.github.com/mhuebert/re-view-material), views for Google's [Material Design Components](https://github.com/material-components/material-components-web)
+- [Re-View ProseMirror](https://www.github.com/mhuebert/re-view-prosemirror), rich text editor that (de)serializes to Markdown
 
 ## Explainers
 
-- [Hiccup](./Hiccup-Syntax), HTML in Clojure
-- [Atoms](../Atoms), things that change
+- [Atoms](explainers/atoms)
+- [State](explainers/state)
+- [Views, Elements, and Components](explainers/views-elements-components)
 
 ## Related Projects
 
