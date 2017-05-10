@@ -6,7 +6,7 @@ Re-View is a library for building reactive user interfaces in ClojureScript.
 
 ----
 
-For full details, read the **[wiki](https://github.com/mhuebert/re-view/wiki)**.
+For full details, read the **[wiki](https://mhuebert.github.io/re-view)**.
 
 ----
 
@@ -50,6 +50,3 @@ Read the `:name` prop:
 (defview say-hello [this] 
   [:div "hello, " (:name this) "!"])
 ```
-
-Read more on the **[wiki](/mhuebert/re-view/wiki)**
-
