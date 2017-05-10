@@ -4,10 +4,10 @@
 
 ## Docs
 
-- [Getting Started](Getting-Started)
-- [Routing](Re-View-Routing)
-- [Hiccup Syntax](Hiccup-Syntax)
-- [Advanced Topics](Advanced-Topics)
+- [Getting Started](re-view/getting-started)
+- [Routing](routing)
+- [Hiccup Syntax](hiccup/syntax)
+- [Advanced Topics](re-view/advanced-topics)
 
 ## View Libraries
 

@@ -1,6 +1,5 @@
 # Re-View: Advanced Topics
 
-
 ## Advanced compilation
 
 For trouble-free [advanced compilation](https://github.com/clojure/clojurescript/wiki/Advanced-Compilation), items defined in the method map should be accessed in camelCase with dot syntax (eg. `(.-someProperty this)` or `(.someFunction this "my-arg")`, **not** using `aset` or `goog.object/get`. Keys are added via `set!` for Closure Compiler compatibility, so trying to read them by string will fail.
@@ -50,3 +49,6 @@ Views are updated in a render loop using `requestAnimationFrame` in browsers tha
 **`v/flush!`** executes pending updates immediately.
 
 
+## Differences from other approaches
+
+See [differences](differences) for some comparative notes.
