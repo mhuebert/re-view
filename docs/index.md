@@ -9,7 +9,6 @@
 - [Routing](routing)
 - [Hiccup Syntax](hiccup/syntax)
 - [Advanced Topics](re-view/advanced-topics)
-- [Re-DB README](https://github.com/mhuebert/re-db)
 
 ## View Libraries
 
@@ -24,5 +23,5 @@
 
 ## Related Projects
 
-- [Re-DB](/mhuebert/re-db)
+- [Re-DB](https://www.github.com/mhuebert/re-db)
 
