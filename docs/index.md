@@ -1,7 +1,5 @@
 # Re-View: Home
 
-[Source on GitHub](https://www.github.com/mhuebert/re-view)
-
 ## Docs
 
 - [README](https://github.com/mhuebert/re-view/blob/master/README.md)
@@ -24,7 +22,10 @@ Check out the [component gallery](https://re-view.matt.is), which features:
 - [Views, Elements, and Components](explainers/views-elements-components)
 - [Hiccup Syntax](hiccup/syntax)
 
-## Related Projects
+## Source Code
 
+- [Re-View](https://www.github.com/mhuebert/re-view)
+- [Re-View Routing](https://www.github.com/mhuebert/re-view-routing)
+- [Re-View Hiccup](https://www.github.com/mhuebert/re-view-hiccup)
 - [Re-DB](https://www.github.com/mhuebert/re-db)
 
