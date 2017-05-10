@@ -1,6 +1,6 @@
 # Hiccup: Intro
 
-If you're new to hiccup, check out the **link:Hiccup-Syntax[Hiccup Syntax]** guide.
+If you're new to hiccup, check out the **[syntax guide](syntax)**.
 
 ----
 
@@ -10,15 +10,15 @@ If you're new to hiccup, check out the **link:Hiccup-Syntax[Hiccup Syntax]** gui
 
 **Example:**
 
-----
+```clj
 (ns my-app.core 
   (:require [re-view-hiccup.core :as hiccup]))
 
 (hiccup/element [:div {:style {:color "red"}} "Hello, world!"])
-----
+```
 
 
-= Syntax Notes
+# Syntax Notes
 
 ### Attributes
 
