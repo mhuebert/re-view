@@ -8,7 +8,7 @@
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
 - [Advanced Topics](re-view/advanced-topics)
-- [Differences](differences) from other approaches
+- [Differences](re-view/differences) from other approaches
 
 ## View Libraries
 
