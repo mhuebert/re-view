@@ -9,6 +9,7 @@
 - [Routing](routing)
 - [Hiccup Syntax](hiccup/syntax)
 - [Advanced Topics](re-view/advanced-topics)
+- [Differences](differences) from other approaches
 
 ## View Libraries
 

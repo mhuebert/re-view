@@ -47,8 +47,3 @@ Views are updated in a render loop using `requestAnimationFrame` in browsers tha
 **`v/force-render`** updates a component on the next animation frame. +
 **`v/force-render!`** updates a component immediately (https://facebook.github.io/react/docs/react-component.html#forceupdate[forceUpdate]). +
 **`v/flush!`** executes pending updates immediately.
-
-
-## Differences from other approaches
-
-See [differences](differences) for some comparative notes.
