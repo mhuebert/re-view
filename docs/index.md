@@ -1,8 +1,8 @@
-# Re-View: Home
+# Re-View
 
 ## Docs
 
-- [README](https://github.com/mhuebert/re-view/blob/master/README.md)
+- The Re-View [README](https://github.com/mhuebert/re-view/blob/master/README.md)
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
 - [Advanced Topics](re-view/advanced-topics)
