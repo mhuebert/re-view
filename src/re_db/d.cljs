@@ -7,25 +7,25 @@
 
 (defn partial-deref
   "Partially apply a (an atom) to f, but deref the atom at time of application."
-  [a f deref?]
+  [f a]
   (fn [& args]
     (apply f @a args)))
 
-(def entity (partial-deref *db* d/entity true))
-(def get (partial-deref *db* d/get true))
-(def get-in (partial-deref *db* d/get-in true))
-(def select-keys (partial-deref *db* d/select-keys true))
+(def entity (partial-deref d/entity *db*))
+(def get (partial-deref d/get *db*))
+(def get-in (partial-deref d/get-in *db*))
+(def select-keys (partial-deref d/select-keys *db*))
 
-(def entity-ids (partial-deref *db* d/entity-ids true))
-(def entities (partial-deref *db* d/entities true))
+(def entity-ids (partial-deref d/entity-ids *db*))
+(def entities (partial-deref d/entities *db*))
 
-(def contains? (partial-deref *db* d/contains? true))
-(def touch (partial-deref *db* d/touch true))
+(def contains? (partial-deref d/contains? *db*))
+(def touch (partial-deref d/touch *db*))
 
-(def transact! (partial *db* d/transact!))
-(def listen! (partial *db* d/listen!))
-(def unlisten! (partial *db* d/unlisten!))
-(def merge-schema! (partial *db* d/merge-schema!))
+(def transact! (partial d/transact! *db*))
+(def listen! (partial d/listen! *db*))
+(def unlisten! (partial d/unlisten! *db*))
+(def merge-schema! (partial d/merge-schema! *db*))
 
 (def squuid d/squuid)
 (def capture-patterns* d/capture-patterns*)
