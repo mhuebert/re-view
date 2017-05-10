@@ -7,7 +7,6 @@
 - [README](https://github.com/mhuebert/re-view/blob/master/README.md)
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
-- [Hiccup Syntax](hiccup/syntax)
 - [Advanced Topics](re-view/advanced-topics)
 - [Differences](differences) from other approaches
 
@@ -23,6 +22,7 @@ Check out the [component gallery](https://re-view.matt.is), which features:
 - [Atoms](explainers/atoms)
 - [State](explainers/state)
 - [Views, Elements, and Components](explainers/views-elements-components)
+- [Hiccup Syntax](hiccup/syntax)
 
 ## Related Projects
 
