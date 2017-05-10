@@ -1,0 +1,9 @@
+---
+---
+{% assign pages = site.pages | where_exp:"page", "page.layout" %}
+<ul>
+    {% for page in pages %}
+    <li><a href="{{ page.url }}">{{ page.name }}</a></li>
+    {% if forloop.last %}{% else %},{% endif %}
+    {% endfor %}
+</ul>
