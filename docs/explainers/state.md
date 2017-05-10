@@ -1,4 +1,4 @@
-# Explainer: State
+# State
 
 In programming, when we talk about _state_, we mean information that can change over time, and is stored somewhere in memory. A program is 'stateful' if it _remembers_ information over time, and 'stateless' if it has no memory of the past.
 

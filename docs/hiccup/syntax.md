@@ -1,4 +1,4 @@
-## Hiccup: Syntax
+## Hiccup: Syntax Introduction
 
 Introduction for first-timers. Also: [full docs](index)
 
