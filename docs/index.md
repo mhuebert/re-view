@@ -4,10 +4,12 @@
 
 ## Docs
 
+- [Re-View README](https://github.com/mhuebert/re-view/blob/master/README.md)
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
 - [Hiccup Syntax](hiccup/syntax)
 - [Advanced Topics](re-view/advanced-topics)
+- [Re-DB README](https://github.com/mhuebert/re-db)
 
 ## View Libraries
 
