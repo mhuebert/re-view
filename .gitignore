@@ -6,3 +6,5 @@ pom.xml*
 *.iml
 resources
 doo*.html
+checkouts
+docs/marginalia

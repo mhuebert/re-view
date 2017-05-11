@@ -1,9 +1,9 @@
-(ns re-view-example.helpers
+(ns re-view.example.helpers
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-material.core :as ui]
-            [re-view-material.util :as util]
+            [re-view.material :as ui]
+            [re-view.material.util :as util]
             [clojure.string :as string])
-  (:require-macros [re-view-example.helpers]))
+  (:require-macros [re-view.example.helpers]))
 
 (defn key-field
   "View key in editor"

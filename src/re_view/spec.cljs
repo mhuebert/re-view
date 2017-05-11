@@ -4,7 +4,7 @@
             [cljs.spec.test :as t]
             [clojure.test.check.generators]
             [clojure.string :as string]
-            [re-view-hiccup.spec]))
+            [re-view.hiccup.spec]))
 
 
 (s/fdef re-view.core/defview

@@ -1,12 +1,12 @@
 (defproject re-view "0.3.13-SNAPSHOT"
   :description "Tiny React wrapper"
-  :url "http://example.com/FIXME"
+  :url "https://www.github.com/re-view/re-view"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
-                 [re-db "0.1.9-SNAPSHOT"]
-                 [re-view-hiccup "0.1.4-SNAPSHOT"]]
+                 [re-db "0.1.10"]
+                 [re-view-hiccup "0.1.4"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             [lein-figwheel "0.5.0-2"]

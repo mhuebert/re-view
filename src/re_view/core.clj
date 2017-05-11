@@ -1,25 +1,9 @@
 (ns ^:figwheel-always re-view.core
-  (:require [clojure.string :as string]))
-
-(def lifecycle-keys #{:constructor
-                      :initial-state
-                      :will-mount
-                      :did-mount
-                      :will-receive-props
-                      :will-receive-state
-                      :should-update
-                      :will-update
-                      :did-update
-                      :will-unmount
-                      :render})
-
-(defn- camelCase
-  "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
-  [s]
-  (clojure.string/replace (name s) #"-(.)" (fn [[_ match]] (clojure.string/upper-case match))))
+  (:require [clojure.string :as string]
+            [re-view.util :refer [camelCase]]))
 
 (defn- js-obj-with-set!
-  "Return a javascript object for m using `(set! (.-someKey the-obj))`, to play well with Closure Compiler.
+  "Convert a Clojure map to javascript object using `set!`, to play well with Closure Compiler.
   Keys are converted to camelCase. Shallow."
   [m]
   (when-let [m (seq m)]
@@ -30,30 +14,36 @@
          ~@exprs
          ~sym))))
 
-(comment
-  (defn- js-obj-camelCase
-    "Return a javascript object for m with keys as camelCase strings (keys will not be recognized by Closure compiler)."
-    [m]
-    `(~'js-obj ~@(map (fn [[k v]] [(camelCase (name k)) v]) (seq m)))))
-
 (defn group-methods
   "Groups methods by role in a React component."
   [methods]
   (-> (reduce-kv (fn [m k v]
-                   (cond (contains? lifecycle-keys k)
-                         (assoc-in m [:lifecycle-methods k] v)
-                         (or (= "static" (namespace k))
-                             (#{:key :display-name :docstring} k))
-                         (assoc-in m [:class-keys k] v)
-                         :else
-                         (assoc-in m [:element-keys k] v))) {} methods)
+                   (cond
+                     ;; lifecycle methods
+                     (contains? #{:constructor
+                                  :initial-state
+                                  :will-mount
+                                  :did-mount
+                                  :will-receive-props
+                                  :will-receive-state
+                                  :should-update
+                                  :will-update
+                                  :did-update
+                                  :will-unmount
+                                  :render} k)
+                     (assoc-in m [:lifecycle-methods k] v)
+
+                     ;; class keys
+                     (or (= "static" (namespace k))
+                         (#{:key :display-name :docstring} k))
+                     (assoc-in m [:class-keys k] v)
+                     :else
+                     ;; other keys are defined on the element
+                     (assoc-in m [:element-keys k] v))) {} methods)
       (update :element-keys js-obj-with-set!)))
 
-(defn parse-name [n]
-  (str (name (ns-name *ns*)) "/" n))
-
 (defn parse-view-args
-  "Parse args with optional docstring and method map"
+  "Parse args for optional docstring and method map"
   [args]
   (let [out [(if (string? (first args)) (first args) nil)]
         args (cond-> args (string? (first args)) (next))
@@ -78,19 +68,21 @@
              '[nil nil [] nil])))
 
 (defn display-name
-  "A meaningful name to identify React components while debugging"
+  "Generate a meaningful name to identify React components while debugging"
   ([ns] (str (gensym (display-name ns "view"))))
   ([ns given-name]
    (str (last (string/split (name (ns-name ns)) #"\.")) "/" given-name)))
 
-(defn wrap-body [args body]
-  `(~'fn ~args (~'re-view-hiccup.core/element (do ~@body))))
+(defn wrap-body
+  "Wrap body in anonymous function form."
+  [args body]
+  `(~'fn ~args (~'re-view.hiccup/element (do ~@body))))
 
 (defmacro defview
-  "Defines a view function which returns a React element.
+  "Define a view function.
 
    Expects optional docstring and methods map, followed by
-    the argslist and body for the render function. Body must
+    the argslist and body for the render function, which should
     return a Hiccup vector or React element."
   [view-name & args]
   (let [[docstring methods args body] (parse-view-args args)
@@ -102,7 +94,7 @@
     `(def ~view-name ~docstring (~'re-view.core/view* ~methods))))
 
 (defmacro view
-  "Returns anonymous view, same args as `defview`."
+  "Returns anonymous view, given the same args as `defview`."
   [& args]
   (let [[docstring methods args body] (parse-view-args args)
         methods (-> methods
@@ -115,7 +107,7 @@
 (defmacro defpartial
   "Returns partially applied view with given name & optional docstring."
   ([name base-view props]
-    `(~'re-view.core/defpartial ~name nil ~base-view ~props))
+   `(~'re-view.core/defpartial ~name nil ~base-view ~props))
   ([name docstring base-view props]
    `(~'re-view.core/partial ~base-view ~(cond-> {:name (str name)}
-                                           docstring (assoc :docstring docstring)) ~props)))
+                                                docstring (assoc :docstring docstring)) ~props)))

@@ -1,4 +1,4 @@
-(ns re-view-example.helpers
+(ns re-view.example.helpers
   (:require [clojure.walk :as walk]))
 
 (defmacro atom-as

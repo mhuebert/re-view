@@ -3,6 +3,7 @@
 
 0.3.14
 - Sync with re-db listen! api change
+- Example namespaces renamed
 
 0.3.13
 - Fix bug in debug log for errors in component render
