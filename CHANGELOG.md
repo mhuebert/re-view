@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.1.10
+- rename core/listen! -> core/listen and core/unlisten! -> core/listen
+
 ### 0.1.9
 - Listeners are called with the tx-report map instead of data related to the pattern(s) the listener was registered on.
 - `listen!` now accepts a map of patterns, ie. {<kind>, <collection of patterns>}, instead of multiple patterns as args, for clarity and performance.

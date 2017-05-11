@@ -23,8 +23,8 @@
 (def touch (partial-deref d/touch *db*))
 
 (def transact! (partial d/transact! *db*))
-(def listen! (partial d/listen! *db*))
-(def unlisten! (partial d/unlisten! *db*))
+(def listen (partial d/listen *db*))
+(def unlisten (partial d/unlisten *db*))
 (def merge-schema! (partial d/merge-schema! *db*))
 
 (def squuid d/squuid)

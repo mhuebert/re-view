@@ -10,7 +10,7 @@
     (is (satisfies? cljs.core/IDeref db)
         "DB is an atom")
 
-    (d/listen! db #(swap! tx-log conj (:datoms %)))
+    (d/listen db #(swap! tx-log conj (:datoms %)))
 
     (d/transact! db [{:db/id "herman"}])
 
@@ -176,7 +176,7 @@
       (is (= "Mary" (d/get @db [:person/children "john"] :name))
           "Get attribute via lookup ref")
 
-      (d/listen! db {:e__ [["mary"]]} (cb :mary-entity))
+      (d/listen db {:e__ [["mary"]]} (cb :mary-entity))
 
       (d/transact! db [[:db/add "mary" :name "MMMary"]])
 
@@ -187,7 +187,7 @@
 
 
       (d/transact! db [{:db/id "peter" :name "Peter"}])
-      (d/listen! db {:e__ #{[[:person/children "peter"]]}} (cb :peter-as-child))
+      (d/listen db {:e__ #{[[:person/children "peter"]]}} (cb :peter-as-child))
 
       (d/transact! db [[:db/add "mary" :person/children #{"peter"}]])
 

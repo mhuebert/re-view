@@ -298,15 +298,15 @@
                        (many? k-schema) (conj attr))) #{} schema))
 
 
-(defn unlisten!
+(defn unlisten
   "Remove listener from patterns (if provided) or :tx-log."
   ([db f]
    (doto db
      (swap! update-in [:listeners :tx-log] disj f)))
   ([db patterns f]
-   (patterns/unlisten! db patterns f)))
+   (patterns/unlisten db patterns f)))
 
-(defn listen!
+(defn listen
   "Adds listener for transactions which contain datom(s) matching the provided pattern. If patterns not provided, matches all transactions.
 
    Patterns should be a map containing any of the following keys, each containing a collection of patterns:
@@ -317,10 +317,10 @@
     :_a_      attribute                           [_ attr _]"
   ([db f]
    (swap! db update-in [:listeners :tx-log] conj-set f)
-   #(unlisten! db f))
+   #(unlisten db f))
   ([db patterns f]
-   (patterns/listen! db patterns f)
-   #(unlisten! db patterns f)))
+   (patterns/listen db patterns f)
+   #(unlisten db patterns f)))
 
 (defn- notify-listeners
   "Notify listeners for supported patterns matched by datoms in transaction.

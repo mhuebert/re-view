@@ -40,14 +40,14 @@
   [value-map pattern-key pattern value]
   (update-in value-map (pattern-path pattern-key pattern) disj value))
 
-(declare listen! unlisten!)
+(declare listen unlisten)
 
 (defn resolve-id
   [db-snap attr val]
   (log-read :_av [nil attr val])
   (first (get-in db-snap [:ave attr val])))
 
-(defn listen-lookup-ref!
+(defn listen-lookup-ref
   "Stateful listener for datoms where the id is specified as a lookup ref."
   [listeners db pattern f]
   (let [[[lookup-attr lookup-val :as lookup-ref] attr] pattern
@@ -55,9 +55,9 @@
         lookup-cb (fn [{:keys [db-after] :as tx-report}]
                     (let [next-lookup-target (resolve-id db-after lookup-attr lookup-val)]
                       (when @lookup-target
-                        (unlisten! db {:e__ [[@lookup-target]]} f))
+                        (unlisten db {:e__ [[@lookup-target]]} f))
                       (when-not (nil? next-lookup-target)
-                        (listen! db {:e__ [[next-lookup-target]]} f))
+                        (listen db {:e__ [[next-lookup-target]]} f))
                       (reset! lookup-target next-lookup-target)
                       ;; trigger callback when lookup ref points to a different entity
                       (f tx-report)))]
@@ -76,17 +76,17 @@
         (remove-value :_av [nil lookup-attr lookup-val] lookup-cb)
         (update-in [:lookup-ref pattern] dissoc f))))
 
-(defn listen!
-
+(defn listen
+  "Add listener for patterns"
   [db patterns value]
   (swap! db assoc :listeners
          (reduce-kv (fn [listeners kind patterns]
                       (reduce (fn [listeners pattern]
                                 (if (vector? (first pattern))
-                                  (listen-lookup-ref! listeners db pattern value)
+                                  (listen-lookup-ref listeners db pattern value)
                                   (add-value listeners kind pattern value))) listeners patterns)) (get @db :listeners) patterns)))
 
-(defn unlisten!
+(defn unlisten
   [db patterns value]
   (swap! db assoc :listeners
          (reduce-kv (fn [listeners kind patterns]

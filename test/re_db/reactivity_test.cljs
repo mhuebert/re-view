@@ -4,7 +4,7 @@
             [re-db.patterns :as patterns :include-macros true])
   (:require-macros [tests.helpers :refer [throws]]))
 
-(def eval-count (atom 0)) 
+(def eval-count (atom 0))
 
 (deftest reactivity
   (d/transact! [{:db/id 1
