@@ -1,14 +1,14 @@
 (defproject re-view-prosemirror "0.1.3-SNAPSHOT"
-  :description "prosemirror editor in re-view"
-  :url "https://www.github.com/mhuebert/re-view-prosemirror"
+  :description "Rich text editors built with ProseMirror in Re-View"
+  :url "https://www.github.com/re-view/re-view-prosemirror"
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}
   :min-lein-version "2.7.1"
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [cljsjs/markdown-it "7.0.0-0"]]
-  :provided {:dependencies [[org.clojars.mhuebert/re-view "0.3.9"]
-                            [org.clojars.mhuebert/re-view-material "0.1.0-SNAPSHOT"]]}
+  :provided {:dependencies [[re-view "0.3.13"]
+                            [re-view-material "0.1.1-SNAPSHOT"]]}
   :cljsbuild {:builds []}
   :plugins [[lein-npm "0.6.2"]]
   :lein-release {:deploy-via :clojars}

@@ -1,12 +1,21 @@
 {
+  "scripts": {
+    "postinstall": "cd node_modules/prosemirror-markdown; yarn install"
+  },
   "dependencies": {
-    "prosemirror-commands": "^0.20.0",
-    "prosemirror-history": "^0.20.0",
-    "prosemirror-inputrules": "^0.20.0",
-    "prosemirror-keymap": "^0.20.0",
-    "prosemirror-markdown": "^0.20.0",
-    "prosemirror-schema-list": "^0.20.0",
-    "prosemirror-view": "0.20.5",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-es2015": "^6.24.1",
+    "prosemirror-commands": "^0.21.0",
+    "prosemirror-history": "^0.21.0",
+    "prosemirror-inputrules": "^0.21.0",
+    "prosemirror-keymap": "^0.21.0",
+    "prosemirror-markdown": "^0.21.0",
+    "prosemirror-model": "^0.21.0",
+    "prosemirror-schema-list": "^0.21.0",
+    "prosemirror-schema-table": "^0.21.0",
+    "prosemirror-state": "^0.21.0",
+    "prosemirror-view": "^0.21.0",
     "webpack": "^2.4.1"
   }
 }

@@ -1,7 +1,7 @@
-(ns re-view-prosemirror.toolbar
-  (:require [re-view-prosemirror.prosemirror :as pm]
-            [re-view-material.core :as ui]
-            [re-view-material.icons :as icons]))
+(ns re-view.prosemirror.toolbar
+  (:require [re-view.prosemirror.core :as pm]
+            [re-view.material :as ui]
+            [re-view.material.icons :as icons]))
 
 
 (def menu-item-element :.dib.pa2.serif)
@@ -17,7 +17,7 @@
                               :on-mouse-down (fn [^js/Event e]
                                                (.preventDefault e)
                                                (cmd pm-state dispatch))})
-                           (assoc :key key))
+                           (assoc :key (name key)))
      (update icon 1 assoc :width 18)]))
 
 (defn mark-strong [state dispatch]
@@ -66,22 +66,19 @@
     (let [set-p (pm/set-block-type (pm/get-node state :paragraph) nil)
           set-h1 (pm/set-block-type (pm/get-node state :heading) #js {"level" 1})
           active? (or (set-p state) (set-h1 state))]
-      (ui/DropDown nil
-                   [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
-                                                  {:class "o-30"}) (update icons/FormatSize 1 assoc :width 18)]
-                   (when active?
-                     (ui/Menu {:direction [:right :down]}
-                              [:div
-                               (ui/MenuItem {:key          "p"
-                                             :primary-text "Paragraph"
-                                             :disabled     (false? (set-p state))
-                                             :on-click     #(set-p state dispatch)})
-                               (for [i (range 1 (inc heading-n))
-                                     :let [cmd (pm/set-block-type (pm/get-node state :heading) #js {"level" i})]]
-                                 (ui/MenuItem {:key          i
-                                               :disabled     (false? (cmd state))
-                                               :on-click     #(cmd state dispatch)
-                                               :primary-text [:div {:class (str "f" i)} (str "Heading " i)]}))]))))))
+      (ui/SimpleMenuWithTrigger
+        [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
+                                       {:class "o-30"}) (update icons/FormatSize 1 assoc :width 18)]
+        (ui/SimpleMenuItem {:key          "p"
+                            :text/primary "Paragraph"
+                            :disabled     (false? (set-p state))
+                            :on-click     #(set-p state dispatch)})
+        (for [i (range 1 (inc heading-n))
+              :let [cmd (pm/set-block-type (pm/get-node state :heading) #js {"level" i})]]
+          (ui/SimpleMenuItem {:key          i
+                              :disabled     (false? (cmd state))
+                              :on-click     #(cmd state dispatch)
+                              :text/primary (str "Heading " i)}))))))
 
 (def all-toolbar-items
   [mark-strong

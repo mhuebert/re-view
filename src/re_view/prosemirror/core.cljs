@@ -1,4 +1,4 @@
-(ns re-view-prosemirror.prosemirror
+(ns re-view.prosemirror.core
   (:require [pack.prosemirror]
             [cljsjs.markdown-it]
             [clojure.set :as set]
@@ -12,7 +12,7 @@
 (def pm (.-pm js/window))
 (def commands (.-commands pm))
 (def chain (.-chainCommands commands))
-(def history (.. pm -history -history))
+(def history (.. pm -history))
 
 (def ^js/pm.EditorView EditorView (.-EditorView pm))
 (def ^js/pm.EditorState EditorState (.-EditorState pm))
@@ -45,6 +45,29 @@
 (defn lift-list-item [list-item] (.liftListItem pm list-item))
 (defn sink-list-item [list-item] (.sinkListItem pm list-item))
 
+#_(defn delete-empty [state dispatch]
+  (let [^js/pm.Selection selection (.-selection state)
+        ^js/pm.Node node (or (.-node selection)
+                             (.-parent (.-$from selection)))]
+
+
+    (if (and node
+             (.-isBlock (.-type node))
+             (= 0 (.. node -content -size)))
+      (do
+
+        (.log js/console selection (dec (.. selection -$anchor -pos)) (inc (.. selection -$head -pos)) )
+        (.log js/console (.-$from selection))
+        (.log js/console (.blockRange (.-$from selection) (.-$to selection)) (dec (.. selection -$anchor -pos)) (inc (.. selection -$head -pos)))
+        (.log js/console (-> (.-tr state)
+                             (.delete (dec (.. selection -$anchor -pos)) (inc (.. selection -$head -pos)))
+                             (dispatch)))
+        #_(-> (.-tr state)
+            (.delete 79 81)
+            (dispatch))
+        true)
+      false)))
+
 (def keymap (.-keymap pm))
 (def keymap-base (.-baseKeymap commands))
 (defn keymap-markdown [schema]
@@ -58,10 +81,7 @@
         lift (chain (lift-list-item (get-node schema :list_item)) lift)]
     (.keymap pm (-> (merge {"Mod-z"        (aget history "undo")
                             "Mod-y"        (aget history "redo")
-                            #_"Mod-s"        #_(fn [state _ ^js/pm.EditorView pm-view]
-                                                 (let [{:keys [on-save] :as this} (.-reView pm-view)]
-                                                   (when on-save (on-save (serialize-markdown pm-view))))
-                                                 true)
+                            "Shift-Mod-z"  (aget history "redo")
                             "Backspace"    (.-undoInputRule pm)
                             "Mod-b"        (toggle-mark (get-mark schema :strong))
                             "Mod-i"        (toggle-mark (get-mark schema :em))

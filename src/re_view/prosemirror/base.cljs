@@ -1,6 +1,6 @@
-(ns re-view-prosemirror.core
+(ns re-view.prosemirror.base
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-prosemirror.prosemirror :as pm]))
+            [re-view.prosemirror.core :as pm]))
 
 ;; todo
 ;; Editor accepts :default-value and :value but is not an ordinary controlled component.
@@ -43,7 +43,7 @@
                           (let [editor-state (.create pm/EditorState
                                                       #js {"doc"     (parse (or value default-value ""))
                                                            "schema"  schema
-                                                           "plugins" (-> [(pm/history)
+                                                           "plugins" (-> [(.history pm/history)
                                                                           (pm/keymap-markdown schema)
                                                                           (pm/input-rules schema)
                                                                           (pm/keymap pm/keymap-base)]
