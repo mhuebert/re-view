@@ -1,4 +1,4 @@
-(ns re-view-hiccup.react.attrs)
+(ns re-view.hiccup.react.attrs)
 
 ;; identify *dashed* attributes (to camelCase).
 ;; (not specifically handled by React should not be camelCased.)

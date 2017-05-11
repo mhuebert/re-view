@@ -1,8 +1,8 @@
-(ns re-view-hiccup.core-test
+(ns re-view.hiccup-test
   (:require [cljs.test :refer [deftest is are testing]]
             [clojure.test.check.generators]
-            [re-view-hiccup.core :as hiccup]
-            [re-view-hiccup.react.html :as html]))
+            [re-view.hiccup :as hiccup]
+            [re-view.hiccup.react.html :as html]))
 
 (enable-console-print!)
 

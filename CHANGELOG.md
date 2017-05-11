@@ -2,6 +2,7 @@
 
 ## 0.1.4
 - Added `:create-element` option to override `React.createElement`
+- Moved to re-view.hiccup namespace
 
 ## 0.1.3
 - Added HTML string output in the `react/html` (client-side) and `react/server` (server-side) namespaces
