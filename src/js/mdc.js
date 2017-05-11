@@ -1,6 +1,7 @@
 export {MDCFoundation} from "@material/base"
 export {MDCCheckboxFoundation} from "@material/checkbox"
 export {MDCDialogFoundation} from "@material/dialog"
+export {createFocusTrapInstance} from "@material/dialog/util"
 export {MDCPersistentDrawerFoundation, MDCTemporaryDrawerFoundation} from "@material/drawer"
 export {MDCFormFieldFoundation} from "@material/form-field"
 export {MDCGridListFoundation} from "@material/grid-list"

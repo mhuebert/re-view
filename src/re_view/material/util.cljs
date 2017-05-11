@@ -1,4 +1,4 @@
-(ns re-view-material.util
+(ns re-view.material.util
   (:require [re-view.core :refer [defview]]
             [clojure.string :as string]
             [goog.object :as gobj]
@@ -38,13 +38,18 @@
       (.setProperty style attr val))))
 
 (defn mdc-style-update
-  [mdc-name]
-  (fn [{:keys [view/state] :as this}]
-    (when-let [mdc-styles (seq (get @state :mdc-styles))]
-      (let [adapter (-> (gobj/get this (str "mdc" (name mdc-name)))
-                        (gobj/get "adapter_"))
-            target (or (gobj/get adapter "styleTarget" (gobj/get adapter "root")))]
-        (add-styles target mdc-styles)))))
+  ([mdc-name]
+   (fn [{:keys [view/state] :as this}]
+     (when-let [mdc-styles (seq (get @state :mdc/styles))]
+       (let [adapter (-> (gobj/get this (str "mdc" (name mdc-name)))
+                         (gobj/get "adapter_"))
+             target (or (gobj/get adapter "styleTarget" (gobj/get adapter "root")))]
+         (add-styles target mdc-styles)))))
+  ([mdc-name styles-key element-key]
+   (fn [{:keys [view/state] :as this}]
+
+     (add-styles (aget this (str "mdc" (name mdc-name)) "adapter_" (name element-key))
+                 (get @state styles-key)))))
 
 (defn mdc-classes-update
   [mdc-name]
@@ -128,32 +133,38 @@
   (.-offsetWidth el))
 
 (defview sync-element!
-         "Manage classes and styles for an uncontrolled DOM element (eg. `body` or `html`).
-         :getElement should return the DOM element, :class and :style behave as normal."
-         {:did-mount  (fn [{:keys [view/state get-element] :as this}]
-                        (let [^js/Element element (get-element this)]
-                          (swap! state assoc
-                                 :element element
-                                 :style-obj (.-style element)))
-                        (.componentDidUpdate this))
-          :did-update (fn [{{style :style
-                             class :class}      :view/props
-                            {prev-style :style
-                             prev-class :class} :view/prev-props
-                            :keys               [view/state]}]
-                        (let [{:keys [element style-obj]} @state
-                              class (some-> (string/split class #"\s+") (set))
-                              prev-class (some-> (string/split prev-class #"\s+") (set))
-                              styles-removed (set/difference (set (keys prev-style)) (set (keys style)))
-                              class-removed (set/difference prev-class class)]
-                          (doseq [attr styles-removed]
-                            (.setProperty style-obj attr nil))
-                          (doseq [[attr val] style]
-                            (.setProperty style-obj attr val))
-                          (doseq [class class-removed]
-                            (classes/remove element class))
-                          (doseq [class class]
-                            (classes/add element class))))}
-         [_]
+  "Manage classes and styles for an uncontrolled DOM element (eg. `body` or `html`).
+  :getElement should return the DOM element, :class and :style behave as normal."
+  {:did-mount  (fn [{:keys [view/state get-element] :as this}]
+                 (let [^js/Element element (get-element this)]
+                   (swap! state assoc
+                          :element element
+                          :style-obj (.-style element)))
+                 (.componentDidUpdate this))
+   :did-update (fn [{{style :style
+                      class :class}      :view/props
+                     {prev-style :style
+                      prev-class :class} :view/prev-props
+                     :keys               [view/state]}]
+                 (let [{:keys [element style-obj]} @state
+                       class (some-> (string/split class #"\s+") (set))
+                       prev-class (some-> (string/split prev-class #"\s+") (set))
+                       styles-removed (set/difference (set (keys prev-style)) (set (keys style)))
+                       class-removed (set/difference prev-class class)]
+                   (doseq [attr styles-removed]
+                     (.setProperty style-obj attr nil))
+                   (doseq [[attr val] style]
+                     (.setProperty style-obj attr val))
+                   (doseq [class class-removed]
+                     (classes/remove element class))
+                   (doseq [class class]
+                     (classes/add element class))))}
+  [_]
 
-         [:span.dn])
+  [:span.dn])
+
+(defn flatten-seqs
+  "Flatten collection, only unwrap sequences"
+  [children]
+  (filter #(not (seq? %))
+          (rest (tree-seq seq? seq children))))

@@ -1,7 +1,7 @@
-(ns re-view-material-persisted.core
+(ns re-view.material.persisted.core
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-material.core :as ui]
-            [re-view-material.icons :as icons]))
+            [re-view.material :as ui]
+            [re-view.material.icons :as icons]))
 
 (defn input-change [{:keys [view/state]} ^js/React.SyntheticEvent e]
   (swap! state assoc :local-value (.. e -target -value)))

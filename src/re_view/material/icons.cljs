@@ -1,4 +1,4 @@
-(ns re-view-material.icons)
+(ns re-view.material.icons)
 
 (defn size [icon size]
   (update icon 1 assoc :width size :height size))
