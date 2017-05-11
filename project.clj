@@ -2,7 +2,7 @@
 
   :description "ClojureScript routing tools"
 
-  :url "https://www.github.com/mhuebert/re-view-routing"
+  :url "https://www.github.com/re-view/re-view-routing"
 
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}

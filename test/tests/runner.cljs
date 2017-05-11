@@ -2,6 +2,6 @@
   (:require [cljsjs.react]
             [cljsjs.react.dom]
             [doo.runner :refer-macros [doo-tests]]
-            [re-view-router.core-test]))
+            [re-view.router-test]))
 
-(doo-tests 're-view-router.core-test)
+(doo-tests 're-view.router-test)

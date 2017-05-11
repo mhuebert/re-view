@@ -1,9 +1,9 @@
-(ns re-view-router.core-test
+(ns re-view.router-test
   (:require [cljsjs.react.dom]
             [goog.dom :as gdom]
             [cljs.test :refer [deftest is are testing]]
             [re-db.d :as d]
-            [re-view-routing.core :as routing]
+            [re-view.routing :as routing]
             [cljs.core.match :refer-macros [match]]
             [re-view.core :as view :refer [defview]]))
 
@@ -21,7 +21,7 @@
 
 (defonce _
          ;; set up listener for route changes
-         (routing/on-location-change (fn [{:keys [segments] :as location}]
+         (routing/listen (fn [{:keys [segments] :as location}]
                                        ;; log segments
                                        (swap! segments-log conj segments)
                                        ;; write location to re-db

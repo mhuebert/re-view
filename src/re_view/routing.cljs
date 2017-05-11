@@ -1,4 +1,4 @@
-(ns re-view-routing.core
+(ns re-view.routing
   (:require [goog.events :as events]
             [goog.dom :as gdom]
             [clojure.string :as string])
@@ -124,17 +124,22 @@
               (when browser?
                 (events/listen element "click" click-event-handler))))))
 
-(defn on-location-change
+(defn listen
   "Set up a listener on route changes. Options:
 
   intercept-clicks? (boolean, `true`): For `click` events on local links, prevent page reload & fire listener instead.
-  fire-now? (boolean, `true`): executes listener immediately, with current parsed route."
+  fire-now? (boolean, `true`): executes listener immediately, with current parsed route.
+
+  Returns a key which can be passed to `unlisten` to remove listener."
   ([listener]
-   (on-location-change listener {}))
+   (listen listener {}))
   ([listener {:keys [fire-now? intercept-clicks?]
               :or   {fire-now?         true
                      intercept-clicks? true}}]
    (when intercept-clicks? (intercept-clicks))
    (when fire-now? (listener (parse-path (get-route))))
    (events/listen history "navigate" #(listener (parse-path (get-route))))))
+
+(defn unlisten [k]
+  (events/unlistenByKey k))
 
