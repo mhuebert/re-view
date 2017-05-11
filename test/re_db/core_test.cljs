@@ -10,7 +10,7 @@
     (is (satisfies? cljs.core/IDeref db)
         "DB is an atom")
 
-    (d/listen! db [:tx-log] #(swap! tx-log conj (:datoms %)))
+    (d/listen! db #(swap! tx-log conj (:datoms %)))
 
     (d/transact! db [{:db/id "herman"}])
 
@@ -159,36 +159,48 @@
                                 :pets  #{"fido"}}])
               "Two entities with same unique :db.cardinality/many attr"))))
 
-(deftest listeners
+(deftest pattern-listeners
   (let [db (d/create {:person/children {:db/cardinality :db.cardinality/many
                                         :db/index       :db.index/unique}})
         log (atom {})
         cb (fn [path] (partial swap! log assoc path))]
 
-    (d/transact! db [{:db/id "mary"
-                      :name  "Mary"}
-                     [:db/add "mary"
-                      :person/children #{"john"}]
-                     {:db/id "john"
-                      :name  "John"}])
+    (testing "entity pattern"
+      (d/transact! db [{:db/id "mary"
+                        :name  "Mary"}
+                       [:db/add "mary"
+                        :person/children #{"john"}]
+                       {:db/id "john"
+                        :name  "John"}])
 
-    (is (= "Mary" (d/get @db [:person/children "john"] :name)))
+      (is (= "Mary" (d/get @db [:person/children "john"] :name))
+          "Get attribute via lookup ref")
 
-    (d/listen! db [["mary"]] (cb :mary-entity))
+      (d/listen! db {:e__ [["mary"]]} (cb :mary-entity))
 
-    (d/transact! db [[:db/add "mary" :name "MMMary"]])
-    (is (= [["mary" :name "MMMary" "Mary"]] (:datoms (:mary-entity @log)))
-        "Entity listener called when attribute changes")
+      (d/transact! db [[:db/add "mary" :name "MMMary"]])
 
-    (d/transact! db [{:db/id "peter" :name "Peter"}])
-    (d/listen! db [[[:person/children "peter"]]] (cb :peter-as-child))
-    (d/transact! db [[:db/add "mary" :person/children #{"peter"}]])
+      (is (= [["mary" :name "MMMary" "Mary"]] (:datoms (:mary-entity @log)))
+          "Entity listener called when attribute changes"))
 
-    (is (= [["mary" :person/children #{"peter"} nil]] (:datoms (:peter-as-child @log)))
-        "Lookup ref entity listener is called when attr-val pair changes")
+    (testing "lookup ref pattern"
 
-    (d/transact! db [[:db/retract-attr "mary" :person/children #{"peter"}]])
 
-    (is (and (= [["mary" :person/children nil #{"peter"}]] (:datoms (:peter-as-child @log)))
-             (= nil (d/entity @db [:person/children "peter"])))
-        "Lookup ref listener is called when lookup reference is retracted")))
+      (d/transact! db [{:db/id "peter" :name "Peter"}])
+      (d/listen! db {:e__ #{[[:person/children "peter"]]}} (cb :peter-as-child))
+
+      (d/transact! db [[:db/add "mary" :person/children #{"peter"}]])
+
+
+      (is (= [["mary" :person/children #{"peter"} nil]] (:datoms (:peter-as-child @log)))
+          "Lookup ref entity listener is called when attr-val pair changes")
+
+      (d/transact! db [[:db/retract-attr "mary" :person/children #{"peter"}]])
+
+
+      (is (= [["mary" :person/children nil #{"peter"}]] (:datoms (:peter-as-child @log)))
+          "1/Lookup ref listener is called when lookup reference is retracted")
+
+      (is (= nil (d/entity @db [:person/children "peter"]))
+          "2/Lookup ref listener is called when lookup reference is retracted"))
+    ))

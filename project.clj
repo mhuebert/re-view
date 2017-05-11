@@ -1,6 +1,6 @@
 (defproject re-db "0.1.9-SNAPSHOT"
   :description "in-memory javascript key-value store inspired by Datomic and DataScript"
-  :url "https://www.github.com/mhuebert/re-db"
+  :url "https://www.github.com/re-view/re-db"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]

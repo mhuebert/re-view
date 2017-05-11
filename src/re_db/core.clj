@@ -1,15 +1,6 @@
 (ns re-db.core
   (:refer-clojure :exclude [peek]))
 
-(defmacro capture-patterns
-  "Evaluates body, returning map with evaluation result and read patterns."
-  [& body]
-  `(binding [~'re-db.core/*access-log* ~'re-db.core/blank-access-log]
-     (let [value# (do ~@body)
-           patterns# ~'re-db.core/*access-log*]
-       {:value    value#
-        :patterns (~'re-db.core/access-log-patterns patterns#)})))
-
 (defmacro peek
   "Evaluates body without tracking read patterns."
   [& body]

@@ -28,4 +28,3 @@
 (def merge-schema! (partial d/merge-schema! *db*))
 
 (def squuid d/squuid)
-(def capture-patterns* d/capture-patterns*)

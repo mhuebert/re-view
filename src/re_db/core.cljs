@@ -6,22 +6,17 @@
              select-keys select-keys*
              namespace   namespace*})
   (:require [cljs-uuid-utils.core :as uuid-utils]
-            [clojure.set :as set])
-  (:require-macros [re-db.core :refer [capture-patterns
-                                       get-in*]]))
+            [clojure.set :as set]
+            [re-db.patterns :as patterns])
+  (:require-macros [re-db.core :refer [get-in*]]))
 
 (enable-console-print!)
 
 (def ^:dynamic *notify* true)                               ;; if false, datoms are not tracked & listeners are not notified. faster.
-(def ^:dynamic *access-log* nil)                            ;; used to track read patterns
 (def ^:dynamic *db-log* nil)                                ;; maintains log of transactions while bound
 
-(def fnil-conj-set (fnil conj #{}))
-(def fnil-into-set (fnil into #{}))
-
-(defn log-read [path f v]
-  (when-not (nil? *access-log*)
-    (set! *access-log* (update-in *access-log* path f v))))
+(def conj-set (fnil conj #{}))
+(def into-set (fnil into #{}))
 
 (defn create
   "Create a new db, with optional schema, which should be a mapping of attribute keys to
@@ -73,7 +68,7 @@
   Lookup refs are only supported for indexed attributes.
   The 3-arity version is for known lookup refs, and does not check for uniqueness."
   ([db-snap attr val]
-   (log-read [:_av] conj [nil attr val])
+   (patterns/log-read :_av [nil attr val])
    (first (get-in* db-snap [:ave attr val])))
   ([db-snap id]
    (if ^:boolean (vector? id)
@@ -87,104 +82,16 @@
   "Returns true if entity with given id exists in db."
   [db-snap id]
   (let [id (resolve-id db-snap id)]
-    (when-not ^:boolean (nil? id) (log-read [:e__] conj [id]))
+    (when-not ^:boolean (nil? id) (patterns/log-read :e__ [id]))
     (true? (contains?* (get* db-snap :eav) id))))
 
-(defn- listen-path!
-  [db path f]
-  (doto db
-    (swap! update-in path #(fnil-conj-set % f))))
-
-(defn- unlisten-path!
-  [db path f]
-  (doto db
-    (swap! update-in path disj f)))
-
 (declare get entity)
-
-(defn p-nil?
-  "Return true if value is nil or '_"
-  [x]
-  (or (nil? x) (= '_ x)))
-
-(defn pattern->idx*
-  "Returns type of listener pattern."
-  [[e a v :as x]]
-  (let [pattern (keyword (str (if (p-nil? e) "_" "e")
-                              (if (p-nil? a) "_" "a")
-                              (if (p-nil? v) "_" "v")))]
-    (when-not (#{:e__ :ea_ :_av :_a_ :___} pattern)
-      (println {:pattern pattern :x x})
-      (throw (js/Error. (str "Unsupported pattern: " " " pattern "e: " e "a: " a "v: " v))))
-    pattern))
-
-(defn pattern->idx [pattern]
-  (if (keyword-identical? :tx-log pattern)
-    :___
-    (pattern->idx* pattern)))
-
-;; spec
-
-(defn- pattern->listener-path
-  "Returns path to listener set for the given access pattern."
-  [[id attr val :as pattern]]
-  (case (pattern->idx pattern)
-    :e__ [:listeners :e__ id]
-    :ea_ [:listeners :ea_ id attr]
-    :_av [:listeners :_av attr val]
-    :_a_ [:listeners :_a_ attr]
-    :___ [:listeners :___]))
-
-(declare listen! unlisten!)
-
-(defn- listen-lookup-ref!
-  "Listen for a pattern where the id is a lookup ref (Requires an intermediate listener.)"
-  [db pattern cb]
-  (let [[[lookup-attr lookup-val :as lookup-ref] attr] pattern]
-    (let [unlisten (atom)]
-      (listen! db [[nil lookup-attr lookup-val]]
-               (fn [{:keys [db-after] :as tx-report}]
-                 (let [lookup-id (resolve-id db-after lookup-attr lookup-val)]
-                   (when (not (nil? lookup-id)) (reset! unlisten (listen! db [[lookup-id attr]] cb)))
-                   (when @unlisten (@unlisten) (reset! unlisten nil))
-                   (cb tx-report))))
-      (swap! db assoc-in [:listeners :lookup-ref pattern cb]
-             {:clear #(do (when @unlisten (@unlisten))
-                          (swap! db update-in [:listeners :lookup-ref pattern] dissoc cb))}))))
-
-(defn unlisten!
-  "Remove pattern listeners."
-  [db patterns f]
-  (doseq [pattern patterns]
-    (if (vector? (first pattern))
-      ((get-in* @db [:listeners :lookup-ref pattern f :clear])))
-    (unlisten-path! db (pattern->listener-path pattern) f)))
-
-(defn listen!
-  "Adds listener for transactions which match any of the given patterns.
-
-   Each pattern must be a vector matching one of these forms
-
-   [id _ _]        :e__      entity
-   [id attr _]     :ea_      entity-attribute
-   [_ attr val]    :_av      attribute-value
-   [_ attr _]      :_a_      attribute
-   [_ _ _]         :___      tx-log (matches all transactions)
-
-   _ is matched to literal `nil` or a quoted '_. Trailing _ values may be omitted.
-   The keyword :tx-log may be supplied as alternative to '[_ _ _]."
-  [db patterns f]
-  (doseq [pattern patterns]
-    (cond (= :tx-log pattern) (listen-path! db [:listeners :tx-log] f)
-          (vector? (first pattern)) (listen-lookup-ref! db pattern f)
-          :else (listen-path! db (pattern->listener-path pattern) f)))
-  #(unlisten! db patterns f))
 
 (defn entity
   "Returns entity for resolved id."
   [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (log-read [:e__] conj [id])
+    (patterns/log-read :e__ [id])
     (some-> (get-in* db-snap [:eav id])
             (assoc :db/id id))))
 
@@ -192,23 +99,23 @@
   "Get attribute in entity with given id."
   ([db-snap id attr]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:ea_ id] fnil-conj-set [id attr])
+     (patterns/log-read :ea_ [id attr])
      (get-in* db-snap [:eav id attr])))
   ([db-snap id attr not-found]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:ea_ id] fnil-conj-set [id attr])
+     (patterns/log-read :ea_ [id attr])
      (get-in* db-snap [:eav id attr] not-found))))
 
 (defn get-in
   "Get-in the entity with given id."
   ([db-snap id ks]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:ea_ id] fnil-conj-set [id (first ks)])
+     (patterns/log-read :ea_ [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks))))
   ([db-snap id ks not-found]
    (when-let [id (resolve-id db-snap id)]
-     (log-read [:ea_ id] fnil-conj-set [id (first ks)])
+     (patterns/log-read :ea_ [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks not-found)))))
 
@@ -216,7 +123,7 @@
   "Select keys from entity of id"
   [db-snap id ks]
   (when-let [id (resolve-id db-snap id)]
-    (log-read [:ea_ id] into (mapv #(do [id %]) ks))
+    (patterns/log-read :ea_ (mapv #(do [id %]) ks) true)
     (-> (get-in* db-snap [:eav id])
         (assoc :db/id id)
         (select-keys* ks))))
@@ -239,8 +146,8 @@
     (when (keyword-identical? index :db.index/unique)
       (assert-uniqueness db-snap id a v))
     (cond-> db-snap
-            (not (nil? index)) (update-in [:ave a v] fnil-conj-set id)
-            (ref? schema) (update-in [:vae v a] fnil-conj-set id))))
+            (not (nil? index)) (update-in [:ave a v] conj-set id)
+            (ref? schema) (update-in [:vae v a] conj-set id))))
 
 (defn- add-index-many [db-snap id attr added schema]
   (reduce (fn [state v]
@@ -315,7 +222,7 @@
       (let [additions (set/difference val prev-val)]
         (if (empty? additions)
           state
-          [(-> (update-in db-snap [:eav id attr] fnil-into-set additions)
+          [(-> (update-in db-snap [:eav id attr] into-set additions)
                (update-index id attr additions nil schema))
            (cond-> datoms
                    (true? *notify*) (conj! [id attr additions nil]))]))
@@ -390,47 +297,39 @@
                (cond-> s
                        (many? k-schema) (conj attr))) #{} schema))
 
+
+(defn unlisten!
+  "Remove listener from patterns (if provided) or :tx-log."
+  ([db f]
+   (doto db
+     (swap! update-in [:listeners :tx-log] disj f)))
+  ([db patterns f]
+   (patterns/unlisten! db patterns f)))
+
+(defn listen!
+  "Adds listener for transactions which contain datom(s) matching the provided pattern. If patterns not provided, matches all transactions.
+
+   Patterns should be a map containing any of the following keys, each containing a collection of patterns:
+
+    :e__      entity                              [id _ _]
+    :ea_      entity-attribute                    [id attr _]
+    :_av      attribute-value                     [_ attr val]
+    :_a_      attribute                           [_ attr _]"
+  ([db f]
+   (swap! db update-in [:listeners :tx-log] conj-set f)
+   #(unlisten! db f))
+  ([db patterns f]
+   (patterns/listen! db patterns f)
+   #(unlisten! db patterns f)))
+
 (defn- notify-listeners
   "Notify listeners for supported patterns matched by datoms in transaction.
 
   Listeners are called with the complete :tx-report. A listener is called at most once per transaction."
   [{:keys [db-after datoms] :as tx-report}]
-  (when-let [{:keys [e__ ea_ _av _a_] :as all-listeners} (get* db-after :listeners)]
-    (let [^boolean e__? (not (empty? e__))
-          ^boolean ea_? (not (empty? ea_))
-          ^boolean _a_? (not (empty? _a_))
-          ^boolean _av? (not (empty? _av))
-          many? (many-attrs (:schema db-after))
-          ;; 1st pass: get supported patterns from datoms.
-          ;;  and only adds patterns that listeners exist for.
-          patterns (->> datoms
-                        (reduce (fn [patterns [id a v prev-v]]
-                                  ;; only track patterns that listeners exist for.
-                                  (-> patterns
-                                      (cond-> e__? (conj [:e__ id]))
-                                      (cond-> ea_? (conj [:ea_ id a]))
-                                      (cond-> _a_? (conj [:_a_ a]))
-                                      (cond-> _av? (into (if (many? a)
-                                                           (reduce (fn [patterns v]
-                                                                     (conj patterns [:_av a v])) [] (or v prev-v))
-                                                           [[:_av a (or v prev-v)]])))))
-                                #{[:tx-log]}))
-          ;; 2nd pass: get listeners for patterns. (uses set for deduplication)
-          listeners (->> patterns
-                         (reduce (fn [listeners pattern]
-                                   (into listeners (get-in* all-listeners pattern))) #{}))]
-      (doseq [listener listeners]
-        (listener tx-report)))))
-
-(defn- map->txs!
-  [m]
-  (assert (contains?* m :db/id))
-  (when-not (= 1 (count m))
-    (let [id (get* m :db/id)]
-      (reduce-kv (fn [txs attr val]
-                   (conj txs (if (nil? val)
-                               [:db/retract-attr id attr]
-                               [:db/add id attr val]))) [] (dissoc m :db/id)))))
+  (when-let [pattern-value-map (get* db-after :listeners)]
+    (doseq [listener (patterns/datom-values pattern-value-map datoms (many-attrs (:schema db-after)))]
+      (listener tx-report))))
 
 (defn- commit-tx [state tx]
   (apply (case (tx 0)
@@ -448,8 +347,7 @@
         [db-after datoms] (reduce (fn [state tx]
                                     (if (vector? tx)
                                       (commit-tx state (update tx 1 resolve-id))
-                                      (commit-tx state [:db/add-map (update tx :db/id resolve-id)])
-                                      #_(reduce commit-tx state (map->txs! (update tx :db/id resolve-id)))))
+                                      (commit-tx state [:db/add-map (update tx :db/id resolve-id)])))
                                   [db-before (transient [])]
                                   new-txs)]
     {:db-before db-before
@@ -485,12 +383,12 @@
                           (reduce-kv (fn [s id entity] (if ^:boolean (q entity) (conj s id) s)) #{} (get* db-snap :eav))
 
                           (keyword? q)
-                          (do (log-read [:_a_] conj [nil q nil])
+                          (do (patterns/log-read :_a_ [nil q nil])
                               (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :eav)))
 
                           :else
                           (let [[attr val] q]
-                            (log-read [:_av] conj [nil attr val])
+                            (patterns/log-read :_av [nil attr val])
                             (if (index? db-snap attr)
                               (get-in* db-snap [:ave attr val])
                               (entity-ids db-snap [#(= val (get* % attr))])))))))
@@ -503,30 +401,6 @@
 (defn squuid []
   (str (uuid-utils/make-random-uuid)))
 
-(def blank-access-log
-  {:e__ #{}
-   :_a_ #{}
-   :_av #{}
-   :ea_ {}})
-
-(defn access-log-patterns
-  "Returns vector of access log patterns, pruning overlapping patterns"
-  [{ids :e__ attr-vals :_av entity-attrs :ea_ attrs :_a_}]
-  (apply set/union
-         ids
-         attr-vals
-         attrs
-         (vals (apply dissoc entity-attrs (map first ids)))))
-
 (defn namespace [db-snap ns]
-  ;(log-read [:namespace] fnil-conj-set ns)
   (map #(entity db-snap (first %)) (subseq (get* db-snap :eav) >= (keyword (name ns) "!") <= (keyword (name ns) "z"))))
 
-(defn capture-patterns*
-  "Evaluates f, returning map with evaluation result and read patterns."
-  [f]
-  (binding [*access-log* blank-access-log]
-    (let [value (f)
-          patterns *access-log*]
-      {:value    value
-       :patterns (access-log-patterns patterns)})))
