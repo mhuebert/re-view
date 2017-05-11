@@ -1,4 +1,4 @@
-(defproject re-db "0.1.9-SNAPSHOT"
+(defproject re-db "0.1.9"
   :description "in-memory javascript key-value store inspired by Datomic and DataScript"
   :url "https://www.github.com/re-view/re-db"
   :license {:name "Eclipse Public License"
