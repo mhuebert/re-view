@@ -1,4 +1,4 @@
-(defproject re-view-routing "0.1.2-SNAPSHOT"
+(defproject re-view-routing "0.1.2"
 
   :description "ClojureScript routing tools"
 
