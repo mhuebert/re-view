@@ -14,34 +14,30 @@
 
   (testing "capture access patterns"
 
-    (is (= #{[1]} (-> (patterns/capture-patterns
-                        (d/entity 1))
-                      :patterns
-                      :e__))
+    (is (= #{[1 nil nil]} (-> (patterns/capture-patterns
+                                (d/entity 1))
+                              :patterns))
         "entity pattern")
 
-    (is (= #{[1 :name]} (-> (patterns/capture-patterns
-                              (d/get 1 :name)
-                              (d/get 1 :name))
-                            :patterns
-                            :ea_))
+    (is (= #{[1 :name nil]} (-> (patterns/capture-patterns
+                                  (d/get 1 :name)
+                                  (d/get 1 :name))
+                                :patterns))
         "entity-attr pattern")
 
-    (is (= #{[1 :name]
-             [1 :dog]} (-> (patterns/capture-patterns
-                             (d/get 1 :name)
-                             (d/get 1 :dog))
-                           :patterns
-                           :ea_))
+    (is (= #{[1 :name nil]
+             [1 :dog nil]} (-> (patterns/capture-patterns
+                                 (d/get 1 :name)
+                                 (d/get 1 :dog))
+                               :patterns))
         "two entity-attr patterns")
 
-    (is (= {:e__ #{[1]}
-            :ea_ #{[1 :name]}} (-> (patterns/capture-patterns
-                                     (d/get 1 :name)
-                                     (d/entity 1)
-                                     (d/get 1 :name))
-                                   :patterns
-                                   (select-keys [:e__ :ea_])))
+    (is (= #{[1 nil nil]
+             [1 :name nil]} (-> (patterns/capture-patterns
+                                  (d/get 1 :name)
+                                  (d/entity 1)
+                                  (d/get 1 :name))
+                                :patterns))
         "entity pattern")))
 
 #_(deftest compute

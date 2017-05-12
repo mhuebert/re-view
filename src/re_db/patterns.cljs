@@ -16,29 +16,29 @@
   "Record a read pattern to *pattern-log*."
   ([kind pattern]
    (when-not (nil? *pattern-log*)
-     (set! *pattern-log* (update *pattern-log* kind conj pattern))))
+     (set! *pattern-log* (conj *pattern-log* pattern))))
   ([kind pattern multiple?]
    (when-not (nil? *pattern-log*)
-     (set! *pattern-log* (update *pattern-log* kind (if multiple? into conj) pattern)))))
+     (set! *pattern-log* ((if multiple? into conj) *pattern-log* pattern)))))
 
 (def conj-set (fnil conj #{}))
 
 (defn pattern-path
   "Given a pattern type and datom, returns path"
   [kind pattern]
-  (case kind :e__ [:e__ (pattern 0)]
-             :ea_ [:ea_ (pattern 0) (pattern 1)]
-             :_av [:_av (pattern 1) (pattern 2)]
-             :_a_ [:_a_ (pattern 2)]
+  (case kind :e__ [(pattern 0) nil nil]
+             :ea_ [(pattern 0) (pattern 1) nil]
+             :_av [nil (pattern 1) (pattern 2)]
+             :_a_ [nil (pattern 2) nil]
              (into [kind] pattern)))
 
 (defn add-value
   [value-map pattern-key pattern value]
-  (update-in value-map (pattern-path pattern-key pattern) conj-set value))
+  (update value-map (pattern-path pattern-key pattern) conj-set value))
 
 (defn remove-value
   [value-map pattern-key pattern value]
-  (update-in value-map (pattern-path pattern-key pattern) disj value))
+  (update value-map (pattern-path pattern-key pattern) disj value))
 
 (declare listen unlisten)
 
@@ -64,17 +64,17 @@
     (-> (cond-> listeners
                 (not (nil? @lookup-target)) (add-value :e__ [@lookup-target] f))
         (add-value :_av [nil lookup-attr lookup-val] lookup-cb)
-        (assoc-in [:lookup-ref pattern f] {:lookup-cb     lookup-cb
-                                           :lookup-target lookup-target}))))
+        (assoc-in [:lookup-refs [pattern f]] {:lookup-cb     lookup-cb
+                                              :lookup-target lookup-target}))))
 
 (defn unlisten-lookup-ref
   "Removes lookup ref listener."
   [listeners db [[lookup-attr lookup-val] :as pattern] f]
-  (let [{:keys [lookup-cb lookup-target]} (get-in listeners [:lookup-ref pattern f])]
+  (let [{:keys [lookup-cb lookup-target]} (get-in listeners [:lookup-refs [pattern f]])]
     (-> (cond-> listeners
                 @lookup-target (remove-value :e__ [@lookup-target] f))
         (remove-value :_av [nil lookup-attr lookup-val] lookup-cb)
-        (update-in [:lookup-ref pattern] dissoc f))))
+        (dissoc [:lookup-refs [pattern f]]))))
 
 (defn listen
   "Add listener for patterns"
@@ -98,44 +98,66 @@
 (defn get-values [value-map pattern-key pattern]
   (get-in value-map (pattern-path pattern-key pattern)))
 
-(defn datom-patterns
-  "Patterns invalidated by a list of datoms. Provide a list of pattern-keys to limit results.
+(defn matches-datom? [pattern datom many?]
+  (or (nil? pattern)
+      (and (or (nil? (pattern 0)) (= (pattern 0) (datom 0)))
+           (or (nil? (pattern 1)) (= (pattern 1) (datom 1)))
+           (or (nil? (pattern 2)) (if (many? (datom 1))
+                                    (or (contains? (datom 2) (pattern 2))
+                                        (contains? (datom 3) (pattern 2)))
+                                    (or (= (pattern 2) (datom 2))
+                                        (= (pattern 2) (datom 3))))))))
 
-  many? should return true for attribute keys which are :cardinality/many"
-  ([datoms many?] (datom-patterns datoms many? (keys blank-pattern-log)))
-  ([datoms many? pattern-keys]
-   (->> datoms
-        ;; for every datom...
-        (reduce (fn [patterns datom]
-                  ;; for every active pattern key...
-                  (reduce (fn [pattern-paths pattern-key]
-                            (if (and (keyword-identical? pattern-key :_av)
-                                     (many? (nth datom 1)))
-                              ;; for cardinality/many values, one pattern per item in value and prev-value
-                              (into pattern-paths (let [[_ attr val prev-val] datom]
-                                                    (reduce
-                                                      (fn [patterns v] (conj patterns (pattern-path :_av [nil attr v]))) [] (into val prev-val))))
-                              (conj pattern-paths (pattern-path pattern-key datom)))) patterns pattern-keys))
-                #{}))))
+(defn match-datoms [patterns datoms many?]
+  (let [patterns (into-array patterns)
+        d-len (count datoms)
+        p-len (.-length patterns)]
+    (loop [matched []
+           p-index 0
+           d-index 0]
+      (if (or (= d-index d-len)                             ;; end of datoms
+              (= (count matched) p-len))                    ;; matched all patterns
+        matched
+        (let [next? (= p-index (dec p-len))
+              pattern (nth patterns p-index)
+              matches? (or (nil? pattern)
+                           (let [datom (nth datoms d-index)]
+                             (and (or (nil? (pattern 0)) (= (pattern 0) (datom 0)))
+                                  (or (nil? (pattern 1)) (= (pattern 1) (datom 1)))
+                                  (or (nil? (pattern 2)) (if (many? (datom 1))
+                                                           (or (contains? (datom 2) (pattern 2))
+                                                               (contains? (datom 3) (pattern 2)))
+                                                           (or (= (pattern 2) (datom 2))
+                                                               (= (pattern 2) (datom 3))))))))]
+          (when (true? matches?) (aset patterns p-index nil))
+          (recur (if matches? (conj matched pattern) matched)
+                 (if next? 0 (inc p-index))
+                 (if next? (inc d-index) d-index)))))))
 
-(defn active-patterns
-  "List of pattern keys for which values exist in map"
-  [value-map]
-  (reduce (fn [ks k]
-            (cond-> ks
-                    (not (empty? (get value-map k))) (conj k))) [] (keys blank-pattern-log)))
+
+(assert (= (match-datoms [[:e nil nil]
+                          [nil :a nil]
+                          [nil nil :v]
+                          [nil nil :pv]
+                          [:e :a nil]
+                          [nil :a :v]
+                          [:e :e :e]
+                          [:a :a nil]]
+                         [[:e :a :v :pv]]
+                         #{})
+           [[:e nil nil]
+            [nil :a nil]
+            [nil nil :v]
+            [nil nil :pv]
+            [:e :a nil]
+            [nil :a :v]]))
 
 (defn datom-values
   "Given a mapping of patterns to values, return the set of values for patterns that match any datom in the list."
   [value-map datoms many?]
-  (->>
-    ;; only collect patterns for which values exist
-    (active-patterns value-map)
-    ;; parse datoms for patterns
-    (datom-patterns datoms many?)
-    ;; collect values from map
-    (reduce (fn [values pattern]
-              (into values (get-in value-map pattern))) #{})
-    ;; add :tx-log patterns
-    (into (get value-map :tx-log))))
+  (->> (match-datoms (-> value-map
+                         (dissoc :lookup-refs)
+                         (keys)) datoms many?)
+       (reduce (fn [values pattern]
+                 (into values (get value-map pattern))) (get value-map :tx-log #{}))))
 

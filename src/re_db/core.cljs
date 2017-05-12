@@ -82,7 +82,7 @@
   "Returns true if entity with given id exists in db."
   [db-snap id]
   (let [id (resolve-id db-snap id)]
-    (when-not ^:boolean (nil? id) (patterns/log-read :e__ [id]))
+    (when-not ^:boolean (nil? id) (patterns/log-read :e__ [id nil nil]))
     (true? (contains?* (get* db-snap :eav) id))))
 
 (declare get entity)
@@ -91,7 +91,7 @@
   "Returns entity for resolved id."
   [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (patterns/log-read :e__ [id])
+    (patterns/log-read :e__ [id nil nil])
     (some-> (get-in* db-snap [:eav id])
             (assoc :db/id id))))
 
@@ -99,23 +99,23 @@
   "Get attribute in entity with given id."
   ([db-snap id attr]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id attr])
+     (patterns/log-read :ea_ [id attr nil])
      (get-in* db-snap [:eav id attr])))
   ([db-snap id attr not-found]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id attr])
+     (patterns/log-read :ea_ [id attr nil])
      (get-in* db-snap [:eav id attr] not-found))))
 
 (defn get-in
   "Get-in the entity with given id."
   ([db-snap id ks]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id (first ks)])
+     (patterns/log-read :ea_ [id (first ks) nil])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks))))
   ([db-snap id ks not-found]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id (first ks)])
+     (patterns/log-read :ea_ [id (first ks) nil])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks not-found)))))
 
@@ -123,7 +123,7 @@
   "Select keys from entity of id"
   [db-snap id ks]
   (when-let [id (resolve-id db-snap id)]
-    (patterns/log-read :ea_ (mapv #(do [id %]) ks) true)
+    (patterns/log-read :ea_ (mapv #(do [id % nil]) ks) true)
     (-> (get-in* db-snap [:eav id])
         (assoc :db/id id)
         (select-keys* ks))))
@@ -302,7 +302,7 @@
   "Remove listener from patterns (if provided) or :tx-log."
   ([db f]
    (doto db
-     (swap! update-in [:listeners :tx-log] disj f)))
+     (swap! update :tx-listeners disj f)))
   ([db patterns f]
    (patterns/unlisten db patterns f)))
 
@@ -316,7 +316,7 @@
     :_av      attribute-value                     [_ attr val]
     :_a_      attribute                           [_ attr _]"
   ([db f]
-   (swap! db update-in [:listeners :tx-log] conj-set f)
+   (swap! db update :tx-listeners conj-set f)
    #(unlisten db f))
   ([db patterns f]
    (patterns/listen db patterns f)
@@ -329,7 +329,9 @@
   [{:keys [db-after datoms] :as tx-report}]
   (when-let [pattern-value-map (get* db-after :listeners)]
     (doseq [listener (patterns/datom-values pattern-value-map datoms (many-attrs (:schema db-after)))]
-      (listener tx-report))))
+      (listener tx-report)))
+  (doseq [listener (get* db-after :tx-listeners)]
+    (listener tx-report)))
 
 (defn- commit-tx [state tx]
   (apply (case (tx 0)
