@@ -17,7 +17,7 @@ Re-View has two ways of managing state.
 
 - First, there is one **[state atom](getting-started#state-atoms)** per component. When it changes, the component is re-rendered. There is never any doubt about which component is bound to which atom. These are ordinary Clojure atoms, which do not support cursors: they are only for managing internal state, one component each. It is easy to inspect the state atom of a component at runtime.
 
-- Second, Re-View integrates with **[Re-DB](https://www.github.com/mhuebert/re-db)** for managing app-wide, global state. Similar to Reagent, reads are logged during render to determine data dependencies. But we track reads based on re-db _patterns_, so a list of entities and attributes a component depends on is visible as plain data at runtime, and we can efficiently re-render based on changes in re-db even when the number of active components is large.
+- Second, Re-View integrates with **[Re-DB](https://www.github.com/re-view/re-db)** for managing app-wide, global state. Similar to Reagent, reads are logged during render to determine data dependencies. But we track reads based on re-db _patterns_, so a list of entities and attributes a component depends on is visible as plain data at runtime, and we can efficiently re-render based on changes in re-db even when the number of active components is large.
 
 **Lifecycle Methods**
 
