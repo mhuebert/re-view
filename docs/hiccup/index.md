@@ -6,13 +6,13 @@ If you're new to hiccup, check out the **[syntax guide](syntax)**.
 
 # API
 
-**`re-view-hiccup.core/element`** accepts a `hiccup` vector and returns a React element. If a non-vector form is supplied, it is returned untouched. You may pass an options map with a `:wrap-props` function to be applied to all props maps during parsing. 
+**`re-view.hiccup/element`** accepts a `hiccup` vector and returns a React element. If a non-vector form is supplied, it is returned untouched. You may pass an options map with a `:wrap-props` function to be applied to all props maps during parsing.
 
 **Example:**
 
 ```clj
 (ns my-app.core 
-  (:require [re-view-hiccup.core :as hiccup]))
+  (:require [re-view.hiccup :as hiccup]))
 
 (hiccup/element [:div {:style {:color "red"}} "Hello, world!"])
 ```
