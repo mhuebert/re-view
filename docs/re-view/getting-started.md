@@ -147,4 +147,4 @@ If you're not sure what a Clojure atom is, check out the [atoms explainer](../ex
 
 ### Global state
 
-Re-View was written in tandem with [re-db](https://github.com/mhuebert/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes. More information in the re-db [README](https://www.github.com/mhuebert/re-db).
+Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes. More information in the re-db [README](https://www.github.com/re-view/re-db).
