@@ -27,4 +27,4 @@
 (def unlisten (partial d/unlisten *db*))
 (def merge-schema! (partial d/merge-schema! *db*))
 
-(def squuid d/squuid)
+(def unique-id d/unique-id)

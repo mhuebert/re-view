@@ -14,30 +14,35 @@
 
   (testing "capture access patterns"
 
-    (is (= #{[1 nil nil]} (-> (patterns/capture-patterns
+    (is (= #{1} (-> (patterns/capture-patterns
                                 (d/entity 1))
-                              :patterns))
+                              :patterns
+                              :e__))
         "entity pattern")
 
-    (is (= #{[1 :name nil]} (-> (patterns/capture-patterns
+    (is (= #{[1 :name]} (-> (patterns/capture-patterns
                                   (d/get 1 :name)
                                   (d/get 1 :name))
-                                :patterns))
+                                :patterns
+                                :ea_))
         "entity-attr pattern")
 
-    (is (= #{[1 :name nil]
-             [1 :dog nil]} (-> (patterns/capture-patterns
-                                 (d/get 1 :name)
-                                 (d/get 1 :dog))
-                               :patterns))
+    (is (= #{[1 :name]
+             [1 :dog]} (-> (patterns/capture-patterns
+                                        (d/get 1 :name)
+                                        (d/get 1 :dog))
+                                      :patterns
+                                      :ea_))
         "two entity-attr patterns")
 
-    (is (= #{[1 nil nil]
-             [1 :name nil]} (-> (patterns/capture-patterns
-                                  (d/get 1 :name)
-                                  (d/entity 1)
-                                  (d/get 1 :name))
-                                :patterns))
+    (is (= {:e__ #{1}
+            :ea_ #{[1 :name]}}
+           (-> (patterns/capture-patterns
+                 (d/get 1 :name)
+                 (d/entity 1)
+                 (d/get 1 :name))
+               :patterns
+               (select-keys [:e__ :ea_])))
         "entity pattern")))
 
 #_(deftest compute

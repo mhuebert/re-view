@@ -1,5 +1,15 @@
 ## Changelog
 
+### 0.1.11
+- pattern listener format has been changed to accept minimal necessary data. Call re-db.core/listen with a pattern map of the form:
+
+```clj
+  {:e__ [<entity id>, <entity id>]                             ;; vector of ids
+   :ea_ [[<entity id> <attribute>], [<entity id> <attribute>]] ;; vector of vectors of id-attribute pairs
+   :_a_ [<attribute>, <attribute>]                             ;; vector of attributes
+   :_av [[<attribute>, <value>], [<attribute>, <value>]]}      ;; vector of attribute-value pairs
+```
+
 ### 0.1.10
 - rename core/listen! -> core/listen and core/unlisten! -> core/listen
 

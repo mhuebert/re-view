@@ -176,7 +176,9 @@
       (is (= "Mary" (d/get @db [:person/children "john"] :name))
           "Get attribute via lookup ref")
 
-      (d/listen db {:e__ [["mary"]]} (cb :mary-entity))
+      (d/listen db {:e__ ["mary"]} (cb :mary-entity))
+
+
 
       (d/transact! db [[:db/add "mary" :name "MMMary"]])
 
@@ -185,9 +187,8 @@
 
     (testing "lookup ref pattern"
 
-
       (d/transact! db [{:db/id "peter" :name "Peter"}])
-      (d/listen db {:e__ #{[[:person/children "peter"]]}} (cb :peter-as-child))
+      (d/listen db {:e__ #{[:person/children "peter"]}} (cb :peter-as-child))
 
       (d/transact! db [[:db/add "mary" :person/children #{"peter"}]])
 
@@ -202,5 +203,4 @@
           "1/Lookup ref listener is called when lookup reference is retracted")
 
       (is (= nil (d/entity @db [:person/children "peter"]))
-          "2/Lookup ref listener is called when lookup reference is retracted"))
-    ))
+          "2/Lookup ref listener is called when lookup reference is retracted"))))

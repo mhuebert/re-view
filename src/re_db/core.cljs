@@ -68,7 +68,7 @@
   Lookup refs are only supported for indexed attributes.
   The 3-arity version is for known lookup refs, and does not check for uniqueness."
   ([db-snap attr val]
-   (patterns/log-read :_av [nil attr val])
+   (patterns/log-read :_av [attr val])
    (first (get-in* db-snap [:ave attr val])))
   ([db-snap id]
    (if ^:boolean (vector? id)
@@ -82,7 +82,7 @@
   "Returns true if entity with given id exists in db."
   [db-snap id]
   (let [id (resolve-id db-snap id)]
-    (when-not ^:boolean (nil? id) (patterns/log-read :e__ [id nil nil]))
+    (when-not ^:boolean (nil? id) (patterns/log-read :e__ id))
     (true? (contains?* (get* db-snap :eav) id))))
 
 (declare get entity)
@@ -91,7 +91,7 @@
   "Returns entity for resolved id."
   [db-snap id]
   (when-let [id (resolve-id db-snap id)]
-    (patterns/log-read :e__ [id nil nil])
+    (patterns/log-read :e__ id)
     (some-> (get-in* db-snap [:eav id])
             (assoc :db/id id))))
 
@@ -99,23 +99,23 @@
   "Get attribute in entity with given id."
   ([db-snap id attr]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id attr nil])
+     (patterns/log-read :ea_ [id attr])
      (get-in* db-snap [:eav id attr])))
   ([db-snap id attr not-found]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id attr nil])
+     (patterns/log-read :ea_ [id attr])
      (get-in* db-snap [:eav id attr] not-found))))
 
 (defn get-in
   "Get-in the entity with given id."
   ([db-snap id ks]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id (first ks) nil])
+     (patterns/log-read :ea_ [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks))))
   ([db-snap id ks not-found]
    (when-let [id (resolve-id db-snap id)]
-     (patterns/log-read :ea_ [id (first ks) nil])
+     (patterns/log-read :ea_ [id (first ks)])
      (-> (get-in* db-snap [:eav id])
          (get-in* ks not-found)))))
 
@@ -123,7 +123,7 @@
   "Select keys from entity of id"
   [db-snap id ks]
   (when-let [id (resolve-id db-snap id)]
-    (patterns/log-read :ea_ (mapv #(do [id % nil]) ks) true)
+    (patterns/log-read :ea_ (mapv #(do [id %]) ks) true)
     (-> (get-in* db-snap [:eav id])
         (assoc :db/id id)
         (select-keys* ks))))
@@ -385,12 +385,12 @@
                           (reduce-kv (fn [s id entity] (if ^:boolean (q entity) (conj s id) s)) #{} (get* db-snap :eav))
 
                           (keyword? q)
-                          (do (patterns/log-read :_a_ [nil q nil])
+                          (do (patterns/log-read :_a_ q)
                               (reduce-kv (fn [s id entity] (if ^:boolean (contains?* entity q) (conj s id) s)) #{} (get* db-snap :eav)))
 
                           :else
                           (let [[attr val] q]
-                            (patterns/log-read :_av [nil attr val])
+                            (patterns/log-read :_av [attr val])
                             (if (index? db-snap attr)
                               (get-in* db-snap [:ave attr val])
                               (entity-ids db-snap [#(= val (get* % attr))])))))))
@@ -400,9 +400,8 @@
   [db-snap qs]
   (map #(entity db-snap %) (entity-ids db-snap qs)))
 
-(defn squuid []
+(defn unique-id
+  "Returns a unique id (string)."
+  []
   (str (uuid-utils/make-random-uuid)))
-
-(defn namespace [db-snap ns]
-  (map #(entity db-snap (first %)) (subseq (get* db-snap :eav) >= (keyword (name ns) "!") <= (keyword (name ns) "z"))))
 
