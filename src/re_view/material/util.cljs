@@ -32,24 +32,25 @@
                          (.-shiftKey e) (conj "shift")
                          true (conj (get non-char-keys code str-char))))))
 
-(defn add-styles [target styles]
-  (let [style (gobj/get target "style")]
-    (doseq [[attr val] styles]
-      (.setProperty style attr val))))
+(defn add-styles [target styles prev-styles]
+  (when (or styles prev-styles)
+    (let [style (gobj/get target "style")]
+      (doseq [attr (-> #{}
+                       (into (keys styles))
+                       (into (keys prev-styles)))]
+        (.setProperty style attr (get styles attr))))))
 
 (defn mdc-style-update
   ([mdc-name]
-   (fn [{:keys [view/state] :as this}]
-     (when-let [mdc-styles (seq (get @state :mdc/styles))]
-       (let [adapter (-> (gobj/get this (str "mdc" (name mdc-name)))
-                         (gobj/get "adapter_"))
-             target (or (gobj/get adapter "styleTarget" (gobj/get adapter "root")))]
-         (add-styles target mdc-styles)))))
-  ([mdc-name styles-key element-key]
-   (fn [{:keys [view/state] :as this}]
-
-     (add-styles (aget this (str "mdc" (name mdc-name)) "adapter_" (name element-key))
-                 (get @state styles-key)))))
+   (mdc-style-update mdc-name "root" :styles))
+  ([mdc-name element-key styles-key]
+   (fn [{:keys [view/state
+                view/prev-state] :as this}]
+     (let [adapter (aget this (str "mdc" (name mdc-name)) "adapter_")
+           element (or (and (= element-key "root") (aget adapter "styleTarget"))
+                       (aget adapter element-key))
+           style-key (keyword "mdc" (name styles-key))]
+       (add-styles element (get @state style-key) (get prev-state style-key))))))
 
 (defn mdc-classes-update
   [mdc-name]

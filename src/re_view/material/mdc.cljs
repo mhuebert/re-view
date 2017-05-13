@@ -73,7 +73,7 @@
   ([prefix]
    (fn [attr val]
      (this-as this
-       (swap! (gobj/get this "state") assoc-in [(keyword "mdc" (str (some-> prefix (str "-")) "styles")) attr] val)))))
+       (swap! (gobj/get this "state") assoc-in [(keyword "mdc" (str (some-> prefix (name) (str "-")) "styles")) attr] val)))))
 
 (defn class-handler
   ([action] (class-handler action nil))
@@ -179,31 +179,25 @@
       (cond-> {:drawer                             drawer
                :styleTarget                        drawer
                ;:onDestroy                          #(events/unlistenByKey listener-key)
-               :hasNecessaryDom                    #(this-as this drawer)
+               :hasNecessaryDom                    #(do drawer)
                ;:registerInteractionHandler         #(.log js/console "i" %1 %2)
                ;:deregisterInteractionHandler       #(.log js/console %1 %2)
-               :registerDrawerInteractionHandler   (interaction-handler :listen "drawer") #_(fn [evt handler]
-                                                                                                    (this-as this (util/guarded-listen #(= (gobj/get % "target")
-                                                                                                                                           (gobj/get % "currentTarget"))
-                                                                                                                                       drawer (remapEvent evt) handler (applyPassive))))
-               :deregisterDrawerInteractionHandler (interaction-handler :unlisten "drawer") #_(fn [evt handler]
-                                                                                                      (this-as this (util/guarded-unlisten drawer (remapEvent evt) handler (applyPassive))))
+               :registerDrawerInteractionHandler   (interaction-handler :listen "drawer")
+               :deregisterDrawerInteractionHandler (interaction-handler :unlisten "drawer")
                :registerTransitionEndHandler       (interaction-handler :listen "drawer" (event-name js/window "transitionend"))
                :deregisterTransitionEndHandler     (interaction-handler :unlisten "drawer" (event-name js/window "transitionend"))
-               :getDrawerWidth                     #(this-as this
-                                                      (util/force-layout drawer))
+               :getDrawerWidth                     #(util/force-layout drawer)
                :setTranslateX                      (fn [n]
-                                                     (this-as this (swap! state assoc-in [:mdc/styles (getTransformPropertyName)]
-                                                                          (when n (str "translateX(" n "px)")))))
+                                                     (swap! state assoc-in [:mdc/styles (getTransformPropertyName)]
+                                                            (when n (str "translateX(" n "px)"))))
                :updateCssVariable                  (fn [value]
-                                                     (this-as this (when (supportsCssCustomProperties)
-                                                                     (swap! state assoc-in [:mdc/styles (aget mdc "MDCTemporaryDrawerFoundation" "strings" "OPACITY_VAR_NAME")] value))))
-               :getFocusableElements               (fn []
-                                                     (this-as this (.querySelectorAll drawer (aget mdc "MDCTemporaryDrawerFoundation" "strings" "FOCUSABLE_ELEMENTS"))))
+                                                     (when (supportsCssCustomProperties)
+                                                       (swap! state assoc-in [:mdc/styles (aget mdc "MDCTemporaryDrawerFoundation" "strings" "OPACITY_VAR_NAME")] value)))
+               :getFocusableElements               #(.querySelectorAll drawer (aget mdc "MDCTemporaryDrawerFoundation" "strings" "FOCUSABLE_ELEMENTS"))
                :saveElementTabState                (gobj/get mdc "saveElementTabState")
                :restoreElementTabState             (gobj/get mdc "restoreElementTabState")
                :makeElementUntabbable              #(.setAttribute ^js/Element % "tabindex" -1)
-               :isDrawer                           #(this-as this (= % drawer))}
+               :isDrawer                           #(= % drawer)}
               (.-notifyOpen component) (assoc :notifyOpen (.-notifyOpen component))
               (.-notifyClose component) (assoc :notifyClose (.-notifyClose component))))))
 
@@ -247,9 +241,9 @@
        :getWindowDimensions              #(do #js {"width"  (.-innerWidth js/window)
                                                    "height" (.-innerHeight js/window)})
        :setScale                         (fn [x y]
-                                           (this-as this (swap! state assoc-in [:mdc/styles (getTransformPropertyName)] (str "scale(" x ", " y ")"))))
+                                           (swap! state assoc-in [:mdc/styles (getTransformPropertyName)] (str "scale(" x ", " y ")")))
        :setInnerScale                    (fn [x y]
-                                           (this-as this (swap! state assoc-in [:mdc/styles-inner (getTransformPropertyName)] (str "scale(" x ", " y ")"))))
+                                           (swap! state assoc-in [:mdc/inner-styles (getTransformPropertyName)] (str "scale(" x ", " y ")")))
        :getNumberOfItems                 #(count (util/flatten-seqs (:view/children component)))
        :getYParamsForItemAtIndex         (fn [index]
                                            (this-as this
@@ -306,3 +300,34 @@
 (defadapter Select)
 
 (defadapter Snackbar)
+
+(defn log-ret [msg x]
+  (.log js/console msg x)
+  x)
+(defadapter Toolbar
+  (fn [component]
+    (let [parent-element (v/dom-node component)
+          toolbar-element (gdom/getFirstElementChild parent-element)
+          sibling-element (gdom/getLastElementChild parent-element)
+          flexible-row-element (-> toolbar-element
+                                   (util/find-node #(classes/has % "mdc-toolbar__row")))
+          parent-window (or (some-> toolbar-element (aget "ownerDocument") (aget "defaultView")) js/window)]
+      {:root                              toolbar-element
+       :flexibleRowElement                flexible-row-element
+       :fixedAdjustElement                sibling-element
+       :titleElement                      (util/find-node toolbar-element #(classes/has % "mdc-toolbar__title"))
+       :registerScrollHandler             (interaction-handler :listen parent-window "scroll")
+       :deregisterScrollHandler           (interaction-handler :unlisten parent-window "scroll")
+       :registerResizeHandler             (interaction-handler :listen parent-window "resize")
+       :deregisterResizeHandler           (interaction-handler :unlisten parent-window "resize")
+       :getViewportWidth                  #(.-innerWidth parent-window)
+       :getViewportScrollY                #(.-pageYOffset parent-window)
+       :getOffsetHeight                   #(.-offsetHeight toolbar-element)
+       :getFlexibleRowElementOffsetHeight #(.-offsetHeight flexible-row-element)
+       :notifyChange                      (fn [ratio])
+       :setStyle                          (style-handler)
+       :setStyleForTitleElement           (style-handler :title)
+       :setStyleForFlexibleRowElement     (style-handler :flexible-row)
+       :setStyleForFixedAdjustElement     (style-handler :fixed-adjust)
+
+       })))

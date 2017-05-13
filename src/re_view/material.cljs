@@ -257,7 +257,7 @@
                                             (aset "selectionStart" cursor)
                                             (aset "selectionEnd" cursor)))))}))])
 
-(defview NativeSelect
+(defview Select
   "Native select element"
   [{:keys [view/props]} & items]
   (into [:select.mdc-select props] items))
@@ -447,7 +447,7 @@
    :did-mount    (fn [this] (mdc/init this mdc/SimpleMenu))
    :will-unmount (fn [this] (mdc/destroy this mdc/SimpleMenu))
    :open         (fn [this] (.open (gobj/get this "mdcSimpleMenu")))
-   :did-update   (v/compseq (util/mdc-style-update :SimpleMenu :mdc/styles-inner "menuItemContainer")
+   :did-update   (v/compseq (util/mdc-style-update :SimpleMenu "menuItemContainer" :inner-styles)
                             (util/mdc-style-update :SimpleMenu))}
   [{:keys [view/state view/props classes]} & items]
   [:.mdc-simple-menu (merge (apply dissoc props SimpleMenuProps)
@@ -609,6 +609,79 @@
 
 (def TemporaryDrawerWithTrigger (ext/with-trigger TemporaryDrawer))
 
+(def ToolbarProps [:fixed? :fixed-lastrow-only? :waterfall? :flexible? :flexible-default-behavior? :rtl])
+
+(def update-toolbar-styles
+  (v/compseq (util/mdc-style-update :Toolbar "titleElement" :title-styles)
+             (util/mdc-style-update :Toolbar "flexibleRowElement" :flexible-row-styles)
+             (util/mdc-style-update :Toolbar "fixedAdjustElement" :fixed-adjust-styles)
+             (util/mdc-style-update :Toolbar)))
+
+(defn reset-toolbar
+  "Toolbar is very stateful and must be totally reset if props change."
+  [{:keys [view/state] :as this}]
+  (v/swap-silently! state #(do {}))
+  (update-toolbar-styles this)
+  (mdc/destroy this mdc/Toolbar)
+  (mdc/init this mdc/Toolbar))
+
+(defview ToolbarWithContent
+  "Toolbar.
+
+  **:fixed?** (false): fixes toolbar to top of screen.
+  **:waterfall?** (false): toolbar will gain elevation and become fixed when user scrolls."
+  {:did-mount    #(mdc/init % mdc/Toolbar)
+   :did-update   (v/compseq
+                   update-toolbar-styles
+                   (fn [{:keys [view/props view/prev-props] :as this}]
+                     (when (and (not= props prev-props)) (reset-toolbar this))))
+   :will-unmount #(mdc/destroy % mdc/Toolbar)}
+  [{:keys [fixed?
+           fixed-lastrow-only?
+           waterfall?
+           flexible?
+           flexible-default-behavior?
+           rtl
+           view/state
+           view/props]} toolbar-content content]
+  (let [fixed? (or fixed? waterfall? fixed-lastrow-only?)]
+    [:span
+     (into [:header.mdc-toolbar
+            (-> (apply dissoc props ToolbarProps)
+                (cond-> rtl (assoc :dir "rtl"))
+                (update :classes into (cond-> (:mdc/Toolbar-classes @state)
+                                              fixed? (conj "mdc-toolbar--fixed")
+                                              waterfall? (conj "mdc-toolbar--waterfall")
+                                              (or flexible?
+                                                  flexible-default-behavior?) (conj "mdc-toolbar--flexible")
+                                              flexible-default-behavior? (conj "mdc-toolbar--flexible-default-behavior")
+                                              fixed-lastrow-only? (conj "mdc-toolbar--fixed-lastrow-only"))))]
+           toolbar-content)
+     [:div {:class (when fixed? "mdc-toolbar-fixed-adjust")} content]]))
+
+(defn ToolbarSection
+  "Toolbar section.
+
+  :align (middle): :start or :end
+  :shrink? (false): use for very long titles"
+  [{:keys [align shrink-to-fit?] :as props} & content]
+  [:section.mdc-toolbar__section
+   (-> props
+       (dissoc :align :shrink-to-fit?)
+       (assoc :role "toolbar")
+       (update :classes into (cond-> []
+                                     align (conj (case align :end "mdc-toolbar__section--align-end"
+                                                             :start "mdc-toolbar__section--align-start"
+                                                             ""))
+                                     shrink-to-fit? (conj "mdc-toolbar__section--shrink-to-fit")
+                                     )))
+   content])
+
+(defn ToolbarTitle [title]
+  [:span.mdc-toolbar__title title])
+
+(defn ToolbarRow [& content]
+  (into [:.mdc-toolbar__row] content))
 
 ;; MDC select element needs work --  arrow does not line up.
 ;; wait until it has improved to implement.
