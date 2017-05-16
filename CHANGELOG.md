@@ -1,13 +1,24 @@
 
 ### Changelog
 
+0.3.15
+**breaking changes**
+- namespaced keys in methods map: :react/key, :react/display-name, :life/<lifecycle-method>
+- revert namespaces to re-view-hiccup, re-view-material, re-view-prosemirror, re-view-routing
+- rename `render-to-element` to `render-to-dom`
+
+additions:
+- added `:view/spec` to specify props and children for a component
+- stop recommending `compseq` to join multiple lifecycle methods - pass a vector of methods instead
+- added `v/defn`, defines stateless components that adhere to standard prop/children arg format and parse body as hiccup
+
+
 0.3.14
 - Sync with re-db listen! api change
 - Example namespaces renamed
 
 0.3.13
 - Fix bug in debug log for errors in component render
-
 
 0.3.12
 - Add `re-view.core/partial` to partially apply props to a view

@@ -21,29 +21,42 @@ Re-View components implement [ILookup](https://cljs.github.io/api/cljs.core/ILoo
    [:p "We have..."])
 ```
 
-We can also `get` three additional keys on `this`:
+Additional keys are defined under the `view` namespace:
 
-**:view/props** returns the entire props map (eg. to pass down to a child component). +
-**:view/children** returns the list of children passed to the component. +
-**:view/state** returns the state atom for the component (it is created when looked up for the first time).
+```clj
+:view/props     ;; the props map
+:view/children  ;; list of children passed to the component.
+:view/state     ;; state atom for the component (created when looked up for the first time).
+```
+
+Previous versions of these values are also available during each lifecycle:
+
+```clj
+:view/prev-props
+:view/prev-children
+:view/prev-state
+```
 
 ## Mixins
 
-Mixins are [not supported](https://facebook.github.io/react/blog/2016/07/13/mixins-considered-harmful.html) by `defview`.
+Mixins are not directly supported by `defview` -- you must pass a literal map (there is some [discussion](https://facebook.github.io/react/blog/2016/07/13/mixins-considered-harmful.html) as to why).
 
-**`v/compseq`** composes functions to execute sequentially on the same arguments, useful for composing lifecycle methods:
+However, you can specify a vector of functions for any lifecycle key and they will be evaluated sequentially at the appropriate time:
 
 ```
 (defview my-app 
-  {:did-mount (v/compseq register-view focus-input)}
+  {:did-mount [register-view focus-input]}
   [this]
   ...)
 ```
 
 ## Render Loop and forceUpdate
 
-Views are updated in a render loop using `requestAnimationFrame` in browsers that support it. 
+Views are updated in a render loop using `requestAnimationFrame` in browsers that support it. We use (https://facebook.github.io/react/docs/react-component.html#forceupdate[forceUpdate]) instead of rendering from the top level, because we know exactly which components should update for a given change in state.
 
-**`v/force-render`** updates a component on the next animation frame. +
-**`v/force-render!`** updates a component immediately (https://facebook.github.io/react/docs/react-component.html#forceupdate[forceUpdate]). +
-**`v/flush!`** executes pending updates immediately.
+```clj
+v/force-render  ;; update component on next animation frame.
+v/force-render! ;; update component immediately.
+v/flush!        ;; execute pending updates immediately.
+```
+

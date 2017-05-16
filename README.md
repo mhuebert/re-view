@@ -35,13 +35,13 @@ Define your first view:
 Render to the DOM:
 
 ```clj
-(v/render-to-element (say-hello) "id-of-element")
+(v/render-to-dom (say-hello) "id-of-element")
 ```
 
 Pass in a props map:
 
 ```clj
-(v/render-to-element (say-hello {:name "Maria"}) "id-of-element")
+(v/render-to-dom (say-hello {:name "Maria"}) "id-of-element")
 ```
 
 Read the `:name` prop:

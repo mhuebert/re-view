@@ -13,12 +13,12 @@
           local-state (atom nil)
           el (append-el)
           view (v/view
-                 {:initial-state 0
-                  :did-mount     #(reset! local-state (:view/state %))}
+                 {:life/initial-state 0
+                  :life/did-mount     #(reset! local-state (:view/state %))}
                  [{:keys [view/state]}]
                  (swap! log conj @state)
                  [:div "hello"])
-          render #(v/render-to-element (view) el)]
+          render #(v/render-to-dom (view) el)]
 
       (render)
       (is (= @log [0]))
@@ -43,7 +43,7 @@
           view (v/view [{:keys [db/id]}]
                        (swap! log conj (d/get id :name))
                        [:div "hello"])
-          render #(v/render-to-element (view {:db/id %}) el)]
+          render #(v/render-to-dom (view {:db/id %}) el)]
 
       (render 1)
       (is (= 1 (count @log)))
