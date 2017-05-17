@@ -109,13 +109,7 @@ a {
     border-collapse: collapse;
     margin: 1em 0;
   }
-  tr:nth-child(2n) {
-    background-color: rgba(0, 0, 0, 0.02);
-  }
-  td, th {
-    vertical-align: middle;
-    padding: 0.25rem 0.5rem;
-  }
+
   td {
     border: 1px solid #ddd;
   }
@@ -128,11 +122,11 @@ a {
 
 table {
   border-collapse: collapse;
-  td {
+  td, th {
     padding: 0.5rem;
   }
   tr:nth-child(2n) {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(0, 0, 0, 0.025);
   }
 }
 
@@ -166,13 +160,16 @@ table {
   table {
     font-size: 83%;
   }
+  table code {
+    font-size: 90%;
+  }
 }
 
 pre {
   background: rgba(0, 0, 0, 0.03);
   padding: 0.75rem;
   font-size: 14px;
-  border-left: 7px solid rgba(0, 0, 0, 0.05);
+  white-space: pre-wrap;
   code {
     font-size: 14px;
   }
@@ -182,15 +179,20 @@ code {
   font-size: 14px;
 }
 
-p code {
-  background: rgba(0, 0, 0, 0.03);
-  padding: 2px 4px;
+p, table {
+  code {
+    background: rgba(0, 0, 0, 0.03);
+    padding: 2px 4px;
+  }
 }
 
 .mdc-theme--dark {
   color: white;
   pre, p code {
     background: rgba(0, 0, 0, 0.2);
+  }
+  table tr:nth-child(2n) {
+    background-color: rgba(0, 0, 0, 0.15);
   }
 }
 
@@ -199,11 +201,12 @@ p code {
 }
 
 .elevated-card {
-  box-shadow: 2px 2px 8px 0 rgba(0,0,0,.2);
+  box-shadow: 2px 2px 8px 0 rgba(0, 0, 0, .2);
   border-bottom: 0.25rem solid #eee;
   border-radius: 0.25rem;
   background-color: white;
 }
+
 .mdc-theme--dark .elevated-card {
   background-color: #333;
   border-color: #777;
