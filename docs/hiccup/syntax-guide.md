@@ -2,6 +2,8 @@
 
 Introduction for first-timers. Also: [full docs](overview)
 
+----
+
 ## Get started
 
 Create a div.
