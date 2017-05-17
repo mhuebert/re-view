@@ -4,11 +4,11 @@ View specs are a way to specify exactly what props and children each component e
 
 ### Why is this important?
 
-**Clarity / documentation**: quickly identify how to use a view by looking at its spec.
+Clarity / documentation -- quickly identify how to use a view by looking at its spec.
 
-**Debugging**: During develoment, we __validate__ the arguments passed to each component to verify correct usage and provide **helpful error messages**
+Debugging -- During develoment, we __validate__ the arguments passed to each component to verify correct usage and provide **helpful error messages**
 
-**Productivity**: Automate the pruning of props that are passed down to child components.
+Productivity -- Automate the pruning of props that are passed down to child components.
 
 ### Usage
 
