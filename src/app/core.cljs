@@ -87,7 +87,7 @@
 
        [:.flex.items-stretch
         (let [sidebar-content (->> [{:text-primary "Docs"
-                                     :href         "/docs"}
+                                     :href         "/docs/"}
                                     {:text-primary "Components"
                                      :href         "/components"}]
                                    (map (fn [{:keys [href] :as item}]

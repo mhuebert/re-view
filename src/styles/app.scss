@@ -149,6 +149,9 @@ table {
     &:hover {
       opacity: 1;
     }
+    [href^="http"]:after {
+      content: ""
+    }
   }
   p, ul, ol, table {
     max-width: 600px;
