@@ -1,6 +1,6 @@
 
+### Docs
 
-- The Re-View [README](https://github.com/re-view/re-view/blob/master/README.md)
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
 - [View Specs](re-view/view-specs)
