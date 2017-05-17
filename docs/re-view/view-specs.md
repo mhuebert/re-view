@@ -4,9 +4,13 @@ View specs are a way to specify exactly what props and children each component e
 
 ### Why is this important?
 
-**Documentation**: a typical application may use dozens or hundreds of components by the time it is finished. Each component is easy to build in isolation, but as your app grows it will be harder to remember how things work. What if there was a way, just by looking at a component, to know exactly how it should be used?
+### Why is this important?
 
-**Debugging**: Interfaces are composed of deeply nested trees of components, and we often pass props multiple hops down the tree. It can be hard to keep track of what is happening to these props as they flow from component to component. What if there was a way to specify exactly which props each component consumes? Then we could __validate__ the arguments passed to each component during development, providing **helpful error messages**, and _automate_ the pruning of props for passing down to child components.
+**Clarity / documentation**: quickly identify how to use a view by looking at its spec.
+
+**Debugging**: During develoment, we __validate__ the arguments passed to each component to verify correct usage and provide **helpful error messages**
+
+**Productivity**: Automate the pruning of props that are passed down to child components.
 
 ### Usage
 
