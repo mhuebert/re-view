@@ -17,7 +17,8 @@
                  [cljsjs/react "15.5.0-0"]
                  [cljsjs/react-dom "15.5.0-0"]
                  [cljsjs/react-dom-server "15.5.0-0"]
-                 [cljsjs/markdown-it "7.0.0-0"]]
+                 [cljsjs/markdown-it "7.0.0-0"]
+                 [cljsjs/highlight "9.6.0-0"]]
 
   :plugins [[lein-figwheel "0.5.10"]
             [lein-cljsbuild "1.1.5" :exclusions [org.clojure/clojure]]]

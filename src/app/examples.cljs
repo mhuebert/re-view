@@ -71,9 +71,8 @@
   (let [{:keys [element-width]} @state
         component (cond-> component
                           wrap-component (wrap-component))]
-    [:.bw2.bb.dib.flex-auto.flex.flex-column.shadow-4.br2.border-box
-     {:classes [(if (d/get :ui/globals :theme/dark?) "bg-dark-gray b--gray" "bg-white b--light-gray")
-                (if mobile? "mb3" "ma3" )]
+    [:.dib.flex-auto.flex.flex-column.border-box.elevated-card
+     {:classes [(if mobile? "mb3" "ma3" )]
       :style (when mobile? (cond-> {:min-width 260}
                                    element-width (assoc :width element-width
                                                         :flex "none")))}
@@ -189,7 +188,7 @@
                   :overflow-y "auto"}}
          (component-detail (d/entity detail-view))]
         ])
-     (when-not query [:.tc.ph4.pt3.pb0 (md "Views for Google's [Material Design Components](https://github.com/material-components/material-components-web), and a [ProseMirror](prosemirror.net) rich text editor that reads and writes Markdown.")])
+     (when-not query [:.tc.ph4.pt3.pb0 (md "Views for Google's [Material Design Components](https://github.com/material-components/material-components-web), and a [ProseMirror](http://www.prosemirror.net) rich text editor that reads and writes Markdown.")])
      [:div.br2.ma3.flex.justify-between.items-stretch.flex-wrap
       (->> (cond->> (->> (d/entities [[:kind :re-view/component]])
                          (sort-by :label))

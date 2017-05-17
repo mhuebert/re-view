@@ -2,10 +2,7 @@ $mdc-theme-primary: #23005e; //#230a62;
 $mdc-theme-accent: #c51162; //#d50c6f;
 $mdc-theme-background: #fff;
 
-
-
 @import '../../node_modules/@material/theme/mdc-theme';
-
 @import '../../node_modules/prosemirror-view/style/prosemirror';
 @import '../../node_modules/@material/animation/mdc-animation';
 @import '../../node_modules/@material/button/mdc-button';
@@ -140,12 +137,77 @@ table {
 }
 
 .text-shadow {
-  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
+
 .svg-shadow {
- filter: drop-shadow( 0 1px 1px rgba(0,0,0,0.5))
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5))
 }
 
 .serif {
-  font-family: 'Vollkorn',georgia,times,serif;
+  font-family: 'Vollkorn', georgia, times, serif;
 }
+
+.markdown-copy {
+  a {
+    opacity: 0.7;
+    //text-decoration: none;
+    &:hover {
+      opacity: 1;
+    }
+  }
+  p, ul, ol, table {
+    max-width: 600px;
+  }
+
+  h1, h2, h3 {
+    font-weight: normal;
+  }
+  table {
+    font-size: 83%;
+  }
+}
+
+pre {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 0.75rem;
+  font-size: 14px;
+  border-left: 7px solid rgba(0, 0, 0, 0.05);
+  code {
+    font-size: 14px;
+  }
+}
+
+code {
+  font-size: 14px;
+}
+
+p code {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 2px 4px;
+}
+
+.mdc-theme--dark {
+  color: white;
+  pre, p code {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+.mdc-theme--dark-bg {
+  background-color: #444;
+}
+
+.elevated-card {
+  box-shadow: 2px 2px 8px 0 rgba(0,0,0,.2);
+  border-bottom: 0.25rem solid #eee;
+  border-radius: 0.25rem;
+  background-color: white;
+}
+.mdc-theme--dark .elevated-card {
+  background-color: #333;
+  border-color: #777;
+}
+
+
+

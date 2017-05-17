@@ -26,7 +26,7 @@
                                                                    :layout/drawer-open? (not mobile?)}])) 200))
   (d/transact! [{:db/id               :ui/globals
                  :media/mobile?       mobile?
-                 :theme/dark?         true
+                 :theme/dark?         false
                  :layout/drawer-open? (not mobile?)}]))
 (set! v/DEBUG true)
 
@@ -42,11 +42,15 @@
     [:.mdc-typography
      (util/sync-element!
        {:class       (if (d/get :ui/globals :theme/dark?)
-                       "mdc-theme--dark bg-mid-gray white"
+                       "mdc-theme--dark bg-mid-gray"
                        "bg-near-white")
         :style       {:min-height "100%"}
         :get-element #(when (exists? js/document)
                         (.-documentElement js/document))})
+     [:link {:rel "stylesheet"
+             :type "text/css"
+              :href (if dark? "/styles/railscasts.css"
+                              "/styles/github.css")}]
      (ui/ToolbarWithContent
        {:style     {:background-color    "transparent"
                     :background-image    "url(/images/bg_sky.jpg)"
@@ -58,9 +62,9 @@
 
        [:.pt6.tc
         [:.ma4
-         [:img {:style {:width     500
-                        :max-width "100%"}
-                :src   "/images/re-view-text.png"}]
+         [:a.o-100 {:href "/"} [:img {:style {:width     500
+                                              :max-width "100%"}
+                                      :src   "/images/re-view-text.png"}]]
          [:.f4.mw6.center.text-shadow.serif.mv4 "For building user interfaces in ClojureScript."]]]
        (ui/ToolbarRow
          {:classes ["mdc-theme--dark"
@@ -69,7 +73,6 @@
                       "mdc-theme--primary-bg")]}
          (ui/ToolbarSection
            {:classes ["flex" "items-center"]}
-
            [:.pointer.o-70.hover-o-100.z-2.white
             {:style    {:margin-right "1rem"
                         :margin-top   3}
@@ -83,9 +86,7 @@
 
 
        [:.flex.items-stretch
-        (let [sidebar-content (->> [{:text-primary "Home"
-                                     :href         "/"}
-                                    {:text-primary "Docs"
+        (let [sidebar-content (->> [{:text-primary "Docs"
                                      :href         "/docs"}
                                     {:text-primary "Components"
                                      :href         "/components"}]
@@ -104,12 +105,12 @@
                       (if drawer-open? (ui/PermanentDrawer {:class "flex-none"
                                                             :style {:height "auto"}}
                                                            sidebar-content))))
-        body])]))
+        [:.flex-auto body]])]))
 
 (defn home-toolbar []
   (ui/ToolbarSection
     {:class "flex items-center"}
-    (ui/ToolbarTitle "Docs")
+    (ui/ToolbarTitle "")
     [:.flex-auto]))
 
 (defview root
@@ -118,14 +119,15 @@
   []
 
   (match (d/get :router/location :segments)
-         ["components"] (layout (examples/toolbar)
-                                (examples/library nil))
+
+         (:or [] ["components"]) (layout (examples/toolbar)
+                                         (examples/library nil))
          ["components" id] (layout (examples/toolbar)
                                    (examples/library {:detail-view id}))
          ["docs"] (layout (docs/toolbar)
                           (docs/home))
-         [] (layout (home-toolbar)
-                    [:div "Home"])
+         ["docs" & segments] (layout (docs/toolbar)
+                                     (docs/page segments))
          :else [:div "not found"]))
 
 (defn init []
@@ -143,6 +145,6 @@
 ;; X fix fixed-adjust-size, doesn't work when changing orientation
 ;; X permanent drawer in desktop
 ;; X URLs for components
-     ;; tighter spacing / smaller grid in mobile
+;; tighter spacing / smaller grid in mobile
 ;; read docs from repo / render markdown inline
 ;; expanded view should take up whole screen
