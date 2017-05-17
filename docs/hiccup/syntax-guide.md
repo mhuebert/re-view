@@ -1,6 +1,6 @@
 ## Hiccup Syntax Intro
 
-Introduction for first-timers. Also: [full docs](index)
+Introduction for first-timers. Also: [full docs](overview)
 
 ## Get started
 
