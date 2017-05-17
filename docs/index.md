@@ -6,13 +6,14 @@
 - [View Specs](re-view/view-specs)
 - [Advanced Topics](re-view/advanced-topics)
 - [Differences](re-view/differences) from other approaches
+- [Hiccup Notes](hiccup/overview)
 
 ### Explainers
 
 - [Atoms](explainers/atoms)
 - [State](explainers/state)
 - [Views, Elements, and Components](explainers/views-elements-components)
-- [Hiccup Syntax](hiccup/syntax)
+- [Hiccup Syntax](hiccup/syntax-guide)
 
 ### Source Code
 
