@@ -16,7 +16,7 @@
 
 (defn ensure-keys [forms]
   (let [seen #{}]
-    (map-indexed #(update-attrs %2 update :react/key (fn [k]
+    (map-indexed #(update-attrs %2 update :key (fn [k]
                                                        (if (or (nil? k) (contains? seen k))
                                                          %1
                                                          (do (swap! seen conj k)
@@ -39,3 +39,9 @@
            (and x
                 (or (boolean (aget x "re$view"))
                     (.isValidElement js/React x)))))
+
+(defn flatten-seqs
+  "Flatten collection, only unwrap sequences"
+  [children]
+  (filter #(not (seq? %))
+          (rest (tree-seq seq? seq children))))

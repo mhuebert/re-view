@@ -21,6 +21,7 @@
         (boolean? v) :Boolean
         (nil? v) :Nil
         (fn? v) :Function
+        (set? v) :Set
         (vector? v) (if
                       (keyword? (first v))
                       (if (string/starts-with? (name (first v)) "svg")
@@ -49,9 +50,12 @@
    {:id (str "h" level "-" (string/replace label #"\W" "-"))} label])
 
 (defn string-editor [props cb]
-  (ui/Input (merge {:class     "bn shadow-5 focus-shadow-5-blue pa1 f7 bg-white"
-                    :on-change #(cb (.. % -target -value))}
-                   props)))
+  (ui/Text (merge {:dense       true
+                   :compact     true
+                   :field-props {:style {:height     32
+                                         :margin-top 0}}
+                   :on-change   #(cb (.. % -target -value))}
+                  props)))
 
 (defn value-display-string
   "Returns a string representation for value"
@@ -64,22 +68,22 @@
 
 (defn value-edit
   "Recursively view and edit Clojure values"
-  [{:keys [doc spec default name]} prop-atom path]
+  [{:keys [doc spec default spec-name] :as spec-map} prop-atom path]
   (let [v (get-in @prop-atom path default)
         {:keys [example/select]} (when (satisfies? IMeta v)
                                    (meta v))
         set-val! #(swap! prop-atom assoc-in path (parse-dom-string %))
         id (-> (string/join "__" path)
                (string/replace ":" ""))
-        kind-name (or name (value-kind v))]
-    [:.dib {:react/key id}
+        kind-name (or (s/spec-kind spec-map) (value-kind v))]
+    [:.dib {:key id}
      (case kind-name
        :Set (ui/Select {:value     v
                         :on-change #(set-val! (.. % -target -value))}
                        (for [value spec]
                          [:option {:value value
                                    :label (value-display-string value)}]))
-       :String (string-editor {:id id :value v}  set-val!)
+       :String (string-editor {:id id :value v} set-val!)
        :Boolean [:.pv2 (ui/Switch {:checked   v
                                    :id        id
 
@@ -89,7 +93,7 @@
                 (interpose [:br] (map (fn [i] (value-edit nil prop-atom (conj path i))) (range (count v))))
                 [:.absolute.bottom-0.right-0.di.b "]"]]
        :Element (if (or (nil? v) (string? v))
-                  (string-editor {:id id :value v}  set-val!)
+                  (string-editor {:id id :value v} set-val!)
                   (some-> v .-type .-displayName))
        :Hiccup (str "[" (first v) (when (map? (second v))
                                     (str " { " (string/join ", " (map str (keys (second v)))) " } ")) " ... ]")
@@ -97,11 +101,11 @@
 
 (defview props-editor
   "Editor for atom containing Clojure map"
-  {:react/key         :label
+  {:key               :label
    :life/did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
    :life/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
   [{:keys [label component]} prop-atom]
-  (let [section #(do [:tr [:td.b.black.pv2.f6 {:col-span 3} %]])
+  (let [section #(do [:tr [:td.b.pv2.f6 {:col-span 3} %]])
         {prop-specs  :props
          child-specs :children
          defaults    :props/defaults} (v/element-get (component) :view/spec)]
@@ -110,30 +114,34 @@
      (if prop-atom
        [:table.f7.w-100
         [:tbody
-         (when-let [props (some->> prop-atom deref first)]
-           (list (section "Props")
-                 (for [[k v] prop-specs
-                       :let [{:keys [doc] :as prop-spec} (s/resolve-spec v)
-                             v (get props k)]
-                       :when (not= k :react/key)]
-                   [:tr
-                    [:td.b.o-60 (key-field k)]
-                    [:td.pl3 (value-edit prop-spec prop-atom [0 k])]
-                    [:td doc]])))
+         (when-not (empty? prop-specs)
+           (let [values (some->> prop-atom deref first)]
+             (list (section "Props")
+                   (for [[k v] (->> prop-specs
+                                    (seq)
+                                    (sort-by first))
+                         :let [{:keys [doc] :as prop-spec} (s/resolve-spec v)
+                               v (get values k)]
+                         :when (not= k :key)]
+                     [:tr
+                      [:td.b.o-60.pre (key-field k)]
+                      [:td.pl3 (value-edit prop-spec prop-atom [0 k])]
+                      [:td.o-60 doc]]))))
+
          (when-let [children (some->> prop-atom deref (drop 1) (seq))]
            (list (section "Children")
                  (for [i (range (count children))]
                    [:tr
-                    [:td.b.o-60 (key-field (value-kind (nth children i)))]
+                    [:td.b.o-60.pre (key-field (value-kind (nth children i)))]
                     [:td.pl3 (value-edit nil prop-atom [(inc i)])]
                     [:td #_doc]])))]]
        [:.gray.i.mv2.tc.f7 "No Props"])]))
 
 (defview with-prop-atom*
   "Calls component with value of atom & re-renders when atom changes."
-  {:react/key         (fn [_ _ prop-atom]
+  {:key               (fn [_ _ prop-atom]
                         (let [props (some-> prop-atom deref first)
-                              {:keys [react/key id name]} (when (map? props) props)]
+                              {:keys [key id name]} (when (map? props) props)]
                           (or key id name)))
    :life/did-mount    (fn [this component atom]
                         (some-> atom
@@ -147,7 +155,7 @@
   (apply component (or (some-> prop-atom deref) [])))
 
 (defview example-inspector
-  {:react/key          :label
+  {:key                :label
    :life/initial-state (fn [{:keys [prop-atom]}] prop-atom)}
   [{:keys [component orientation label view/state]
     :or   {orientation :horizontal}}]

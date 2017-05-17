@@ -93,7 +93,7 @@
     f
     (case method-k
       (:life/initial-state
-        :react/key
+        :key
         :life/constructor) f
       :life/render (reactive-render f)
       :life/will-receive-props
@@ -256,23 +256,26 @@
                                        (nil? props)) [props children]
                                    (and (object? props)
                                         (not (.isValidElement js/React props))) [(js->clj props :keywordize-keys true) children]
-                                   :else [nil (cons props children)])]
-        (.createElement js/React constructor
-                        (cond-> #js {"key"      (or (get props :react/key)
-                                                    (when class-react-key
-                                                      (cond (string? class-react-key) class-react-key
-                                                            (keyword? class-react-key) (get props class-react-key)
-                                                            (fn? class-react-key) (apply class-react-key props children)
-                                                            :else (throw (js/Error "Invalid key supplied to component"))))
-                                                    display-name)
-                                     "ref"      (get props :ref)
-                                     "props"    (cond->> (->> (dissoc props :ref)
-                                                              (merge defaults))
-                                                         (true? DEBUG) (vspec/validate-props display-name spec))
-                                     "children" (cond->> children
-                                                         (true? DEBUG) (vspec/validate-children display-name spec))
-                                     "instance" instance-keys
-                                     "class"    class-keys}))))))
+                                   :else [nil (cons props children)])
+            props (cond->> props defaults (merge defaults))
+            key (or (get props :key)
+                    (when class-react-key
+                      (cond (string? class-react-key) class-react-key
+                            (keyword? class-react-key) (get props class-react-key)
+                            (fn? class-react-key) (apply class-react-key props children)
+                            :else (throw (js/Error "Invalid key supplied to component"))))
+                    display-name)]
+
+        (when (true? DEBUG)
+          (vspec/validate-props display-name spec props)
+          (vspec/validate-children display-name spec children))
+
+        (.createElement js/React constructor #js {"key"      key
+                                                  "ref"      (get props :ref)
+                                                  "props"    (dissoc props :ref)
+                                                  "children" children
+                                                  "instance" instance-keys
+                                                  "class"    class-keys})))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.

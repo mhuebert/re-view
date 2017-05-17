@@ -29,7 +29,9 @@
                                   "life" :lifecycle-keys
                                   "react" :react-keys
                                   "view" :class-keys
-                                  :instance-keys) k] v)) {} methods)
+                                  (if (= k :key)
+                                    :react-keys
+                                    :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
       ;; must use set! for the keys, otherwise they will
       ;; be modified in advanced compilation.
@@ -93,15 +95,6 @@
        (~'fn [& args#]
          (let [~args (if (map? (first args#)) args# (cons {} args#))]
            (~'re-view-hiccup.core/element (do ~@body)))))))
-
-(defmacro defspecs
-  "Define a view spec"
-  [specs]
-  `(set! ~'re-view.view-spec/spec-registry (merge ~'re-view.view-spec/spec-registry
-                                                  ~(reduce-kv (fn [m k v]
-                                                                (cond-> m
-                                                                        (not (map? v)) (assoc k {:spec v
-                                                                                                 :name k}))) specs specs))))
 
 (comment
   (assert (= (parse-view-args '("a" {:b 1} [c] 1 2))
