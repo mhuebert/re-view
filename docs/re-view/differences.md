@@ -1,4 +1,4 @@
-# Re-View: Differences
+# Differences
 
 ## Compared to Reagent
 

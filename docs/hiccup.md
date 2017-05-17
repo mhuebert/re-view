@@ -1,6 +1,6 @@
-# Hiccup: Intro
+# Hiccup
 
-If you're new to hiccup, check out the **[syntax guide](syntax)**.
+If you're new to hiccup, check out the **[syntax guide](hiccup/syntax)**.
 
 ----
 

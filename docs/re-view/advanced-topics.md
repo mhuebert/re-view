@@ -1,4 +1,4 @@
-# Re-View: Advanced Topics
+# Advanced Topics
 
 ## Advanced compilation
 
@@ -43,7 +43,7 @@ Mixins are not directly supported by `defview` -- you must pass a literal map (t
 
 However, you can specify a vector of functions for any lifecycle key and they will be evaluated sequentially at the appropriate time:
 
-```
+```clj
 (defview my-app 
   {:did-mount [register-view focus-input]}
   [this]

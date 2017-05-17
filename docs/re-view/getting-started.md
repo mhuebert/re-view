@@ -1,4 +1,4 @@
-## Re-View: Getting Started
+## Getting Started
 
 ## Your First View 
 

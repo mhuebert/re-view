@@ -27,9 +27,7 @@ Create a listener that writes the current location to `re-db`. Views that read t
   (fn [location] 
     (d/transact! [(assoc location :db/id :route/location)])))
 
-```
 
-      
 (defview root 
   "Displays the current browser location path"
   [] 

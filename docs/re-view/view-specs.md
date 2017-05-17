@@ -1,22 +1,24 @@
-# view/spec
+# View Specs
 
-ALPHA
+View specs are a way to specify exactly what props and children each component expects, inspired by Clojure's [Spec](https://clojure.org/about/spec).
 
-**defview** accepts a `:view/spec` key for specifying the props and children expected by a component. View specs are inspired by [Clojure Spec](https://clojure.org/about/spec), but do much less, and are used at runtime as well as during development.
+### Why is this important?
 
-## Purpose
+**Documentation**: a typical application may use dozens or hundreds of components by the time it is finished. Each component is easy to build in isolation, but as your app grows it will be harder to remember how things work. What if there was a way, just by looking at a component, to know exactly how it should be used?
 
-1. Documentation - quickly learnr how to use a view by looking at its spec.
-2. Debugging - get helpful error messages during development.
-3. Runtime functionality - supports common patterns including prop defaults, and passing unhandled props to a child component.
+**Debugging**: Interfaces are composed of deeply nested trees of components, and we often pass props multiple hops down the tree. It can be hard to keep track of what is happening to these props as they flow from component to component. What if there was a way to specify exactly which props each component consumes? Then we could __validate__ the arguments passed to each component during development, providing **helpful error messages**, and _automate_ the pruning of props for passing down to child components.
 
-## Usage
+### Usage
 
-Include a `:view/spec` key in a component's method map, containing view specs for `:props` and `:children`.
+You may recall that **defview** accepts a methods map, for lifecycle methods and so on. We can include a `:view/spec` key here, containing a spec map describing the `:props` and `:children` expected by a component.
+
+Inside the spec map, we can put a `:props` map, which pairs prop keys with specs (more on what a spec is later). Here's a quick example which states that the `greeting` view expects a `:name` prop, which is a string:
 
 ```clj
 (defview greeting
-  {:view/spec {:props {:name :String}}}
+  {:view/spec {:props {:name :String
+                       :doc "The name of a person to be greeted by this component."
+                       :required true}}}
   [this]
   [:div (str "Hello, " (get this :name) ".")])
 ```
@@ -27,49 +29,36 @@ A spec may be one of the following:
    ```clj
    :Boolean :String :Number :Function :Map :Vector :Element :Hiccup :SVG :Object :Keyword
    ```
-2. A predicate function or set
-3. A map containing a `:spec` key, which itself is a spec
+2. A predicate function or set.
+3. A map containing a `:spec` key, which itself is a spec.
 
-Specs are registered using `re-view.view-spec/defspec`, which accepts a map of the form `{<keyword> <spec>}`.
+Specs are registered using `re-view.view-spec/defspecs`, which accepts a map of the form `{<keyword> <spec>}`. Let's define a `::label` spec, which should be a string along with a docstring.
 
 ```clj
-(defspec ::label {:spec :String
-                  :doc "Label for a form input"})
+(defspecs {::label {:spec :String
+                    :doc "Label for a form input"}})
 ```
 
+Now, how do we use `::label`?
 
-## The :view/spec map
-
-The :view/spec map accepts the following keys:
-
-| key | info |
-| :props | A map of the form `{<prop-key> <spec>}` |
-| :props/keys | A vector of registered spec keys |
-| :children | A vector of specs, aligned to the child args accepted by the component |
-
-## Props
+First, we can include it in our view spec `:props` map:
 
 ```clj
-;; spec can be a map with a :spec key and other options.
-{:view/spec {:props {:name {:spec :String
-                            :default "random traveller"
-                            :doc "Name of person to greet"}}}}
+{:view/spec {:props {:label ::label}}}
+```
 
-;; spec can be the keyword of a registered spec
-{:view/spec {:props {:name :String}}}
+But this is verbose. We can also include `:props/keys`, a vector of namespaced keywords that have been registered as specs:
 
-;; use the custom ::label spec by including it in the :prop/keys vector.
-;; qualified keywords specified here will match  the _unqualified_ key in the props map, eg. `:label`.
+```clj
 {:view/spec {:props/keys [::label]}}
-
-;; use the custom ::label in a :props map, and assign it to a different prop key (other than :label)
-{:view/spec {:props {:input-label ::label}}}
+;; means the component expects a `:label` prop, which conforms to the `::label` spec
 ```
 
-## Children
+This is a more concise way to declare props, and means we can reuse keys among many components.
 
-Children are spec'd by supplying a vector of specs, aligned with the argslist of the component. The `:&` key may be used like `&` in an argslist to match any number of trailing children.
+Specs in `:props/keys` are matched to _unqualified_ keywords in props. `::label` matches `:label`, and so on.
 
+Lastly, we can spec `:children`, the additional arguments passed to views. The `:children` key is a vector of specs, plus the special `:&` keyword, which behaves just like `&` in ordinary Clojure argument lists.
 
 ```clj
 ;; spec for a single :Element child
@@ -85,26 +74,30 @@ Children are spec'd by supplying a vector of specs, aligned with the argslist of
 {:view/spec {:children [:Number :& :Element]}}
 ```
 
-## A spec map
-
-Specs may be supplied as maps, with any of the following keys (only :spec is required):
+To recap, the :view/spec map accepts the following keys:
 
 | key | info |
-|---|---|---|
-| `:spec` | A predicate function, set, or keyword of an already-defined spec |
-| `:doc` (string) | A **docstring** for each prop  |
-| `:default` (any) | Supply defaults values for props |
-| `:required` (boolean) | Props are considered optional unless the :required key is true. |
-| `:pass-through` (boolean) | Mark as `true` if the prop should be passed to a child view in the return value of `re-view.core/pass-props` |
-| `:validate` (function) | Should return true if value is valid |
+| --- | --- |
+| **:props** | A map of the form `{<prop-key> <spec>}` |
+| **:props/keys** | A vector of registered spec keys |
+| **:children** | A vector of specs, aligned to the child args accepted by the component |
+
+### Spec Options
+
+A spec must contain a `:spec` key, but it may also include:
+
+| key | info |
+| --- | --- |
+| **:doc** (string) | docstring that describes what the prop is for, usage instructions, etc. |
+| **:required** (boolean) | key *must* be present |
+| **:pass-through** (boolean) | key will be passed on to child component (via `re-view.core/pass-props`)|
+
+
 
 **Why not just use Clojure Spec?**
 
-1. Clojure Spec is a powerful _general-purpose_ library which would add a lot to ClojureScript bundle sizes if it was included (`re-view.view-spec` is only ~100 LOC).
-2. It has no support for docstrings, which are a key benefit of view specs.
-3. It does not support inline spec'ing of individual one-off map keys, which are common in UI views.
-4. It handles unqualified keywords as the exceptional case, but when working with Hiccup / React views most keys are unqualified.
+You can absolutely use Clojure Spec _in addition_ to view specs for additional inspection and testing, but we don't think it's a good fit for being a hard dependency of Re-View.
 
-Generally, a custom implementation means we get exactly the functionality we want with a small amount of code.
-
-That said, you could use Clojure Spec _with_ re-view without problems. `defview` returns a function which could be instrumented, for example.
+1. View specs are designed to support runtime behaviour (eg. managing props flow, specifying prop defaults), and relying on Spec at runtime would add to compiled bundle sizes (`re-view.view-spec` is only ~100 LOC).
+2. We care a lot about docstrings, which Spec doesn't support (yet).
+3. We want to support patterns that Spec does not... eg. inline spec'ing of individual one-off map keys, which are common in UI views, and treating unqualified keys as the default case, which is the norm for Hiccup and all other similar tools.
