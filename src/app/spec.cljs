@@ -25,8 +25,7 @@
 (s/def ::dense boolean?)
 (s/def ::raised boolean?)
 (s/def ::compact boolean?)
-(s/def ::accent boolean?)
-(s/def ::primary boolean?)
+(s/def ::color #{:accent :primary})
 (s/def ::ripple boolean?)
 
 (s/def ::id ::primitive)

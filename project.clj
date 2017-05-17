@@ -1,4 +1,4 @@
-(defproject re-view-web "0.1.0-SNAPSHOT"
+(defproject re-view/website "0.1.0-SNAPSHOT"
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 
@@ -8,8 +8,9 @@
                  [org.clojure/clojurescript "1.9.518"]
 
                  [re-view "0.3.12"]
+                 [re-db "0.1.11-SNAPSHOT"]
                  [re-view-routing "0.1.1"]
-                 [re-view-prosemirror "0.1.2-SNAPSHOT"]
+                 [re-view-prosemirror "0.1.3-SNAPSHOT"]
                  [re-view-material "0.1.0"]
 
                  [org.clojure/core.match "0.3.0-alpha4"]
@@ -25,7 +26,7 @@
                                     "target"]
 
 
-  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]} }
+  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
   :source-paths ["src"]
 
   :cljsbuild {:builds [{:id           "dev"
