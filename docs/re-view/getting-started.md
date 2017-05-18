@@ -106,7 +106,7 @@ React https://facebook.github.io/react/docs/react-component.html#the-component-l
 
 
 | Method key          | React equivalent          ||
-|---|---|
+|---|---|---|
 | :life/initial-state      | getInitialState           | Initial value for the `:view/state` atom. Can be function (of `this`) or other value. |
 | :life/will-mount         | componentWillMount        ||
 | :life/did-mount          | componentDidMount         ||
