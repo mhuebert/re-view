@@ -6,7 +6,7 @@ Re-View is a library for building reactive user interfaces in ClojureScript.
 
 ----
 
-For full details, read the **[wiki](https://re-view.github.io/re-view)**.
+For full details, visit the **[website](https://re-view.matt.is)**.
 
 ----
 
