@@ -72,7 +72,7 @@
          [:.absolute.top-0.left-0.w-100
           [:img {:src "/images/re-view-text.png"}]]
          ]
-        [:.f4.mw6.center.text-shadow.serif.mv4 "Create beautiful, fast, and intuitive user experiences with ClojureScript."]]
+        [:.f4.mw6.center.text-shadow.serif.mv4 "Build fast, intuitive user interfaces in ClojureScript."]]
        (ui/ToolbarRow
          {:classes ["mdc-theme--dark"
                     (if dark?
@@ -124,18 +124,17 @@
   "The root component reads current router location from re-db,
    and will therefore re-render whenever this value changes."
   []
-
-  (match (d/get :router/location :segments)
-
-         (:or [] ["components"]) (layout (examples/toolbar)
-                                         (examples/library nil))
-         ["components" id] (layout (examples/toolbar)
-                                   (examples/library {:detail-view id}))
-         ["docs"] (layout (docs/toolbar)
-                          (docs/home))
-         ["docs" & segments] (layout (docs/toolbar)
-                                     (docs/page segments))
-         :else [:div "not found"]))
+  (let [segments (d/get :router/location :segments)]
+    (match segments
+           (:or [] ["components"]) (layout (examples/toolbar)
+                                           (examples/library nil))
+           ["components" id] (layout (examples/toolbar)
+                                     (examples/library {:detail-view id}))
+           ["docs"] (layout (docs/toolbar)
+                            (docs/home))
+           ["docs" & doc-path] (layout (docs/toolbar)
+                                       (docs/page doc-path))
+           :else [:div "not found"])))
 
 (defn init []
   (r/listen

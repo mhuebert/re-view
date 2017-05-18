@@ -4,6 +4,7 @@
             [app.markdown :refer [md]]
             [goog.net.XhrIo :as xhr]
             [goog.dom :as gdom]
+            [goog.dom.classes :as classes]
             [clojure.string :as string]
             [goog.events :as events]
             [re-view-routing.core :as routing]
@@ -53,6 +54,14 @@
     "Re-View"
     (string/replace s #"(?:^|-)([a-z])" (fn [[_ s]] (str " " (string/upper-case s))))))
 
+(defn parse-header [^js/Element anchor-element]
+  (let [heading (.-parentNode anchor-element)]
+    {:label (gdom/getTextContent heading)
+     :level (js/parseInt (second (re-find #"H(\d)" (.-tagName heading))))
+     :id    (.-id anchor-element)}))
+
+
+
 (def index nil)
 
 (def get-index (fn [cb]
@@ -66,20 +75,20 @@
 
 
 (defn breadcrumb [url]
-  (when-let [all-segments (seq (routing/segments url))]
-    [:.f6.mb3 (let [num-segments (count all-segments)]
-                (->> all-segments
-                     (map-indexed
-                       (fn [i label]
-                         [(hyphens->readable label)
-                          (as-> (take (inc i) all-segments) segments
-                                (string/join "/" segments)
-                                (str "/docs/" segments)
-                                (if-not (= i (dec num-segments)) (str segments "/") segments))]))
-                     (cons ["Docs" "/docs/"])
-                     (map (fn [[label href]] [:a.no-underline {:href href
-                                                               :key  href} label]))
-                     (interpose " / ")))]))
+  (let [all-segments (routing/segments url)]
+    [:.f6.mh2 (let [num-segments (count all-segments)]
+            (->> all-segments
+                 (map-indexed
+                   (fn [i label]
+                     [(hyphens->readable label)
+                      (as-> (take (inc i) all-segments) segments
+                            (string/join "/" segments)
+                            (str "/docs/" segments)
+                            (if-not (= i (dec num-segments)) (str segments "/") segments))]))
+                 (cons ["Docs" "/docs/"])
+                 (map (fn [[label href]] [:a.no-underline {:href href
+                                                           :key  href} label]))
+                 (interpose " / ")))]))
 
 (defn docs-at-path [path-keys]
   (let [children (get-in index (drop-last path-keys))]
@@ -91,11 +100,22 @@
           (map (fn [{:keys [title name path]}]
                  [:p [:a {:href (str "/docs/" (string/replace path #"\.md$" ""))} title]])))]))
 
+(defn html-toc [el]
+  (->> (gdom/findNodes el #(classes/has % "heading-anchor"))
+       (clj->js)
+       (keep (comp (fn [{:keys [label level id]}]
+                     (prn id)
+                     (when (> level 1)
+                       [:a.db.no-underline {:href  (str "#" id)
+                                            :style {:padding-left (str (- level 2) "rem")}} label])) parse-header))))
+
 (defview markdown-page
   {:initial-state           (fn [_ url] {:value (get cache url)
                                          :index index})
+   :update-toc              (fn [{:keys [view/state] :as this}]
+                              (swap! state assoc :toc (html-toc (v/dom-node this))))
    :update                  (fn [{:keys [view/state]} url]
-                              (swap! state assoc :loading true)
+                              (swap! state assoc :loading true :toc nil)
                               (let [path-keys (path->keys url)]
                                 (if (get-in index path-keys)
                                   (GET :text (download-url url) #(do (reset! state %)))
@@ -107,24 +127,31 @@
                               (.update this url))
    :life/will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
                               (when (not= children prev-children)
-                                (.update this (first children))))}
+                                (.update this (first children))))
+   :life/did-update         (fn [{:keys [view/state view/prev-state] :as this}]
+                              (.updateToc this))}
   [{:keys [view/state]} url]
-
-  (let [{:keys [value error]} @state]
+  (let [{:keys [value error toc]} @state]
     [:.markdown-copy.pa4.flex-grow
-     (breadcrumb url)
-     [:.ph4.pv2.lh-copy.mw7.elevated-card.relative
+     [:.flex.items-center.pv2
+      (breadcrumb url)
+      [:.flex-auto]
       (ui/Button {:href    (edit-url url)
                   :target  "_blank"
                   :icon    icons/ModeEdit
                   :label   "Edit on GitHub"
                   :dense   true
-                  :compact true
-                  :class   "absolute top-0 right-0 ma2"})
+                  :compact true})]
+     [:.ph4.pv2.lh-copy.mw7.elevated-card.relative
+
+      (when-not (empty? toc)
+        [:.f7.fr.pa3.bg-darken-1.mt3.relative.z-1
+         [:.b.f6 "On this page:"]
+         toc])
       (cond error [:div "Error..." error]
             (not index) [:div "Loading..."]
             value (if (string? value)
-                    [:div (md value)]
+                    (md value)
                     value)
             :else [:div "Loading..."])]]))
 

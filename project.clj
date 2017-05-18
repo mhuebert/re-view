@@ -54,7 +54,7 @@
                                        ;:pseudo-names  true
                                        :asset-path    "/js/out"
                                        :output-dir    "resources/public/js/out-prod"
-                                       :output-to     "resources/public/js/app.min.js"
-                                       :source-map    "resources/public/js/app.min.js.map"
+                                       :output-to     "resources/public/js/app.js"
+                                       :source-map    "resources/public/js/app.js.map"
                                        :optimizations :advanced
                                        }}]})

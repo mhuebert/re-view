@@ -72,10 +72,10 @@
         component (cond-> component
                           wrap-component (wrap-component))]
     [:.dib.flex-auto.flex.flex-column.border-box.elevated-card
-     {:classes [(if mobile? "mb3" "ma3" )]
-      :style (when mobile? (cond-> {:min-width 260}
-                                   element-width (assoc :width element-width
-                                                        :flex "none")))}
+     {:classes [(if mobile? "mb3" "ma3")]
+      :style   (when mobile? (cond-> {:min-width 260}
+                                     element-width (assoc :width element-width
+                                                          :flex "none")))}
      [:.w-100
       [:.relative.pa3.nb3
        label
@@ -108,29 +108,26 @@
                           wrap-component (wrap-component))]
     [:.ma3.bw2.bb.shadow-4.br2.border-box.relative
      {:class (str (if (d/get :ui/globals :theme/dark?) "bg-dark-gray b--gray" "bg-white b--light-gray"))}
-     [:a.pa3.ma1.absolute.top-0.right-0.dib {:href "/components"} icons/Close]
+     [:a.pa2.ma1.absolute.top-0.right-0.dib {:href "/components"} icons/Close]
 
      [:.flex
       {:style {:max-height "100%"}}
       [:.flex.flex-column.ph4.mv2.pv3.mw6
        [:.mv3.f4 label]
        (when docstring
-         [:.o-70.f6 (md docstring)])
+         (md {:class "o-70 f6"} docstring))
        [:.flex-auto]
-       [:.mv3 (if custom-view (custom-view)
-                              (try (cond-> (h/with-prop-atom* nil component prop-atom)
-                                           wrap (wrap))
-                                   (catch js/Error e "Error")))]
+       [:.mv3.center (if custom-view (custom-view)
+                                     (try (cond-> (h/with-prop-atom* nil component prop-atom)
+                                                  wrap (wrap))
+                                          (catch js/Error e "Error")))]
        [:.flex-auto]]
 
-      [:.pa3.b--darken-2.bt.mw6
-       {:class (if (d/get :ui/globals :theme/dark?)
-                 "bg-darken-7"
-                 "bg-darken-3")
-        :style {:max-height 500
-                :overflow-y "scroll"}}
-       (or (some->> prop-atom (h/props-editor {:component component}))
-           [:.f6.o-60.tc.pv3 "No props"])]]]))
+      (some->> prop-atom (h/props-editor {:component       component
+                                          :container-props {:style {:max-height 500
+                                                                    :min-width 200
+                                                                    :overflow-y "scroll"}
+                                                            :class "pa3 pt0 b--darken-2 bt mw6 bg-darken"}}))]]))
 
 
 (def theme-mods {:accent "mdc-theme--accent-bg mdc-theme--text-primary-on-accent"})
@@ -160,15 +157,6 @@
             (assoc-in [1 :on-click] #(routing/swap-query! dissoc :search))))]]))
 
 (defview library
-  {:life/did-mount (fn [{:keys [view/state] :as this}]
-                     (let [headings (gdom/findNodes (v/dom-node this)
-                                                    (fn [^js/Element el]
-                                                      (some->> (.-tagName el) (re-find #"H\d"))))
-                           toc (map (fn [^js/Element el]
-                                      {:label (gdom/getTextContent el)
-                                       :level (js/parseInt (second (re-find #"H(\d)" (.-tagName el))))
-                                       :id    (.-id el)}) headings)]
-                       (swap! state assoc :toc toc)))}
   [{:keys [detail-view
            view/state]}]
   (let [query (d/get-in :router/location [:query :search])]

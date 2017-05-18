@@ -125,7 +125,7 @@ table {
   td, th {
     padding: 0.5rem;
   }
-  tr:nth-child(2n) {
+  tr:nth-child(2n), thead tr {
     background-color: rgba(0, 0, 0, 0.025);
   }
 }
@@ -210,10 +210,49 @@ p, table {
   background-color: white;
 }
 
-.mdc-theme--dark .elevated-card {
-  background-color: #333;
-  border-color: #777;
+.bg-darken {
+  background-color: rgba(0,0,0,0.04);
+}
+.mdc-theme--dark {
+  .elevated-card {
+    background-color: #333;
+    border-color: #777;
+  }
+  .bg-darken {
+    background-color: rgba(0,0,0,0.175);
+  }
+
 }
 
+a.heading-anchor {
+  text-decoration: none;
+  font-size: 15px;
+  vertical-align: middle;
+  display: inline-block;
+  position: absolute;
+  left: -20px;
+  bottom: 50%;
+  margin-bottom: -11px;
+  padding-top: 100px;
+  width: 0;
+  opacity: 0 !important;
+  &:after {
+    opacity: 0.5;
+    content: "#";
+    width: 0;
+    position: absolute;
+    bottom: 0;
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  position: relative;
+  &:hover a.heading-anchor {
+    opacity: 1 !important;
+  }
+}
 
 
