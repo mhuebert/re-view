@@ -4,7 +4,7 @@ If you're new to hiccup, check out the **[syntax guide](syntax-guide)**.
 
 ----
 
-# API
+## API
 
 **`re-view-hiccup.core/element`** accepts a `hiccup` vector and returns a React element. If a non-vector form is supplied, it is returned untouched. You may pass an options map with a `:wrap-props` function to be applied to all props maps during parsing.
 
@@ -18,7 +18,7 @@ If you're new to hiccup, check out the **[syntax guide](syntax-guide)**.
 ```
 
 
-# Syntax Notes
+## Syntax Notes
 
 ### Attributes
 
@@ -38,7 +38,7 @@ Element names must be keywords, and support CSS selector syntax for adding IDs a
 
 Anything in the second position of a hiccup vector that is not a Clojure `map` is passed as a child element.   
 
-# React dependency
+## React dependency
 
 `cljsjs.react` and `cljsjs.react.dom` namespaces are required, but not included. They must be provided separately. You can use any version of React you like. We only expect `React.createElement` to be in the global environment.
   
