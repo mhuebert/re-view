@@ -4,7 +4,7 @@
 
 ----
 
-Full details on the **[wiki](https://github.com/mhuebert/re-view/wiki/Re-View-Routing)**.
+Full details on the **[website](https://www.re-view.io/docs/routing)**.
 
 ----
 
