@@ -4,15 +4,15 @@
 
 Re-DB is a client-side data store for handling global state in ClojureScript apps. It was built in tandem with [Re-View](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
 
-# Installation
+## Installation
 
 In `project.clj`, include the dependency `[re-db "xx"]`.
 
-# Background
+## Background
 
 ClojureScript apps usually store state in [atoms](https://www.re-view.io/docs/explainers/atoms) which are looked up via namespace or symbol references. With `re-db`, global state is stored in a single location, as a collection of maps (`entities`), each of which has a unique ID (under the `:db/id` key). Data is read via unique ID, or by indexed attributes. We spend less time thinking about 'locations' in namespaces (or bindings in closures) and more time thinking about data itself.
 
-# Usage
+## Usage
 
 It is normal to use just one re-db namespace, `re-db.d`, for reads and writes throughout an app.
 
@@ -21,7 +21,7 @@ It is normal to use just one re-db namespace, `re-db.d`, for reads and writes th
   (:require [re-db.d :as d))
 ```
 
-## Writing data
+### Writing data
 
 To write data, pass a collection of transactions to `d/transact!`. There are two kinds of transactions.
 
@@ -56,7 +56,7 @@ To write data, pass a collection of transactions to `d/transact!`. There are two
 
     ```
 
-## Reading data
+### Reading data
 
 Read a single entity by passing its ID to `d/entity`.
 
@@ -84,7 +84,7 @@ Read nested attributes via `d/get-in`.
 
 An entity-attribute pattern read (:ea_) is logged.
 
-## Listening for changes
+### Listening for changes
 
 Use `d/listen` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
 
@@ -119,7 +119,7 @@ TODO: update examples to new syntax
 (d/listen! [:tx-log] #(println "The database has been changed"))
 ```
 
-## Indexes
+### Indexes
 
 Use `d/merge-schema!` to update indexes.
 
