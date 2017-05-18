@@ -23,10 +23,10 @@ Require **`re-view-routing.core`**:
   (:require [re-view-routing.core :as routing])
 ```
 
-Pass a callback to **`routing/on-location-change`**. When the route changes, it will be called with a map containing a `:path` string, `:segments` vector and `:query` map.
+Pass a callback to **`routing/listen`**. When the route changes, it will be called with a map containing a `:path` string, `:segments` vector and `:query` map.
 
 ```clj
-(routing/on-location-change update-route-state)
+(routing/listen update-route-state)
 ```
 
 _...elsewhere..._
