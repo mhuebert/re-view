@@ -127,7 +127,7 @@ Use `d/merge-schema!` to update indexes.
 (d/merge-schema! {:children {:db/index true, :db/cardinality :db.cardinality/many}})
 ```
 
-## Finding entities
+### Finding entities
 
 Use `d/entity-ids` and `d/entities` to find entities which match a collection of predicates, each of which should be:
 
@@ -137,6 +137,6 @@ Use `d/entity-ids` and `d/entities` to find entities which match a collection of
 
 `d/entities` logs an entity pattern read (:e__) for every entity returned.
 
-# Pattern read logging
+### Pattern read logging
 
 The `re-db.d/capture-patterns` macro logs read patterns which occur during execution. This is to support reactive views which update when underlying data changes.
