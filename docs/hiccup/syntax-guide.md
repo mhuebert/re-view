@@ -1,4 +1,4 @@
-## Hiccup Syntax Intro
+# Hiccup Syntax Intro
 
 Introduction for first-timers. Also: [full docs](overview)
 
@@ -61,7 +61,7 @@ Create a paragraph with a sentence of text which includes a link to Apple's webs
   "Why are you advertising for " [:a {:href "https://www.apple.com"} "Apple?"] ]
 ```
 
-### Adding classes
+## Add classes
 
 There are three ways to add classes, and each has a purpose. 
 
