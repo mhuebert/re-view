@@ -16,7 +16,7 @@
 (def ^:dynamic *db-log* nil)                                ;; maintains log of transactions while bound
 
 (def conj-set (fnil conj #{}))
-(def into-set (fnil into #{}))
+(def into-set (fnil into #{})) 
 
 (defn create
   "Create a new db, with optional schema, which should be a mapping of attribute keys to

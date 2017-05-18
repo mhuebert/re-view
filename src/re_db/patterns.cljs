@@ -14,16 +14,17 @@
 
 (def supported-pattern-keys (set (keys empty-pattern-map)))
 
+(def conj-set (fnil conj #{}))
+(def into-set (fnil into #{}))
+
 (defn log-read
   "Record pattern to *pattern-log*."
   ([kind pattern]
    (when-not (nil? *pattern-log*)
-     (set! *pattern-log* (update *pattern-log* kind conj pattern))))
+     (set! *pattern-log* (update *pattern-log* kind conj-set pattern))))
   ([kind pattern multiple?]
    (when-not (nil? *pattern-log*)
-     (set! *pattern-log* (update *pattern-log* kind (if multiple? into conj) pattern)))))
-
-(def conj-set (fnil conj #{}))
+     (set! *pattern-log* (update *pattern-log* kind (if multiple? into-set conj-set) pattern)))))
 
 (defn add-value
   "Associates value with pattern in value-map."
