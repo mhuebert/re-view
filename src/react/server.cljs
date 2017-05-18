@@ -1,4 +1,4 @@
-(ns re-view.hiccup.react.server
+(ns re-view-hiccup.react.server
   (:refer-clojure :exclude [string])
   (:require [cljsjs.react.dom.server]))
 

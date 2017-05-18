@@ -1,11 +1,11 @@
-(ns re-view.hiccup.spec
+(ns re-view-hiccup.spec
   (:require [clojure.spec :as s :include-macros true]
             [cljs.spec.impl.gen :as gen]
             [cljs.spec.test :as t]
             [clojure.test.check.generators]
             [clojure.string :as string]
-            [re-view.hiccup :as hiccup]
-            [re-view.hiccup.react.attrs :as attrs]))
+            [re-view-hiccup.core :as hiccup]
+            [re-view-hiccup.react.attrs :as attrs]))
 
 
 (defn gen-wrap
@@ -88,7 +88,7 @@
 
 #_(doall (->>
            ;(s/exercise ::element 6)
-           (s/exercise-fn re-view.hiccup/element)
+           (s/exercise-fn re-view-hiccup.core/element)
            (map prn)))
 
 

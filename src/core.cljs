@@ -1,7 +1,7 @@
-(ns re-view.hiccup
+(ns re-view-hiccup.core
   (:require [cljsjs.react]
             [clojure.string :as string]
-            [re-view.hiccup.react.attrs :as react-html]))
+            [re-view-hiccup.react.attrs :as react-html]))
 
 (enable-console-print!)
 (set! *warn-on-infer* true)
