@@ -2,7 +2,7 @@
 
 View specs are a way to specify exactly what props and children each component expects, inspired by Clojure's [Spec](https://clojure.org/about/spec).
 
-### Why is this important?
+## Why is this important?
 
 **Clarity / documentation**
 
@@ -16,7 +16,7 @@ During develoment, we __validate__ the arguments passed to each component to ver
 
 Automate the pruning of props that are passed down to child components.
 
-### Usage
+## Usage
 
 You may recall that **defview** accepts a methods map, for lifecycle methods and so on. We can include a `:view/spec` key here, containing a spec map describing the `:props` and `:children` expected by a component.
 
@@ -90,7 +90,7 @@ To recap, the :view/spec map accepts the following keys:
 | **:props/keys** | A vector of registered spec keys |
 | **:children** | A vector of specs, aligned to the child args accepted by the component |
 
-### Spec Options
+## Spec Options
 
 A spec must contain a `:spec` key, but it may also include:
 
@@ -101,6 +101,7 @@ A spec must contain a `:spec` key, but it may also include:
 | **:pass-through** (boolean) | key will be passed on to child component (via `re-view.core/pass-props`)|
 
 
+---
 
 **Why not just use Clojure Spec?**
 
