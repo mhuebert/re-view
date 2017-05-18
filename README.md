@@ -88,7 +88,7 @@ An entity-attribute pattern read (:ea_) is logged.
 
 Use `d/listen` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
 
-    Value FORMAT         Pattern              Description
+    Value Format         Pattern              Description
     id                   :e__                 entity pattern
     [id attr]            :ea_                 entity-attribute pattern
     [attr val]           :_av                 attribute-value pattern
