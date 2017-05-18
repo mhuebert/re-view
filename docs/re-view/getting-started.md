@@ -127,7 +127,7 @@ Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a 
 
 ### Lifecycle methods 
 
-React https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle[lifecycle methods] are supported via the following keys, all with the namespace `life`:
+React [lifecycle methods](https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle) are supported via the following keys, all with the namespace `life`:
 
 
 | Method key          | React equivalent          ||
