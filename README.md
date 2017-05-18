@@ -54,4 +54,4 @@ Use `core.match` for wildcard segments or other patterns.
     ["post" id] (app-views/posts {:id id}))
 ```
  
-Read more on the **[wiki](https://github.com/mhuebert/re-view/wiki/Re-View-Routing)**.
+
