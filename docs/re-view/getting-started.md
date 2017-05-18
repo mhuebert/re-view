@@ -92,7 +92,7 @@ Remember, the first argument to the view function always the component itself (`
 
 Re-View supports two ways of managing [state](../explainers/state).
 
-### State Atom
+### State atom
 
 For local state, the `:view/state` key of a component returns a Clojure [Atom](../explainers/atoms) which is bound to the component, so that when its value changes, the component will update (re-render). The atom's initial value can be set using the `:initial-state` key in the methods map. If `:initial-state` is a function, it will be called with the component after props are set.
 
