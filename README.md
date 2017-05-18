@@ -2,7 +2,7 @@
 
 ![badge](https://img.shields.io/clojars/v/re-db.svg)
 
-Re-DB is a reactive client-side data store for handling global state in ClojureScript apps. It was built in tandem with [re-view](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
+Re-DB is a client-side data store for handling global state in ClojureScript apps. It was built in tandem with [Re-View](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
 
 # Installation
 
@@ -10,7 +10,7 @@ In `project.clj`, include the dependency `[re-db "xx"]`.
 
 # Background
 
-ClojureScript apps usually store state in atoms (because state can change) which are looked up via namespace or symbol references. `re-db` offers an alternative perspective: all of an app's global state is stored in a single location, as a collection of maps (`entities`), each of which has a unique ID (under the `:db/id` key). Data is read via unique ID, or by indexed attributes. We spend less time thinking about 'locations' in the namespaces of our app, and more time thinking about data itself.
+ClojureScript apps usually store state in [atoms](https://www.re-view.io/docs/explainers/atoms) which are looked up via namespace or symbol references. With `re-db`, global state is stored in a single location, as a collection of maps (`entities`), each of which has a unique ID (under the `:db/id` key). Data is read via unique ID, or by indexed attributes. We spend less time thinking about 'locations' in namespaces (or bindings in closures) and more time thinking about data itself.
 
 # Usage
 
@@ -74,7 +74,7 @@ Read an attribute by passing an ID and attribute to `d/get`.
 ;; => "Matt"
 ```
 
-An entity-attribute pattern read (:ea_) is logged.
+An entity-attribute pattern read (:ea\_) is logged.
 
 Read nested attributes via `d/get-in`.
 
@@ -86,20 +86,21 @@ An entity-attribute pattern read (:ea_) is logged.
 
 ## Listening for changes
 
-Use `d/listen!` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
+Use `d/listen` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
 
-    Value                Pattern name         Description
-    [id _ _]             :e__                 entity pattern
-    [id attr _]          :ea_                 entity-attribute pattern
-    [_ attr val]         :_av                 attribute-value pattern
-    [_ attr _]           :_a_                 attribute pattern
-    [_ _ _] or :tx-log   :___                 Matches all transactions
+    Value FORMAT         Pattern              Description
+    id                   :e__                 entity pattern
+    [id attr]            :ea_                 entity-attribute pattern
+    [attr val]           :_av                 attribute-value pattern
+    attr                 :_a_                 attribute pattern
+   
 
-_\__ may be a quoted '\_ or `nil`.
 
-Pass `d/listen!` a collection of patterns, and the function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
+
+Pass `d/listen` a map of the form `{<pattern> [<...values...>]}`, and a function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
 
 Examples:
+TODO: update examples to new syntax
 
 ```clj
 ;; entity
