@@ -1,4 +1,4 @@
-## Getting Started
+# Getting Started
 
 ## Your First View 
 
@@ -20,7 +20,7 @@ Create a view that returns a `div` with a 'hello, world!' greeting.
   [:div "hello, world!"])
 ```
 
-## Render to the page
+### Render to the page
 
 **`re-view.core/render-to-dom`** renders an React element to the page, given a DOM element or the ID of an element on the page.
 
@@ -36,7 +36,7 @@ How do we render our view to the page?
 (v/render-to-dom (say-hello) "my-app")
 ```
 
-## Props
+### Props
 
 Render the component again, but this time pass it a map containing the `:name` (a string) of someone you know.
 
@@ -70,7 +70,7 @@ There is another way to read prop keys from the component. That is, Clojure [des
   ... name ...)
 ```
 
-## Children
+### Children
 
 If the first argument passed to a view is a map, it is considered the component's `props`. All other arguments are considered `children`, and passed as additional arguments **after** the component.
 
@@ -88,7 +88,32 @@ Now modify the view to accept a second argument, which will contain the string y
 ```
 Remember, the first argument to the view function always the component itself (`this`), and that's where we read `props` keys. All other arguments are passed in afterwards. `(say-hello "fred")` and `(say-hello {} "fred")` are equivalent, just as `[:div "fred"]` and `[:div {} "fred"]` are equivalent.
 
-## Methods map
+## State
+
+Re-View supports two ways of managing [state](../explainers/state).
+
+### State Atom
+
+For local state, the `:view/state` key of a component returns a Clojure [Atom](../explainers/atoms) which is bound to the component, so that when its value changes, the component will update (re-render). The atom's initial value can be set using the `:initial-state` key in the methods map. If `:initial-state` is a function, it will be called with the component after props are set.
+
+During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
+
+Example usage:
+
+```clj
+(defview Toggle
+  {:initial-state false}
+  [{:keys [state]}]
+  [:div {:on-click #(swap! state not)} (if toggle "On" "Off")])
+```
+
+If you're not sure what a Clojure atom is, check out the [atoms explainer](../explainers/atoms).
+
+### Global state
+
+Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes. More information in the re-db [README](https://www.github.com/re-view/re-db).
+
+## Component Methods
 
 `defview` accepts a map, immediately before the arguments list. Functions included in this map are passed the component as the first argument (by convention, `this`), and then additional arguments. Keys are converted to `camelCase` and should be accessed using dot syntax on the component (eg. `(.-someProperty this)` or `(.someFunction this)`.
 
@@ -100,7 +125,7 @@ Remember, the first argument to the view function always the component itself (`
   [:div {:on-click (fn [e] (.printGreeting this))} "Print Greeting"])
 ```
 
-## Lifecycle methods 
+### Lifecycle methods 
 
 React https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle[lifecycle methods] are supported via the following keys, all with the namespace `life`:
 
@@ -133,27 +158,3 @@ There are two other special keys:
 | **:key**  | React [key](https://facebook.github.io/react/docs/lists-and-keys.html). A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
 | **:display-name** | React _[displayName](https://facebook.github.io/react/docs/react-component.html#displayname)_. A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.
 
-## State
-
-Re-View supports two ways of managing [state](../explainers/state).
-
-### State Atom
-
-For local state, the `:view/state` key of a component returns a Clojure [Atom](../explainers/atoms) which is bound to the component, so that when its value changes, the component will update (re-render). The atom's initial value can be set using the `:initial-state` key in the methods map. If `:initial-state` is a function, it will be called with the component after props are set.
-
-During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
-
-Example usage:
-
-```clj
-(defview Toggle
-  {:initial-state false}
-  [{:keys [state]}]
-  [:div {:on-click #(swap! state not)} (if toggle "On" "Off")])
-```
-
-If you're not sure what a Clojure atom is, check out the [atoms explainer](../explainers/atoms).
-
-### Global state
-
-Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes. More information in the re-db [README](https://www.github.com/re-view/re-db).
