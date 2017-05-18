@@ -47,10 +47,10 @@
         :style       {:min-height "100%"}
         :get-element #(when (exists? js/document)
                         (.-documentElement js/document))})
-     [:link {:rel "stylesheet"
+     [:link {:rel  "stylesheet"
              :type "text/css"
-              :href (if dark? "/styles/railscasts.css"
-                              "/styles/github.css")}]
+             :href (if dark? "/styles/railscasts.css"
+                             "/styles/github.css")}]
      (ui/ToolbarWithContent
        {:style     {:background-color    "transparent"
                     :background-image    "url(/images/bg_sky.jpg)"
@@ -60,12 +60,19 @@
         :waterfall true
         :fixed     :lastrow-only}
 
-       [:.pt6.tc
-        [:.ma4
-         [:a.o-100 {:href "/"} [:img {:style {:width     500
-                                              :max-width "100%"}
-                                      :src   "/images/re-view-text.png"}]]
-         [:.f4.mw6.center.text-shadow.serif.mv4 "For building user interfaces in ClojureScript."]]]
+       [:.tc.center.pa4.pt6
+        {:style {:max-width 500}}
+        [:a.relative.db
+         {:href  "/"
+          ;; hard-code the image ratio so that toolbar size is calculated properly on image load
+          :style {:display     "block"
+                  :width       "100%"
+                  :height      0
+                  :padding-top "23%"}}
+         [:.absolute.top-0.left-0.w-100
+          [:img {:src "/images/re-view-text.png"}]]
+         ]
+        [:.f4.mw6.center.text-shadow.serif.mv4 "Create beautiful, fast, and intuitive user experiences with ClojureScript."]]
        (ui/ToolbarRow
          {:classes ["mdc-theme--dark"
                     (if dark?

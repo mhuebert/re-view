@@ -21,7 +21,7 @@
 (d/transact! (->> (concat material-example/examples-data
                           prosemirror-example/examples-data)
                   (map (fn [{:keys [component label] :as example}]
-                         (let [{{:keys [react/docstring react/display-name] :as r} :react-keys} (aget component "re$view$base")
+                         (let [{{:keys [react/docstring display-name] :as r} :react-keys} (aget component "re$view$base")
                                label (or label (-> display-name
                                                    (string/split "/")
                                                    (last)
@@ -123,7 +123,7 @@
                                    (catch js/Error e "Error")))]
        [:.flex-auto]]
 
-      [:.pv3.b--darken-2.bt.mw6
+      [:.pa3.b--darken-2.bt.mw6
        {:class (if (d/get :ui/globals :theme/dark?)
                  "bg-darken-7"
                  "bg-darken-3")

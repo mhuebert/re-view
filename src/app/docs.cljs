@@ -27,16 +27,17 @@
             (not (string/ends-with? path ".md")) (str ".md"))))
 
 (defn download-url [path]
-  (str "http://re-view.github.io/re-view" (md-path path)))
+  (str "https://re-view.github.io/re-view" (md-path path)))
 
 (defn edit-url [path]
   (str "https://github.com/re-view/re-view/edit/master/docs" (md-path path)))
 
-(defn GET [url cb]
+(defn GET [format url cb]
   (if-let [value (get cache url)]
     (cb {:value value})
     (xhr/send url (fn [e]
-                    (let [value (.getResponseText (.-target e))]
+                    (let [value (case format :text (.getResponseText (.-target e))
+                                             :json (.getResponseJson (.-target e)))]
                       (set! cache (assoc cache url value))
                       (cb {:value value}))))))
 
@@ -55,10 +56,10 @@
 (def index nil)
 
 (def get-index (fn [cb]
-                 (GET "http://re-view.github.io/re-view/json/index.json"
+                 (GET :json "https://re-view.github.io/re-view/json/index.json"
                       (fn [{:keys [value]}]
                         (set! index
-                              (->> (js->clj (.parse js/JSON value) :keywordize-keys true)
+                              (->> (js->clj value :keywordize-keys true)
                                    (reduce (fn [m {:keys [title name path] :as doc}]
                                              (assoc-in m (path->keys path) doc)) {})))
                         (cb)))))
@@ -80,7 +81,7 @@
                                                                :key  href} label]))
                      (interpose " / ")))]))
 
-(defn dir-index [path-keys]
+(defn docs-at-path [path-keys]
   (let [children (get-in index (drop-last path-keys))]
     [:.pa3
      [:h3.mv3 "Index"]
@@ -97,9 +98,9 @@
                               (swap! state assoc :loading true)
                               (let [path-keys (path->keys url)]
                                 (if (get-in index path-keys)
-                                  (GET (download-url url) #(do (reset! state %)))
+                                  (GET :text (download-url url) #(do (reset! state %)))
 
-                                  (swap! state merge {:value   (dir-index path-keys)
+                                  (swap! state merge {:value   (docs-at-path path-keys)
                                                       :loading false}))))
    :life/did-mount          (fn [{:keys [view/state] :as this} url]
                               (when-not index (get-index #(.update this url)))
@@ -121,6 +122,7 @@
                   :compact true
                   :class   "absolute top-0 right-0 ma2"})
       (cond error [:div "Error..." error]
+            (not index) [:div "Loading..."]
             value (if (string? value)
                     [:div (md value)]
                     value)
