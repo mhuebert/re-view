@@ -1,5 +1,5 @@
 
-### Docs
+## Docs
 
 - [Getting Started](re-view/getting-started)
 - [Routing](routing)
@@ -8,21 +8,21 @@
 - [Differences](re-view/differences) from other approaches
 - [Hiccup Notes](hiccup/overview)
 
-### Explainers
+## Explainers
 
 - [Atoms](explainers/atoms)
 - [State](explainers/state)
 - [Views, Elements, and Components](explainers/views-elements-components)
 - [Hiccup Syntax](hiccup/syntax-guide)
 
-### Source Code
+## Source Code
 
 - [Re-View](https://www.github.com/re-view/re-view)
 - [Re-View Routing](https://www.github.com/re-view/re-view-routing)
 - [Re-View Hiccup](https://www.github.com/re-view/re-view-hiccup)
 - [Re-DB](https://www.github.com/re-view/re-db)
 
-### Components
+## Components
 
 - [Re-View Material](https://www.github.com/re-view/re-view-material), views for Google's [Material Design Components](https://github.com/material-components/material-components-web)
 - [Re-View ProseMirror](https://www.github.com/re-view/re-view-prosemirror), rich text editor that (de)serializes to Markdown
