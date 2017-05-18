@@ -1,8 +1,8 @@
-(ns re-view.prosemirror.markdown
+(ns re-view-prosemirror.markdown
   (:require [re-view.core :as v]
             [goog.object :as gobj]
             [pack.prosemirror-markdown]
-            [re-view.prosemirror.base :as base]
+            [re-view-prosemirror.base :as base]
             [clojure.string :as string]))
 
 (def pmMarkdown (.-pmMarkdown js/window))
@@ -26,38 +26,37 @@
                                                                           :isolating true}})))
                             "marks" (aget s "spec" "marks")})))
 
-
-(def serializer
+(def ^js/pmMarkdown.MarkdownSerializer serializer
   (let [MarkdownSerializer (.-MarkdownSerializer pmMarkdown)
         nodes (.. pmMarkdown -defaultMarkdownSerializer -nodes)
         marks (.. pmMarkdown -defaultMarkdownSerializer -marks)]
     (MarkdownSerializer. (doto nodes
                            (gobj/extend
-                             (clj->js {:table             (fn [state node]
+                             (clj->js {:table             (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.renderContent state node)
                                                             (.write state "\n"))
-                                       :table_body        (fn [state node]
+                                       :table_body        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.renderContent state node))
-                                       :table_header      (fn [state node]
+                                       :table_header      (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.renderContent state node)
-                                                            (let [columns (.. node -firstChild -content -childCount)]
+                                                            (let [columns (aget node "firstChild" "content" "childCount")]
                                                               (.write state
                                                                       (str "|" (string/join
                                                                                  (take columns (repeat "---|")))
                                                                            "\n"))))
-                                       :table_header_cell (fn [state node]
+                                       :table_header_cell (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.write state "| ")
                                                             (.renderInline state node)
                                                             (.write state " "))
-                                       :table_row         (fn [state node]
+                                       :table_row         (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.renderContent state node)
                                                             (.write state "|\n"))
-                                       :table_cell        (fn [state node]
+                                       :table_cell        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.write state "| ")
                                                             (.renderInline state node)
                                                             (.write state " "))}))) marks)))
 
-(def parser
+(def ^js/pmMarkdown.MarkdownParser parser
   (let [MarkdownParser (.-MarkdownParser pmMarkdown)]
     (MarkdownParser.
       schema (js/markdownit "default" #js {"html" false})

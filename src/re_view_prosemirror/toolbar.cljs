@@ -1,7 +1,7 @@
-(ns re-view.prosemirror.toolbar
-  (:require [re-view.prosemirror.core :as pm]
-            [re-view.material :as ui]
-            [re-view.material.icons :as icons]))
+(ns re-view-prosemirror.toolbar
+  (:require [re-view-prosemirror.core :as pm]
+            [re-view-material.core :as ui]
+            [re-view-material.icons :as icons]))
 
 
 (def menu-item-element :.dib.pa2.serif)
@@ -70,7 +70,7 @@
         [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
                                        {:class "o-30"}) (update icons/FormatSize 1 assoc :width 18)]
         (ui/SimpleMenuItem {:key          "p"
-                            :text/primary "Paragraph"
+                            :text-primary "Paragraph"
                             :disabled     (false? (set-p state))
                             :on-click     #(set-p state dispatch)})
         (for [i (range 1 (inc heading-n))
@@ -78,7 +78,7 @@
           (ui/SimpleMenuItem {:key          i
                               :disabled     (false? (cmd state))
                               :on-click     #(cmd state dispatch)
-                              :text/primary (str "Heading " i)}))))))
+                              :text-primary (str "Heading " i)}))))))
 
 (def all-toolbar-items
   [mark-strong

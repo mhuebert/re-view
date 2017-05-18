@@ -1,12 +1,12 @@
-(ns re-view.prosemirror.example
+(ns re-view-prosemirror.example
   (:require [re-view.core :as v :refer [defview view]]
             [re-view.example.helpers :as h]
-            [re-view.prosemirror.markdown :as prose]
-            [re-view.prosemirror.toolbar :as prose-toolbar]))
+            [re-view-prosemirror.markdown :as prose]
+            [re-view-prosemirror.toolbar :as prose-toolbar]))
 
 (set! *warn-on-infer* true)
 
-(defn toolbar [pm-view]
+(defn toolbar [^js/pm.EditorView pm-view]
   (->> prose-toolbar/all-toolbar-items
        (map (fn [toolbar-item]
               (toolbar-item (.-state pm-view) (.-dispatch pm-view))))))
@@ -28,11 +28,9 @@
                                                         :prosemirror/dispatch (.-dispatch pm-view)))
                                                on-dispatch (v/compseq on-dispatch))))])
 
-
-
 (def examples-data
   (let [example-output (atom [{:markdown nil}])
-        update-markdown (fn [this _]
+        update-markdown (fn [^js/React.Component this _]
                           (swap! example-output assoc-in [0 :markdown] (.serialize this)))]
     [{:kind      :component
       :component RichTextMarkdown
@@ -43,9 +41,9 @@
 | a | b | c |
 | d | e | f |
 
-    c
+    Code
 
-p  "
+Paragraph  "
                          :on-mount      #(js/setTimeout (partial update-markdown %) 0)
                          :on-dispatch   update-markdown}])
       :wrap      #(h/with-prop-atom* {} (view [{:keys [markdown]}]

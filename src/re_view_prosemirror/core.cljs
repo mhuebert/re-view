@@ -1,4 +1,4 @@
-(ns re-view.prosemirror.core
+(ns re-view-prosemirror.core
   (:require [pack.prosemirror]
             [cljsjs.markdown-it]
             [clojure.set :as set]
