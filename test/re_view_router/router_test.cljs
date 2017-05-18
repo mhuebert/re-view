@@ -3,9 +3,9 @@
             [goog.dom :as gdom]
             [cljs.test :refer [deftest is are testing]]
             [re-db.d :as d]
-            [re-view.routing :as routing]
+            [re-view-routing.core :as routing]
             [cljs.core.match :refer-macros [match]]
-            [re-view.core :as view :refer [defview]]))
+            [re-view.core :as v :refer [defview]]))
 
 (enable-console-print!)
 
@@ -52,7 +52,7 @@
 
 (deftest routing-test
   (testing "Basic routing"
-    (let [render #(view/render-to-element % test-element)]
+    (let [render #(view/render-to-dom % test-element)]
 
       ;; set initial route to root
       (routing/nav! "/")

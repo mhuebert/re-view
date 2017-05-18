@@ -1,4 +1,4 @@
-(ns re-view.routing
+(ns re-view-routing.core
   (:require [goog.events :as events]
             [goog.dom :as gdom]
             [clojure.string :as string])
@@ -30,7 +30,7 @@
   [path]
   (let [data (.getQueryData (Uri. path))]
     (reduce (fn [m k]
-              (assoc m k (.get data k))) {} (.getKeys data))))
+              (assoc m (keyword k) (.get data k))) {} (.getKeys data))))
 
 (defn parse-path
   "Returns map of parsed location information for path."
@@ -83,6 +83,27 @@
   "Trigger pushstate navigation to token (path)"
   [token]
   (.setToken history token))
+
+(defn- remove-empty
+  "Remove empty values/strings from map"
+  [m]
+  (reduce-kv (fn [m k v]
+               (cond-> m
+                       (#{nil ""} v) (dissoc k))) m m))
+
+(defn query-string [m]
+  (let [js-query (-> m
+                     (remove-empty)
+                     (clj->js))]
+    (-> Uri .-QueryData (.createFromMap js-query) (.toString))))
+
+(defn query-nav!
+  [query]
+  (nav! (str (.. js/window -location -pathname) "?" (query-string query))))
+
+(defn swap-query!
+  [f & args]
+  (query-nav! (apply f (query (get-route)) args)))
 
 (defn link?
   "Return true if element is a link"
@@ -141,5 +162,7 @@
    (events/listen history "navigate" #(listener (parse-path (get-route))))))
 
 (defn unlisten [k]
-  (events/unlistenByKey k))
+  (if (fn? k)
+    (events/unlisten history "navigate" k)
+    (events/unlistenByKey k)))
 
