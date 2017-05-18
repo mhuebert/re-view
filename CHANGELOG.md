@@ -3,7 +3,7 @@
 
 0.3.15
 **breaking changes**
-- namespaced keys in methods map: :react/key, :react/display-name, :life/<lifecycle-method>
+- namespaced keys in methods map: :life/<lifecycle-method>
 - revert namespaces to re-view-hiccup, re-view-material, re-view-prosemirror, re-view-routing
 - rename `render-to-element` to `render-to-dom`
 

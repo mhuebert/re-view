@@ -2,6 +2,7 @@
   (:require [re-view.core :as v :refer [defview]]
             [re-view-material.core :as ui]
             [re-view-material.util :as util]
+            [re-view-material.icons :as icons]
             [re-view.view-spec :as s]
             [goog.dom :as gdom]
             [clojure.string :as string]
@@ -104,19 +105,22 @@
   {:key               :label
    :life/did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
    :life/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
-  [{:keys [label component]} prop-atom]
-  (let [section #(do [:tr [:td.b.pv2.f6 {:col-span 3} %]])
-        {prop-specs  :props
+  [{:keys [label component view/state]} prop-atom]
+  (let [{prop-specs  :props
          child-specs :children
-         defaults    :props/defaults} (v/element-get (component) :view/spec)]
+         defaults    :props/defaults} (v/element-get (component) :view/spec)
+        {:keys [editing?]} @state
+        section #(do [:tr [:td.b.pv2.f6 {:col-span (if editing? 2 1)} %]])]
     [:div
      (when label [:.f6.b.ph2.pv1 label])
+
      (if prop-atom
        [:table.f7.w-100
         [:tbody
          (when-not (empty? prop-specs)
            (let [values (some->> prop-atom deref first)]
-             (list (section "Props")
+             (list (section [:.flex.items-center "Props"
+                             [:.pointer.pa2.o-60.hover-o-100 {:on-click #(swap! state update :editing? not)} icons/ModeEdit]])
                    (for [[k v] (->> prop-specs
                                     (seq)
                                     (sort-by first))
@@ -124,17 +128,22 @@
                                v (get values k)]
                          :when (not= k :key)]
                      [:tr
-                      [:td.b.o-60.pre (key-field k)]
-                      [:td.pl3 (value-edit prop-spec prop-atom [0 k])]
-                      [:td.o-60 doc]]))))
+                      (when editing?
+                        [:td (value-edit prop-spec prop-atom [0 k])])
+                      [:td
+                       [:.b.pre.mb1 (key-field k)]
+                       [:.o-60 doc]]]))))
 
          (when-let [children (some->> prop-atom deref (drop 1) (seq))]
            (list (section "Children")
                  (for [i (range (count children))]
                    [:tr
-                    [:td.b.o-60.pre (key-field (value-kind (nth children i)))]
-                    [:td.pl3 (value-edit nil prop-atom [(inc i)])]
-                    [:td #_doc]])))]]
+
+                    [:td
+                     {:col-span (if editing? 2 1)}
+                     [:.b.pre.mb1 (key-field (value-kind (nth children i)))]
+                     [:.pl3
+                      (value-edit nil prop-atom [(inc i)])]]])))]]
        [:.gray.i.mv2.tc.f7 "No Props"])]))
 
 (defview with-prop-atom*

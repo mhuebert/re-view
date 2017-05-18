@@ -29,7 +29,8 @@
                                   "life" :lifecycle-keys
                                   "react" :react-keys
                                   "view" :class-keys
-                                  (if (= k :key)
+                                  (case k
+                                    (:key :display-name)
                                     :react-keys
                                     :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
@@ -70,9 +71,9 @@
   [view-name & args]
   (let [[docstring methods args body] (parse-view-args args)
         methods (-> methods
-                    (merge {:react/docstring    docstring
-                            :react/display-name (display-name *ns* view-name)
-                            :life/render        (wrap-body args body)})
+                    (merge {:react/docstring docstring
+                            :display-name    (display-name *ns* view-name)
+                            :life/render     (wrap-body args body)})
                     (group-methods))]
     `(def ~view-name ~docstring (~'re-view.core/view* ~methods))))
 
@@ -81,9 +82,9 @@
   [& args]
   (let [[docstring methods args body] (parse-view-args args)
         methods (-> methods
-                    (merge {:react/docstring    docstring
-                            :react/display-name (display-name *ns*)
-                            :life/render        (wrap-body args body)})
+                    (merge {:react/docstring docstring
+                            :display-name    (display-name *ns*)
+                            :life/render     (wrap-body args body)})
                     (group-methods))]
     `(~'re-view.core/view* ~methods)))
 
