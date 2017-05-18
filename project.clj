@@ -1,4 +1,4 @@
-(defproject re-view-hiccup "0.1.5-SNAPSHOT"
+(defproject re-view-hiccup "0.1.5"
   :description "Hiccup parser for re-view"
 
   :url "https://www.github.com/re-view/re-view-hiccup"
