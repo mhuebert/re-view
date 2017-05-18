@@ -13,8 +13,6 @@ Require `re-view.core` like so:
   (:require [re-view.core :as v :refer [defview]]))
 ```
 
-**`defview`** is a macro that returns a [view function](../explainers/views-elements-components). Similar to `defn`, it expects a name, optional docstring, and arguments vector, followed by the body of the view, which should return valid [Hiccup-Syntax](../hiccup/syntax) or a React element.
-
 Create a view that returns a `div` with a 'hello, world!' greeting.
 
 ```clj
@@ -46,7 +44,7 @@ Render the component again, but this time pass it a map containing the `:name` (
 (v/render-to-dom (say-hello {:name "fred"}) "my-app")
 ```
 
-If the first argument to a view is a Clojure **map** (eg. `{:name "fred"}`), it is considered the component's https://facebook.github.io/react/docs/components-and-props.html[props]. Props can be looked up by keyword on the component itself (eg. `(:name this)`. The component is **always** passed as the first argument to a view. 
+If the first argument to a view is a Clojure **map** (eg. `{:name "fred"}`), it is considered the component's [props](https://facebook.github.io/react/docs/components-and-props.html). Props can be looked up by keyword on the component itself (eg. `(:name this)`. The component is **always** passed as the first argument to a view. 
 
 How do we read the `:name` prop from the component?
 
@@ -65,7 +63,7 @@ Change the view to include the `:name` prop in the greeting text.
 
 We have created a view and passed it a `props` map, `{:name "fred"}`. We accessed the `:name` prop by reading it from the component, which is passed in as the first argument to the view. 
 
-There is one more way to read prop keys from the component. That is, Clojure [destructuring](https://clojure.org/guides/destructuring):
+There is another way to read prop keys from the component. That is, Clojure [destructuring](https://clojure.org/guides/destructuring):
 
 ```clj
 (defview say-hello [{:keys [name] :as this}]
@@ -132,8 +130,8 @@ There are two other special keys:
 
 | key | description
 | --- | ---
-| **:react/key**  | React [key](https://facebook.github.io/react/docs/lists-and-keys.html). A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
-| **:react/display-name** | React _[displayName](https://facebook.github.io/react/docs/react-component.html#displayname)_. A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.
+| **:key**  | React [key](https://facebook.github.io/react/docs/lists-and-keys.html). A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
+| **:display-name** | React _[displayName](https://facebook.github.io/react/docs/react-component.html#displayname)_. A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.
 
 ## State
 
