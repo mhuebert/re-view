@@ -35,7 +35,7 @@
 
 (defn force-update! [^js/React.Component this]
   (set! to-render (disj to-render this))
-  (when-not (true? (.-unmounted this))
+  (when-not (true? (aget this "unmounted"))
     (try (.forceUpdate this)
          (catch js/Error e
            (if-let [catch-fn (aget this "catch")]

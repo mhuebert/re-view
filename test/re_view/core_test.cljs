@@ -134,18 +134,18 @@
       (render {:color "pink"})
       (render {:color "blue"})
 
-      (is (= "pink" (get-in this [:view/prev-props :color])))
+      (is (= "pink" (get-in @lifecycle-log [:life/did-update :view/prev-props :color])))
       (is (= "blue" (:color this)))
 
 
       (render {:color "yellow"})
       (render {:color "mink"})
 
-      (is (= "yellow" (get-in this [:view/prev-props :color])))
+      (is (= "yellow" (get-in @lifecycle-log [:life/did-update :view/prev-props :color])))
       (is (= "mink" (:color this)))
 
       (render {:color "bear"})
-      (is (= "mink" (get-in this [:view/prev-props :color])))
+      (is (= "mink" (get-in @lifecycle-log [:life/will-update :view/prev-props :color])))
       (is (= "bear" (:color this))))
 
     (testing "state transition"
@@ -155,7 +155,7 @@
 
       (is (false? (:shiny? @(:view/state this))))
 
-      (swap! (:view/state this) update :shiny? not)
+      (swap! (:view/state this) assoc :shiny? true)
       (v/flush!)
 
       (is (false? (get-in @lifecycle-log [:life/will-receive-state :view/prev-state :shiny?]))
@@ -164,6 +164,7 @@
           "State has updated")
 
       (render {:color "violet"})
+
       (is (= @(:view/state this)
              (:view/prev-state this))
           "After a component lifecycle, prev-state and state are the same."))))

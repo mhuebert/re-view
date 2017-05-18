@@ -168,11 +168,11 @@
                                         (some-> (aget this "reactiveUnsubscribe") (.call))
                                         (some-> state (remove-watch :state-changed)))
                   :life/did-update    (fn [this]
-                                        (js/setTimeout #(let [re$view (aget this "re$view")
-                                                              state (aget re$view "state")]
-                                                          (doto re$view
-                                                            (cond-> state (aset "prevState" @state))
-                                                            (aset "prevProps" (aget re$view "props")))) 0))}])
+                                        (let [re$view (aget this "re$view")
+                                              state (aget re$view "state")]
+                                          (doto re$view
+                                            (cond-> state (aset "prevState" @state))
+                                            (aset "prevProps" (aget re$view "props")))))}])
        (reduce-kv (fn [m method-k method]
                     (assoc m method-k (wrap-methods method-k method))) {})))
 

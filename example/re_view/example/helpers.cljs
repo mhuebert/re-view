@@ -105,16 +105,16 @@
   {:key               :label
    :life/did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
    :life/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
-  [{:keys [label component view/state]} prop-atom]
+  [{:keys [component view/state container-props]} prop-atom]
   (let [{prop-specs  :props
          child-specs :children
          defaults    :props/defaults} (v/element-get (component) :view/spec)
         {:keys [editing?]} @state
-        section #(do [:tr [:td.b.pv2.f6 {:col-span (if editing? 2 1)} %]])]
-    [:div
-     (when label [:.f6.b.ph2.pv1 label])
-
-     (if prop-atom
+        section #(do [:tr [:td.b.pv2.f6 {:col-span (if editing? 2 1)} %]])
+        children (some->> prop-atom deref (drop 1) (seq))]
+    (when (or (seq prop-specs) children)
+      [:div
+       container-props
        [:table.f7.w-100
         [:tbody
          (when-not (empty? prop-specs)
@@ -134,7 +134,7 @@
                        [:.b.pre.mb1 (key-field k)]
                        [:.o-60 doc]]]))))
 
-         (when-let [children (some->> prop-atom deref (drop 1) (seq))]
+         (when children
            (list (section "Children")
                  (for [i (range (count children))]
                    [:tr
@@ -143,8 +143,7 @@
                      {:col-span (if editing? 2 1)}
                      [:.b.pre.mb1 (key-field (value-kind (nth children i)))]
                      [:.pl3
-                      (value-edit nil prop-atom [(inc i)])]]])))]]
-       [:.gray.i.mv2.tc.f7 "No Props"])]))
+                      (value-edit nil prop-atom [(inc i)])]]])))]]])))
 
 (defview with-prop-atom*
   "Calls component with value of atom & re-renders when atom changes."
