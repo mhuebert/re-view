@@ -4,7 +4,7 @@ View specs are a way to specify exactly what props and children each component e
 
 ## Why is this important?
 
-1. Clarity / documentation - Quickly identify how to use a view by looking at its spec.
+1. Documentation - Quickly identify how to use a view by looking at its spec.
 
 2. Debugging - Validate arguments passed to components to ensure correct usage and provide helpful error messages
 
