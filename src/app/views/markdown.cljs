@@ -1,4 +1,4 @@
-(ns app.markdown
+(ns app.views.markdown
   (:require [cljsjs.markdown-it]
             [re-view.core :as v :refer [defview]]
             [goog.object :as gobj]
@@ -18,7 +18,7 @@
           (fn [tokens idx x y self]
             (let [heading-tokens (aget tokens (inc idx) "children")
                   anchor (->> (areduce heading-tokens i out ""
-                                       (+ out (aget heading-tokens i "content")))
+                                       (str out (aget heading-tokens i "content")))
                               (content-anchor))]
               (str (if heading-open
                      (.apply heading-open (js-this) (js-arguments))

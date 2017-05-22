@@ -14,3 +14,4 @@ resources/public/js/out*
 resources/public/js/app.js
 *app.min.js
 Design
+deploy.sh

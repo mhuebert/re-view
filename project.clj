@@ -18,7 +18,8 @@
                  [cljsjs/react-dom "15.5.0-0"]
                  [cljsjs/react-dom-server "15.5.0-0"]
                  [cljsjs/markdown-it "7.0.0-0"]
-                 [cljsjs/highlight "9.6.0-0"]]
+                 [cljsjs/highlight "9.6.0-0"]
+                 ]
 
   :plugins [[lein-figwheel "0.5.10"]
             [lein-cljsbuild "1.1.5" :exclusions [org.clojure/clojure]]]
@@ -46,15 +47,16 @@
                                        :optimizations        :none}}
                        {:id           "prod"
                         :source-paths ["src"]
-                        :compiler     {:main          "app.core"
-                                       :infer-externs true
-                                       :language-in   :es5
+                        :compiler     {:main            "app.core"
+                                       :infer-externs   true
+                                       :language-in     :es5
                                        ;:language-out  :es5
 
                                        ;:pseudo-names  true
-                                       :asset-path    "/js/out"
-                                       :output-dir    "resources/public/js/out-prod"
-                                       :output-to     "resources/public/js/app.js"
-                                       :source-map    "resources/public/js/app.js.map"
-                                       :optimizations :advanced
+                                       :closure-defines {re-view.core/INSTRUMENT! false}
+                                       :asset-path      "/js/out"
+                                       :output-dir      "resources/public/js/out-prod"
+                                       :output-to       "resources/public/js/app.js"
+                                       :source-map      "resources/public/js/app.js.map"
+                                       :optimizations   :advanced
                                        }}]})
