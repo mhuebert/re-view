@@ -11,7 +11,7 @@ Every web app needs to handle routing, and we have our own data-driven approach 
 
 - [Re-View Routing](routing)
 
-As is common in Clojure, Re-View uses [Hiccup](https://github.com/weavejester/hiccup) syntax as an alternative to HTML or JSX. We use our own [hiccup parser](https://www.github.com/re-view/re-view-hiccup).
+As is common in Clojure, Re-View uses [Hiccup](https://github.com/weavejester/hiccup) syntax as an alternative to HTML or JSX.
 
 - [Re-View Hiccup](hiccup/overview)
 - [Hiccup Syntax Guide](hiccup/syntax-guide)
