@@ -1,19 +1,29 @@
 
 ## Docs
 
+Re-View's core library is responsible for defining components and rendering them to the page.
+
 - [Getting Started](re-view/getting-started)
-- [Routing](routing)
 - [View Specs](re-view/view-specs)
 - [Advanced Topics](re-view/advanced-topics)
-- [Differences](re-view/differences) from other approaches
-- [Hiccup Notes](hiccup/overview)
 
-## Explainers
+Every web app needs to handle routing, and we have our own data-driven approach for that: 
 
-- [Atoms](explainers/atoms)
-- [State](explainers/state)
-- [Views, Elements, and Components](explainers/views-elements-components)
-- [Hiccup Syntax](hiccup/syntax-guide)
+- [Re-View Routing](routing)
+
+As is common in Clojure, Re-View uses [Hiccup](https://github.com/weavejester/hiccup) syntax as an alternative to HTML or JSX. We use our own [hiccup parser](https://www.github.com/re-view/re-view-hiccup).
+
+- [Re-View Hiccup](hiccup/overview)
+- [Hiccup Syntax Guide](hiccup/syntax-guide)
+
+
+## Explainers 
+
+We believe that docs should be as beginner-friendly as possible. To that end, we have written some beginner-friendly 'explainer' documents.
+
+- [What is a Clojure atom?](explainers/atoms)
+- [What is 'state'?](explainers/state)
+- [What are views, elements, and components?](explainers/views-elements-components)
 
 ## Source Code
 
