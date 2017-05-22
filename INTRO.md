@@ -4,7 +4,7 @@
 
 Re-View was built piecemeal during the development of several real-world projects, including [this PX/16 workshop prototype](http://px16.matt.is), where it was advantageous to have total control over small set of in-house tools which could rapidly evolve in response to changing requirements and ideas.
 
-### Approach
+## Approach
 
 **Tinkering** and hands-on experimentation are a more reliable guide than philosophical purity: ideas are best evaluated by trying them. When experimentation is the goal, it is often better to use in-house prototypes rather than external dependencies, otherwise one spends too much time fighting with external limitations and thinking in someone else's box.¹
 
