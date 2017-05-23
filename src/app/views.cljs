@@ -26,12 +26,15 @@
                      (interpose " / "))])))
 
 (defn page [{:keys [toolbar-items]} & content]
-  [:.flex-grow.markdown-copy.mw7.center
-   (into [:.flex.items-center.h3 (breadcrumb)] toolbar-items)
-   (into [:.ph4-ns.ph3.pv2.lh-copy.elevated-card.relative] content)])
+  (let [breadcrumb (breadcrumb)]
+    [:.flex-grow.markdown-copy.mw7.center.mv3
+     (when (or breadcrumb toolbar-items)
+       (into [:.flex.items-center.h2.mv2 breadcrumb] toolbar-items))
+
+     (into [:.ph4-ns.ph3.pv2.lh-copy.elevated-card.relative] content)]))
 
 (defview click-copy
-  {:view/spec {:props {:outer-class :String}}}
+  {:view/spec {:props {:outer-class :String}}} 
   [{:keys [style outer-class] :as this} s]
   [:span.relative.di
    {:class outer-class}

@@ -35,6 +35,7 @@
                         :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:main                 "app.core"
+                                       :closure-defines      {re-view.core/INSTRUMENT! true}
                                        :output-to            "resources/public/js/app.js"
                                        :output-dir           "resources/public/js/out"
                                        :asset-path           "/js/out"
@@ -47,16 +48,15 @@
                                        :optimizations        :none}}
                        {:id           "prod"
                         :source-paths ["src"]
-                        :compiler     {:main            "app.core"
-                                       :infer-externs   true
-                                       :language-in     :es5
+                        :compiler     {:main          "app.core"
+                                       :infer-externs true
+                                       :language-in   :es5
                                        ;:language-out  :es5
 
                                        ;:pseudo-names  true
-                                       :closure-defines {re-view.core/INSTRUMENT! false}
-                                       :asset-path      "/js/out"
-                                       :output-dir      "resources/public/js/out-prod"
-                                       :output-to       "resources/public/js/app.js"
-                                       :source-map      "resources/public/js/app.js.map"
-                                       :optimizations   :advanced
+                                       :asset-path    "/js/out"
+                                       :output-dir    "resources/public/js/out-prod"
+                                       :output-to     "resources/public/js/app.js"
+                                       :source-map    "resources/public/js/app.js.map"
+                                       :optimizations :advanced
                                        }}]})

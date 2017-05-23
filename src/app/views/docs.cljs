@@ -70,11 +70,11 @@
   {:life/did-mount   (fn [{:keys [view/state
                                   edit-url] :as this} url]
                        (when-not index (get-index #(v/force-update this))))}
-  [{:keys [edit-url] :as this} url]
+  [this url]
   (let [path-ks (path->keys url)
         {{file-path :path} :*file
          :as               current-index} (get-in index (path->keys url))]
-    (views/page {:toolbar-items [[:.flex-auto] (when file-path (views/edit-button edit-url))]}
+    (views/page {:toolbar-items [[:.flex-auto] (when file-path (views/edit-button (path/join doc-edit-root file-path)))]}
                 (cond
                   (nil? index) [:div "Loading..."]
                   file-path (views/markdown-page (path/join download-root file-path))

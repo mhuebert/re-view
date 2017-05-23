@@ -20,7 +20,8 @@
   [:div
 
    [:.flex
-    (views/clojars-latest-version repo)
+    [:.w5
+     (views/clojars-latest-version repo)]
 
     (ui/Button {:href    (str "https://www.github.com/re-view/" repo)
                 :label   [:span.di-ns.dn "source"]
@@ -41,16 +42,17 @@
   (views/page nil [:.pv3 (repository-row repo)]))
 
 (defview repositories-index []
+
   (views/page nil
               [:div.pb3
 
-               [:h2 "Re-View"]
+               [:h2 "Core + Utilities"]
 
                (map repository-row ["re-view"
                                     "re-view-hiccup"
                                     "re-view-routing"
                                     "re-db"])
-               [:h2 "Component Libraries"]
+               [:h2 "Components"]
 
                (map repository-row ["re-view-material"
                                     "re-view-prosemirror"])]))

@@ -1,4 +1,4 @@
-(ns app.examples
+(ns app.views.components
   (:require [re-view.core :as v :refer-macros [defview view]]
             [goog.dom :as gdom]
             [goog.dom.classes :as classes]
@@ -8,6 +8,7 @@
             [re-view-prosemirror.example :as prosemirror-example]
             [re-view.example.helpers :as h :include-macros true]
             [re-view-material.icons :as icons]
+            [re-view.hoc :as hoc]
             [clojure.string :as string]
             [re-view-material.core :as ui]
             [clojure.set :as set]
@@ -64,7 +65,7 @@
      [:.flex.items-center.flex-auto.pa4
       [:.center
        (if custom-view (custom-view)
-                       (try (cond-> (h/with-prop-atom* nil component prop-atom)
+                       (try (cond-> (hoc/bind-atom component prop-atom)
                                     wrap (wrap))
                             (catch js/Error e "Error")))]]]))
 
@@ -96,7 +97,7 @@
          (md {:class "o-70 f6"} docstring))
        [:.flex-auto]
        [:.mv3.center (if custom-view (custom-view)
-                                     (try (cond-> (h/with-prop-atom* nil component prop-atom)
+                                     (try (cond-> (hoc/bind-atom component prop-atom)
                                                   wrap (wrap))
                                           (catch js/Error e "Error")))]
        [:.flex-auto]]
@@ -141,7 +142,7 @@
   [{:keys [detail-view
            view/state]}]
   (let [query (d/get-in :router/location [:query :search])]
-    [:div
+    [:.pv3
      (when detail-view
        (fixed-content {:on-close #(routing/nav! "/components")}
                       (component-detail (d/entity detail-view))))
