@@ -1,7 +1,8 @@
 (ns re-view.core
   (:refer-clojure :exclude [partial])
   (:require-macros [re-view.core])
-  (:require [re-db.core :as d]
+  (:require [re-db.core :as re-db]
+            [re-db.d :as d]
             [re-db.patterns :as patterns :include-macros true]
             [re-view.render-loop :as render-loop]
             [re-view-hiccup.core :as hiccup]
@@ -16,24 +17,15 @@
 (def force-update render-loop/force-update)
 (def force-update! render-loop/force-update!)
 (def flush! render-loop/flush!)
-
+ 
 (def ^:dynamic *trigger-state-render* true)
-(def DEBUG false)
+
+(goog-define INSTRUMENT! false)
 
 (defn dom-node
   "Return DOM node for component"
   [component]
   (.findDOMNode js/ReactDOM component))
-
-(defn focus
-  "Focus the first input or textarea in a component"
-  [component]
-  (let [node (dom-node component)
-        p #(#{"INPUT" "TEXTAREA"} (.-tagName %))]
-    (if (p node)
-      (.focus node)
-      (some-> (gdom/findNode node p)
-              (.focus)))))
 
 (defn mounted?
   "Returns true if component is still mounted to the DOM.
@@ -49,9 +41,10 @@
       (let [{:keys [patterns value]} (patterns/capture-patterns (apply f this (aget this "re$view" "children")))
             prev-patterns (aget this "re$view" "dbPatterns")]
         (when-not (= prev-patterns patterns)
-          (some-> (aget this "reactiveUnsubscribe") (.call))
+          (when-let [un-sub (aget this "reactiveUnsubscribe")] (un-sub))
+
           (aset this "reactiveUnsubscribe" (when-not (empty? patterns)
-                                             (re-db.d/listen patterns #(force-update this))))
+                                             (d/listen patterns #(force-update this))))
           (aset this "re$view" "dbPatterns" patterns))
         value))))
 
@@ -124,7 +117,7 @@
     (add-watch a :state-changed (fn [_ _ old-state new-state]
                                   (when (not= old-state new-state)
                                     (aset this "re$view" "prevState" old-state)
-                                    (when-let [will-receive (aget this "componentWillReceiveState")]
+                                    (when-let [^js/Function will-receive (aget this "componentWillReceiveState")]
                                       (.call will-receive this))
                                     (when *trigger-state-render*
                                       (force-update this)))))
@@ -138,7 +131,7 @@
                                (aset "props" (aget $props "props"))
                                (aset "children" (aget $props "children"))))
         (when-let [instance-keys (aget $props "instance")]
-          (doseq [k (.keys js/Object instance-keys)]
+          (doseq [k (gobj/getKeys instance-keys)]
             (let [f (aget instance-keys k)]
               (aset this k (if (fn? f) (fn [& args]
                                          (apply f this args)) f))))))
@@ -165,7 +158,8 @@
                                             (not= children prev-children)))
                   :life/will-unmount  (fn [{:keys [view/state] :as this}]
                                         (aset this "unmounted" true)
-                                        (some-> (aget this "reactiveUnsubscribe") (.call))
+                                        (when-let [un-sub (aget this "reactiveUnsubscribe")]
+                                          (un-sub))
                                         (some-> state (remove-watch :state-changed)))
                   :life/did-update    (fn [this]
                                         (let [re$view (aget this "re$view")
@@ -177,7 +171,7 @@
                     (assoc m method-k (wrap-methods method-k method))) {})))
 
 (defn ensure-state [this]
-  (when-not (.hasOwnProperty (aget this "re$view") "state")
+  (when-not (gobj/containsKey (aget this "re$view") "state")
     (init-state this nil)))
 
 (defn view-var [k]
@@ -249,8 +243,8 @@
          :as             class-keys} (update class-keys :view/spec vspec/normalize-spec-map)
         class-keys (reduce-kv (fn [m k v]
                                 (doto m (aset (v-util/camelCase (name k)) v))) #js {} class-keys)
-        class-react-key (.-key constructor)
-        display-name (.-displayName constructor)]
+        class-react-key (aget constructor "key")
+        display-name (aget constructor "displayName")]
     (fn [props & children]
       (let [[props children] (cond (or (map? props)
                                        (nil? props)) [props children]
@@ -266,7 +260,7 @@
                             :else (throw (js/Error "Invalid key supplied to component"))))
                     display-name)]
 
-        (when (true? DEBUG)
+        (when (true? INSTRUMENT!)
           (vspec/validate-props display-name spec props)
           (vspec/validate-children display-name spec children))
 

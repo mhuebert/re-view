@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.518"]
+                 [org.clojure/clojurescript "1.9.521"]
                  [re-db "0.1.11"]
                  [re-view-hiccup "0.1.6"]]
 
@@ -21,6 +21,7 @@
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
                         :figwheel     {:on-jsload "app.test/run"}
+
                         :compiler     {:main                 app.core
                                        ;:parallel-build       true
                                        :asset-path           "/js/compiled/out"

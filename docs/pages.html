@@ -1,9 +1,0 @@
----
----
-<h1>Re-View Wiki</h1>
-{% assign pages = site.pages | where_exp:"page", "page.layout" %}
-<ul>
-    {% for page in pages %}
-    <li><a href=".{{ page.url }}">{{ page.title | escape }}</a></li>
-    {% endfor %}
-</ul>

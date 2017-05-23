@@ -96,7 +96,8 @@
   (if (nil? value)
     (when required (throw (js/Error (str "Prop is required: " k))))
     (when (and spec (not (spec value)))
-      (prn :spec spec-name :val value)
+      (println spec-map)
+      (prn :spec spec-name :val value :spec spec)
       (throw (js/Error (str "Validation failed for prop: " k " with spec " (or spec-name spec) " and value " value))))))
 
 (defn validate-props [display-name

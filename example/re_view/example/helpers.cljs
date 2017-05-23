@@ -110,17 +110,17 @@
          child-specs :children
          defaults    :props/defaults} (v/element-get (component) :view/spec)
         {:keys [editing?]} @state
-        section #(do [:tr [:td.b.pv2.f6 {:col-span (if editing? 2 1)} %]])
+        section :.b.pa2.pt3.f6
         children (some->> prop-atom deref (drop 1) (seq))]
     (when (or (seq prop-specs) children)
       [:div
        container-props
-       [:table.f7.w-100
-        [:tbody
-         (when-not (empty? prop-specs)
-           (let [values (some->> prop-atom deref first)]
-             (list (section [:.flex.items-center "Props"
-                             [:.pointer.pa2.o-60.hover-o-100 {:on-click #(swap! state update :editing? not)} icons/ModeEdit]])
+       (when-not (empty? prop-specs)
+         (let [values (some->> prop-atom deref first)]
+           (list [section [:.flex.items-center "Props"
+                           [:.pointer.pa2.o-60.hover-o-100 {:on-click #(swap! state update :editing? not)} icons/ModeEdit]]]
+                 [:table.f7.w-100
+                  [:tbody
                    (for [[k v] (->> prop-specs
                                     (seq)
                                     (sort-by first))
@@ -131,19 +131,21 @@
                       (when editing?
                         [:td (value-edit prop-spec prop-atom [0 k])])
                       [:td
-                       [:.b.pre.mb1 (key-field k)]
-                       [:.o-60 doc]]]))))
+                       [:.b.pre-wrap.mb1 (key-field k)]
+                       [:.o-60 doc]]])]])))
 
-         (when children
-           (list (section "Children")
+       (when children
+         (list [section "Children"]
+               [:table.f7.w-100
+                [:tbody
                  (for [i (range (count children))]
                    [:tr
 
                     [:td
                      {:col-span (if editing? 2 1)}
-                     [:.b.pre.mb1 (key-field (value-kind (nth children i)))]
+                     [:.b.pre-wrap.mb1 (key-field (value-kind (nth children i)))]
                      [:.pl3
-                      (value-edit nil prop-atom [(inc i)])]]])))]]])))
+                      (value-edit nil prop-atom [(inc i)])]]])]]))])))
 
 (defview with-prop-atom*
   "Calls component with value of atom & re-renders when atom changes."
