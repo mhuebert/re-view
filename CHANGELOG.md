@@ -1,6 +1,11 @@
 
 # Changelog
 
+## 0.3.16
+
+- new re-view.hoc namespace for higher order components
+- fixed some externs inference issues
+
 ## 0.3.15
 
 **breaking changes**
