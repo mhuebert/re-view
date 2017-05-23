@@ -8,7 +8,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [re-view-routing "0.1.3"]]
-  :profiles {:provided {:dependencies [[re-view "0.3.14"]]}
+  :profiles {:provided {:dependencies [[re-view "0.3.16"]]}
              :dev      {:dependencies [[org.clojure/test.check "0.9.0"]]}}
   :cljsbuild {:builds []}
   :lein-release {:deploy-via :clojars}

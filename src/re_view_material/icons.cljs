@@ -1,4 +1,4 @@
-(ns re-view.material.icons)
+(ns re-view-material.icons)
 
 (defn size [icon size]
   (update icon 1 assoc :width size :height size))
@@ -14,11 +14,25 @@
    [:path {:d "M0 0h24v24H0z", :fill "none"}]
    [:path {:d "M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"}]])
 
+(def ArrowCompress
+  ;; https://materialdesignicons.com/icon/arrow-compress
+  [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
+   [:path {:d "M19.5,3.09L15,7.59V4H13V11H20V9H16.41L20.91,4.5L19.5,3.09M4,13V15H7.59L3.09,19.5L4.5,20.91L9,16.41V20H11V13H4Z"}]])
+
+(def ArrowExpand
+  ;; https://materialdesignicons.com/icon/arrow-expand
+  [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
+   [:path {:d "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.5,10.91L19,6.41V10H21V3H14V5H17.59L13.09,9.5L14.5,10.91Z"}]])
+
 (def Cancel
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"}]
    [:path {:d "M0 0h24v24H0z", :fill "none"}]])
 
+(def ChangeHistory
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M12 7.77L18.39 18H5.61L12 7.77M12 4L2 20h20L12 4z"}]
+   [:path {:d "M0 0h24v24H0V0z", :fill "none"}]])
 (def Close
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"}]
@@ -89,6 +103,11 @@
    [:path {:d "M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"}]
    [:path {:d "M0 0h24v24H0z", :fill "none"}]])
 
+(def Home
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"}]
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]])
+
 (def Menu
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M0 0h24v24H0z", :fill "none"}]
@@ -98,3 +117,8 @@
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"}]
    [:path {:d "M0 0h24v24H0z", :fill "none"}]])
+
+(def StarRate
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 18 18", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M9 11.3l3.71 2.7-1.42-4.36L15 7h-4.55L9 2.5 7.55 7H3l3.71 2.64L5.29 14z"}]
+   [:path {:d "M0 0h18v18H0z", :fill "none"}]])

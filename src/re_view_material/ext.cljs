@@ -1,7 +1,8 @@
-(ns re-view.material.ext
+(ns re-view-material.ext
   ;; components for easier use of re-view-material but not included in official MDC repo
   (:require [re-view.core :as v :refer [defview]]
-            [re-view.material.util :as util]
+            [re-view-material.util :as util]
+            [re-view.util :as v-util]
             [goog.dom.classes :as classes]
             [goog.dom :as gdom]))
 
@@ -14,7 +15,7 @@
   :component - will be opened (via `.open`) on click of trigger
   :container-classes - vector of class strings to be added to container span."
   [{:keys [view/props view/state component container-classes]} & args]
-  (let [[trigger & items] (util/flatten-seqs args)]
+  (let [[trigger & items] (v-util/flatten-seqs args)]
     [:span
      {:classes  container-classes
 
@@ -38,11 +39,11 @@
   "Partially apply WithTrigger to component, keeping original component's name and docstring."
   ([component] (with-trigger component {}))
   ([component props]
-   (v/partial WithTrigger (-> (aget component "reViewBase")
-                              :class-keys
-                              (update :display-name #(str % "WithTrigger")))
-              (merge {:component component}
-                     props))))
+   (v/partial WithTrigger {:react-keys {:display-name (-> (aget component "reViewBase")
+                                                          :react-keys
+                                                          :display-name
+                                                          (str "WithTrigger"))}}
+              (assoc props :component component))))
 
 
 

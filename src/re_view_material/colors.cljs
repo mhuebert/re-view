@@ -1,4 +1,4 @@
-(ns re-view.material.colors)
+(ns re-view-material.colors)
 (def colors {"Red"         {50    "#FFEBEE"
                             100   "#FFCDD2"
                             200   "#EF9A9A"

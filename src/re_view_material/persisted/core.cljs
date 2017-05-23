@@ -1,7 +1,7 @@
-(ns re-view.material.persisted.core
+(ns re-view-material.persisted.core
   (:require [re-view.core :as v :refer [defview]]
-            [re-view.material :as ui]
-            [re-view.material.icons :as icons]))
+            [re-view-material.core :as ui]
+            [re-view-material.icons :as icons]))
 
 (defn input-change [{:keys [view/state]} ^js/React.SyntheticEvent e]
   (swap! state assoc :local-value (.. e -target -value)))
@@ -27,7 +27,7 @@
           :saveLocalState save-local-state}
          [this]
          (let [{:keys [view/props class view/state write-value read-value default-value]} this
-               {:keys [local-value write-in-progress error focused?]} @state
+               {:keys [local-value write-in-progress error focused]} @state
                persistedValue (read-value)
                diff? (and local-value (not= persistedValue local-value))]
            (ui/Text (merge (dissoc props
@@ -39,10 +39,10 @@
                                                      diff?)
                                             (.saveLocalState this))
                             :in-progress write-in-progress
-                            :on-focus    #(swap! state assoc :focused? true)
-                            :on-blur     #(swap! state assoc :focused? false)
+                            :on-focus    #(swap! state assoc :focused true)
+                            :on-blur     #(swap! state assoc :focused false)
                             :info        [(cond error [:.dark-red.b.pa1 error]
-                                                (or diff? focused?) [:.flex
+                                                (or diff? focused) [:.flex
                                                                      [:.flex-auto]
                                                                      [:div {:on-click #(swap! state assoc :local-value persistedValue)}
                                                                       (update icons/Cancel 1 merge
