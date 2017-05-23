@@ -17,7 +17,7 @@
 (def force-update render-loop/force-update)
 (def force-update! render-loop/force-update!)
 (def flush! render-loop/flush!)
- 
+
 (def ^:dynamic *trigger-state-render* true)
 
 (goog-define INSTRUMENT! false)

@@ -4,6 +4,7 @@
             [re-view-material.util :as util]
             [re-view-material.icons :as icons]
             [re-view.view-spec :as s]
+            [re-view.hoc :as hoc]
             [goog.dom :as gdom]
             [clojure.string :as string]
             [re-view-hiccup.core :as hiccup])
@@ -147,23 +148,6 @@
                      [:.pl3
                       (value-edit nil prop-atom [(inc i)])]]])]]))])))
 
-(defview with-prop-atom*
-  "Calls component with value of atom & re-renders when atom changes."
-  {:key               (fn [_ _ prop-atom]
-                        (let [props (some-> prop-atom deref first)
-                              {:keys [key id name]} (when (map? props) props)]
-                          (or key id name)))
-   :life/did-mount    (fn [this component atom]
-                        (some-> atom
-                                (add-watch this (fn [_ _ old new]
-                                                  (when (not= old new)
-                                                    (v/force-update this))))))
-   :life/will-unmount (fn [this _ atom]
-                        (some-> atom
-                                (remove-watch this)))}
-  [_ component prop-atom]
-  (apply component (or (some-> prop-atom deref) [])))
-
 (defview example-inspector
   {:key                :label
    :life/initial-state (fn [{:keys [prop-atom]}] prop-atom)}
@@ -175,32 +159,9 @@
    [:.mv3.flex.items-center
     {:class (case orientation :horizontal "flex-row justify-around"
                               :vertical "flex-column items-stretch")}
-    [:div (with-prop-atom* nil component @state)]
+    [:div (hoc/bind-atom component @state)]
     [:.order-1 (when (= orientation :vertical)
                  {:class "mt3"})
      (props-editor {:label     label
                     :component component} @state)]]])
 
-(defview Frame
-  "Renders component (passed in as child) to an iFrame."
-  {:view/spec         {:children [:Element]}
-   :life/did-mount    (fn [this content]
-                        (-> (v/dom-node this)
-                            (aget "contentDocument" "body")
-                            (gdom/appendChild (gdom/createDom "div")))
-                        (.renderFrame this content))
-   :life/will-unmount (fn [this]
-                        (.unmountComponentAtNode js/ReactDOM (.getElement this)))
-   :get-element       (fn [this]
-                        (-> (v/dom-node this)
-                            (aget "contentDocument" "body")
-                            (gdom/getFirstElementChild)))
-   :render-frame      (fn [this content]
-                        (v/render-to-dom (hiccup/element
-                                           [:div
-                                            [:link {:type "text/css"
-                                                    :rel  "stylesheet"
-                                                    :href "/app.css"}]
-                                            content]) (.getElement this)))}
-  [{:keys [view/props]} component]
-  [:iframe.bn.shadow-2 props])
