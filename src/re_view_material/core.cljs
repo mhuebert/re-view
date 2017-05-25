@@ -70,17 +70,15 @@
    :view/spec {:props/keys [::color ::compact ::dense ::disabled ::label ::raised ::ripple]
                :props      {:icon     :SVG
                             :icon-end :SVG}}}
-  [{:keys [view/state
-           href
+  [{:keys [href
            on-click
            label
            icon
+           icon-end
            disabled
            dense
            raised
            compact
-           icon-end
-           id
            ripple
            color]
     :as   this}]
@@ -159,7 +157,9 @@
 (defview Input
   {:view/spec               {:props {:element {:doc     "Base element type"
                                                :spec    #{:input :textarea}
-                                               :default :input}}}
+                                               :default :input}
+                                     :mask    {:spec :Function
+                                               :doc  "Function to restrict input"}}}
    :life/initial-state      #(get % :value)
    :life/will-receive-props (fn [{{prev-value :value} :view/prev-props
                                   {value :value}      :view/props
@@ -168,8 +168,8 @@
                                 (reset! state value)))
    :life/did-mount          (fn [{:keys [auto-focus] :as this}]
                               (when (true? auto-focus) (-> (v/dom-node this)
-                                                           (gdom/findNode (fn [^js/Element el]
-                                                                            (#{"INPUT" "TEXTAREA"} (aget el "tagName"))))
+                                                           (util/closest (fn [^js/Element el]
+                                                                           (#{"INPUT" "TEXTAREA"} (aget el "tagName"))))
                                                            (.focus))))}
   [{:keys [view/props
            view/state
@@ -211,7 +211,8 @@
   "Allow users to input, edit, and select text. [More](https://material.io/guidelines/components/text-fields.html)"
   {:key                :name
    :view/spec          {:props/keys [::label ::dense ::auto-focus ::dirty]
-                        :props      {:floating-label       :Boolean
+                        :props      {:floating-label       {:spec    :Boolean
+                                                            :default true}
                                      :help-text-persistent :Boolean
                                      :multi-line           :Boolean
                                      :full-width           :Boolean

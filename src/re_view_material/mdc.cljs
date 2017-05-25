@@ -13,8 +13,11 @@
   (:require-macros [re-view-material.mdc :refer [defadapter]]))
 
 (set! *warn-on-infer* true)
+(def browser? (exists? js/window))
+(def Document (when browser? js/document))
+(def Window (when browser? js/window))
 
-(def mdc (gobj/get js/window "mdc"))
+(def mdc (if browser? (gobj/get js/window "mdc") #js {}))
 (def event-name (gobj/get mdc "getCorrectEventName"))
 (def supportsCssVariables (gobj/get mdc "supportsCssVariables"))
 (def getMatchesProperty (gobj/get mdc "getMatchesProperty"))
@@ -24,7 +27,7 @@
 (def applyPassive (gobj/get mdc "applyPassive"))
 (def remapEvent (gobj/get mdc "remapEvent"))
 
-(def MatchesProperty (getMatchesProperty (.-prototype js/HTMLElement)))
+(def MatchesProperty (when browser? (getMatchesProperty (.-prototype js/HTMLElement))))
 (def conj-set (fnil conj #{}))
 (def disj-set (fnil disj #{}))
 
@@ -65,9 +68,9 @@
   ([kind element event-type]
    (fn [handler]
      (this-as this
-       (let [target (cond->> element
-                             (string? element)
-                             (gobj/get this))
+       (let [^js/Element target (cond->> element
+                                         (string? element)
+                                         (gobj/get this))
              event (remapEvent event-type)]
 
          (case kind :listen (.addEventListener target event handler (applyPassive))
@@ -75,9 +78,9 @@
   ([kind element]
    (fn [event-type handler]
      (this-as this
-       (let [target (cond->> element
-                             (string? element)
-                             (gobj/get this))
+       (let [^js/Element target (cond->> element
+                                         (string? element)
+                                         (gobj/get this))
              event-type (remapEvent event-type)]
          (case kind :listen (.addEventListener target event-type handler (applyPassive))
                     :unlisten (.removeEventListener target event-type handler)))))))
@@ -138,10 +141,10 @@
                                         (classes/has (gobj/get this "root") %))
    :registerInteractionHandler       (interaction-handler :listen "root")
    :deregisterInteractionHandler     (interaction-handler :unlisten "root")
-   :registerDocumentKeydownHandler   (interaction-handler :listen js/document "keydown")
-   :deregisterDocumentKeydownHandler (interaction-handler :unlisten js/document "keydown")
-   :registerDocumentClickHandler     (interaction-handler :listen js/document "click")
-   :deregisterDocumentClickHandler   (interaction-handler :unlisten js/document "click")
+   :registerDocumentKeydownHandler   (interaction-handler :listen Document "keydown")
+   :deregisterDocumentKeydownHandler (interaction-handler :unlisten Document "keydown")
+   :registerDocumentClickHandler     (interaction-handler :listen Document "click")
+   :deregisterDocumentClickHandler   (interaction-handler :unlisten Document "click")
    :isRtl                            #(this-as this
                                         (let [^js/Element root (gobj/get this "root")
                                               ^js/CSSStyleDeclaration styles (js/getComputedStyle root)]
@@ -187,8 +190,8 @@
 
 (defadapter Checkbox [component]
   {:root                          (util/find-node (v/dom-node component) #(classes/has "mdc-checkbox"))
-   :registerAnimationEndHandler   (interaction-handler :listen "root" (event-name js/window "animationend"))
-   :deregisterAnimationEndHandler (interaction-handler :unlisten "root" (event-name js/window "animationend"))
+   :registerAnimationEndHandler   (interaction-handler :listen "root" (event-name Window "animationend"))
+   :deregisterAnimationEndHandler (interaction-handler :unlisten "root" (event-name Window "animationend"))
    :registerChangeHandler         (interaction-handler :listen "nativeInput" "change")
    :deregisterChangeHandler       (interaction-handler :unlisten "nativeInput" "change")
    :forceLayout                   #(this-as this (gobj/get (gobj/get this "nativeInput") "offsetWidth"))
@@ -203,14 +206,14 @@
     {:surface                             surface
      :acceptButton                        accept-btn
      :setStyle                            (style-handler :Dialog)
-     :addBodyClass                        #(classes/add (gobj/get js/document "body") %)
-     :removeBodyClass                     #(classes/remove (gobj/get js/document "body") %)
+     :addBodyClass                        #(classes/add (gobj/get Document "body") %)
+     :removeBodyClass                     #(classes/remove (gobj/get Document "body") %)
      :eventTargetHasClass                 (fn [target class-name]
                                             (util/closest target #(classes/has % class-name)))
      :registerSurfaceInteractionHandler   (interaction-handler :listen "surface")
      :deregisterSurfaceInteractionHandler (interaction-handler :unlisten "surface")
-     :registerDocumentKeydownHandler      (interaction-handler :listen js/document "keydown")
-     :deregisterDocumentKeydownHandler    (interaction-handler :unlisten js/document "keydown")
+     :registerDocumentKeydownHandler      (interaction-handler :listen Document "keydown")
+     :deregisterDocumentKeydownHandler    (interaction-handler :unlisten Document "keydown")
      :notifyAccept                        (or on-accept #(println :accept))
      :notifyCancel                        (or on-cancel #(println :cancel))
      :trapFocusOnSurface                  (fn [])
@@ -234,8 +237,8 @@
              ;:deregisterInteractionHandler       #(.log js/console %1 %2)
              :registerDrawerInteractionHandler   (interaction-handler :listen "drawer")
              :deregisterDrawerInteractionHandler (interaction-handler :unlisten "drawer")
-             :registerTransitionEndHandler       (interaction-handler :listen "drawer" (event-name js/window "transitionend"))
-             :deregisterTransitionEndHandler     (interaction-handler :unlisten "drawer" (event-name js/window "transitionend"))
+             :registerTransitionEndHandler       (interaction-handler :listen "drawer" (event-name Window "transitionend"))
+             :deregisterTransitionEndHandler     (interaction-handler :unlisten "drawer" (event-name Window "transitionend"))
              :getDrawerWidth                     #(util/force-layout drawer)
              :setTranslateX                      (fn [n]
                                                    (swap! state assoc-in [:mdc/root-styles (getTransformPropertyName)]
@@ -267,7 +270,7 @@
 
 (defn index-of
   "Index of x in js-coll, where js-coll is an array-like object that does not implement .indexOf (eg. HTMLCollection)"
-  [js-coll x]
+  [^js/Array js-coll x]
   (let [length (.-length js-coll)]
     (loop [i 0]
       (cond (= i length) -1
@@ -288,8 +291,8 @@
      :getAnchorDimensions              #(this-as this (some-> (gobj/get this "root")
                                                               (gobj/get "parentElement")
                                                               (.getBoundingClientRect)))
-     :getWindowDimensions              #(do #js {"width"  (.-innerWidth js/window)
-                                                 "height" (.-innerHeight js/window)})
+     :getWindowDimensions              #(do #js {"width"  (.-innerWidth Window)
+                                                 "height" (.-innerHeight Window)})
      :setScale                         (fn [x y]
                                          (swap! state assoc-in [:mdc/root-styles (getTransformPropertyName)] (str "scale(" x ", " y ")")))
      :setInnerScale                    (fn [x y]
@@ -297,7 +300,7 @@
      :getNumberOfItems                 #(count (v-util/flatten-seqs (:view/children component)))
      :getYParamsForItemAtIndex         (fn [index]
                                          (this-as this
-                                           (let [child (aget (children this) index)]
+                                           (let [^js/HTMLElement child (aget (children this) index)]
                                              #js {"top"    (.-offsetTop child)
                                                   "height" (.-offsetHeight child)})))
      :setTransitionDelayForItemAtIndex (fn [index value]
@@ -314,38 +317,40 @@
      :notifyCancel                     (fn [evtData]
                                          (when-let [f (get component :on-cancel)]
                                            (f evtData)))
-     :saveFocus                        #(this-as this (aset this "previousFocus" (.-activeElement js/document)))
-     :isFocused                        #(this-as this (= (.-activeElement js/document) (gobj/get this "root")))
-     :focus                            #(this-as this (.focus (gobj/get this "root")))
-     :getFocusedItemIndex              #(this-as this (index-of (children this) (.-activeElement js/document)))
-     :focusItemAtIndex                 #(this-as this (.focus (aget (children this) %)))
+     :saveFocus                        #(this-as this (aset this "previousFocus" (.-activeElement Document)))
+     :isFocused                        #(this-as this (= (.-activeElement Document) (gobj/get this "root")))
+     :focus                            #(this-as this (let [^js/HTMLElement root (gobj/get this "root")]
+                                                        (.focus root)))
+     :getFocusedItemIndex              #(this-as this (index-of (children this) (.-activeElement Document)))
+     :focusItemAtIndex                 #(this-as this (let [^js/HTMLElement el (aget (children this) %)]
+                                                        (.focus el)))
      :isRtl                            #(get component :rtl)
      :setTransformOrigin               #(swap! state assoc-in [:mdc/root-styles (str (getTransformPropertyName) "-origin")] %)
      :setPosition                      (fn [pos]
                                          (swap! state update :mdc/root-styles merge (reduce (fn [m k]
-                                                                                                    (assoc m k (or (aget pos k) nil))) {} ["left" "right" "top" "bottom"])))
-     :getAccurateTime                  #(.. js/window -performance (now))}))
+                                                                                              (assoc m k (or (aget pos k) nil))) {} ["left" "right" "top" "bottom"])))
+     :getAccurateTime                  #(.. Window -performance (now))}))
 
 (defadapter Radio [])
 
 (defadapter Ripple
   [component]
-  (let [target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
-                                                           (classes/has % "mdc-ripple-target")))]
+  (let [^js/Element target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
+                                                                       (classes/has % "mdc-ripple-target")))]
     {:root                         target
      :rippleTarget                 target
      :updateCssVariable            (style-handler :Ripple "rippleTarget")
      :registerInteractionHandler   (interaction-handler :listen "rippleTarget")
      :deregisterInteractionHandler (interaction-handler :unlisten "rippleTarget")
-     :browserSupportsCssVars       #(supportsCssVariables js/window)
+     :browserSupportsCssVars       #(supportsCssVariables Window)
      :isUnbounded                  #(dataset/has target "mdcRippleIsUnbounded")
      :isSurfaceActive              #(let [^js/Function f (gobj/get target MatchesProperty)]
                                       (.call f target ":active"))
-     :registerResizeHandler        #(.addEventListener js/window "resize" %)
-     :deregisterResizeHandler      #(.removeEventListener js/window "resize" %)
-     :getWindowPageOffset          #(do #js {"x" (gobj/get js/window "pageXOffset")
-                                             "y" (gobj/get js/window "pageYOffset")})
-     :computeBoundingRect          #(.getBoundingClientRect ^js/Element target)}))
+     :registerResizeHandler        #(.addEventListener Window "resize" %)
+     :deregisterResizeHandler      #(.removeEventListener Window "resize" %)
+     :getWindowPageOffset          #(do #js {"x" (gobj/get Window "pageXOffset")
+                                             "y" (gobj/get Window "pageYOffset")})
+     :computeBoundingRect          #(.getBoundingClientRect target)}))
 
 (defadapter Select [])
 
@@ -362,12 +367,12 @@
                (apply f args)))))
 
 (defadapter Toolbar [{:keys [with-content] :as component}]
-  (let [toolbar-element (cond-> (v/dom-node component)
-                                with-content (gdom/getFirstElementChild))
-        flexible-row-element (-> toolbar-element
-                                 (gdom/findNode #(classes/has % "mdc-toolbar__row")))
-        parent-window (or (some-> toolbar-element (aget "ownerDocument") (aget "defaultView"))
-                          js/window)]
+  (let [^js/HTMLElement toolbar-element (cond-> (v/dom-node component)
+                                                with-content (gdom/getFirstElementChild))
+        ^js/HTMLElement flexible-row-element (-> toolbar-element
+                                                 (gdom/findNode #(classes/has % "mdc-toolbar__row")))
+        ^js/Window parent-window (or (some-> toolbar-element (aget "ownerDocument") (aget "defaultView"))
+                                     Window)]
     (cond-> {:root                              toolbar-element
              :flexibleRowElement                flexible-row-element
              :titleElement                      (util/find-node toolbar-element #(classes/has % "mdc-toolbar__title"))

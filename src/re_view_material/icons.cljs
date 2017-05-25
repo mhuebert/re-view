@@ -19,6 +19,16 @@
   [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
    [:path {:d "M19.5,3.09L15,7.59V4H13V11H20V9H16.41L20.91,4.5L19.5,3.09M4,13V15H7.59L3.09,19.5L4.5,20.91L9,16.41V20H11V13H4Z"}]])
 
+(def ArrowDropDown
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M7 10l5 5 5-5z"}]
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]])
+
+(def ArrowDropUp
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M7 14l5-5 5 5z"}]
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]])
+
 (def ArrowExpand
   ;; https://materialdesignicons.com/icon/arrow-expand
   [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
