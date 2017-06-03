@@ -1,6 +1,20 @@
-**Re-View** is a library for building React apps in ClojureScript. It has one external dependency, [React](https://facebook.github.io/react/).
+Welcome! **Re-View** is a library for building React apps in ClojureScript. It has one external dependency, [React](https://facebook.github.io/react/).
 
-## Usage
+## What are the advantages?
+
+Re-View exposes all the power of React in a clear and straightforward way. 
+
+There is _one_ way to create components: the `defview` macro.
+
+Views created with `defview` return plain React elements.
+
+Every component is assigned an atom for local state (it is only created if used). When the value of this atom changes, the component is re-rendered -- exactly like `setState` in React. Lifecycle methods are called as expected.
+
+Simple components are extremely simple to create. 'Advanced' components are created by progressively adding information to a simple component, and do not require entering a radically different headspace. Lifecycle methods are fully supported.
+
+Components are self-documenting with an opt-in 'view spec' system, which can also validate props and assist in the creation of higher-order components.
+
+## How do I use it?
 
 Add the following dependencies to your project.clj or boot file:
 
@@ -35,10 +49,6 @@ When `greeting` is called, it will return a [React](https://facebook.github.io/r
 - Creating a view using `defview`
 - Using [hiccup syntax](/docs/hiccup/syntax-guide) to specify HTML elements
 - Rendering a component to the page using `re-view.core/render-to-dom`
-
-Let's keep going.
-
-## Props
 
 Now let's define a view which expects a `:name` prop.
 
