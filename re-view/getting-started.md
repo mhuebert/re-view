@@ -90,24 +90,39 @@ Remember, the first argument to the view function always the component itself (`
 
 ## State
 
-Re-View supports two ways of managing [state](../explainers/state).
+> What do we mean when we programmers talk about the word 'state'? If you're not sure, read our [guide to state](../explainers/state).
 
-### State atom
+### Local state with the 'state atom'
 
-For local state, the `:view/state` key of a component returns a Clojure [Atom](../explainers/atoms) which is bound to the component, so that when its value changes, the component will update (re-render). The atom's initial value can be set using the `:initial-state` key in the methods map. If `:initial-state` is a function, it will be called with the component after props are set.
+Every component is automatically assigned a Clojure [atom](../explainers/atoms), and will update whenever this atom changes. You can get the atom for a component via its `:view/state` key:
+
+```
+(defview Counter 
+  [this]
+  [:div (:view/state this)])
+```
+
+To set an initial value for a component's state atom, set the `:life/initial-state` key in its methods map:
+
+```
+(defview Counter 
+  {:life/initial-state 0}
+  [this]
+  [:div (:view/state this)])
+```
+
+> If the value of `:life/initial-state` is a function, that function will be called (with the component as its only argument) and the return value is used.
 
 During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
 
-Example usage:
+Now let's add a click handler to make our Counter component complete:
 
 ```clj
-(defview Toggle
-  {:initial-state false}
-  [{:keys [state]}]
-  [:div {:on-click #(swap! state not)} (if toggle "On" "Off")])
+(defview Counter
+  {:life/initial-state 0}
+  [this]
+  [:div {:on-click #(swap! (:view/state this) inc)} "Current count: " @(:view/state this)])
 ```
-
-If you're not sure what a Clojure atom is, check out the [atoms explainer](../explainers/atoms).
 
 ### Global state
 
