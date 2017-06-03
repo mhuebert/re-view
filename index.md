@@ -1,25 +1,27 @@
 
 ## Docs
 
-Re-View's core library is responsible for defining components and rendering them to the page.
+Use Re-View's core library to define and render components:
 
 - [Getting Started](re-view/getting-started)
-- [View Specs](re-view/view-specs)
 - [Advanced Topics](re-view/advanced-topics)
 
-Every web app needs to handle routing, and we have our own data-driven approach for that: 
+Re-View uses [Hiccup](https://github.com/weavejester/hiccup)-like syntax as an alternative to HTML or JSX:
+
+- [Hiccup Syntax Guide](hiccup/syntax-guide)
+- [Re-View Hiccup Details](hiccup/overview)
+
+Document and debug views using 'view specs':
+
+- [View Specs](re-view/view-specs)
+
+Every web app needs to handle routing:
 
 - [Re-View Routing](routing)
 
-As is common in Clojure, Re-View uses [Hiccup](https://github.com/weavejester/hiccup) syntax as an alternative to HTML or JSX.
-
-- [Re-View Hiccup](hiccup/overview)
-- [Hiccup Syntax Guide](hiccup/syntax-guide)
-
-
 ## Explainers 
 
-We believe that docs should be as beginner-friendly as possible. To that end, we have written some beginner-friendly 'explainer' documents.
+A few simple, beginner-friendly guides:
 
 - [What is a Clojure atom?](explainers/atoms)
 - [What is 'state'?](explainers/state)
@@ -27,12 +29,16 @@ We believe that docs should be as beginner-friendly as possible. To that end, we
 
 ## Source Code
 
+All of Re-View is open source on GitHub:
+
 - [Re-View](https://www.github.com/re-view/re-view)
 - [Re-View Routing](https://www.github.com/re-view/re-view-routing)
 - [Re-View Hiccup](https://www.github.com/re-view/re-view-hiccup)
 - [Re-DB](https://www.github.com/re-view/re-db)
 
 ## Components
+
+There are pre-built components that you can use in your apps:
 
 - [Re-View Material](https://www.github.com/re-view/re-view-material), views for Google's [Material Design Components](https://github.com/material-components/material-components-web)
 - [Re-View ProseMirror](https://www.github.com/re-view/re-view-prosemirror), rich text editor that (de)serializes to Markdown
