@@ -2,13 +2,7 @@
 
 ![badge](https://img.shields.io/clojars/v/re-view.svg)
 
-Re-View is a library for building reactive user interfaces in ClojureScript.
-
-----
-
-For full details, visit the **[website](https://re-view.matt.is)**.
-
-----
+Re-View is a library for building React apps in ClojureScript. [https://re-view.io](https://re-view.io)
 
 ## Usage
 
