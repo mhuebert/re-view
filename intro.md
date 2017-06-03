@@ -2,12 +2,14 @@ _Re-View,_ exposes all of the power of [React](https://facebook.github.io/react/
 
 ## The Basic Approach
 
-Components are created using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
+Components are created using `defview`, which is similar to Clojure's `defn` but always returns a React element.
 
 ```clj
 (defview greeting [this]
   [:div "Hello, world!"])
 ```
+
+(Note the [hiccup syntax](/docs/hiccup/syntax-guide).)
 
 Views return React elements that can be rendered to the page.
 
