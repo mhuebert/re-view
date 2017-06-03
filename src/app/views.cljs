@@ -9,28 +9,32 @@
             [re-view-material.icons :as icons]
             [re-view-material.core :as ui]))
 
+(defview edit-button [this]
+  (ui/Button (-> (v/pass-props this)
+                 (merge {:target  "_blank"
+                         :icon    icons/ModeEdit
+                         :label   "Edit"
+                         :dense   true
+                         :compact true}))))
+
 (defn breadcrumb []
   (let [all-segments (d/get :router/location :segments)]
     (when (second all-segments)
-      [:.f6.mh2 (->> all-segments
-                     (map-indexed
-                       (fn [i label]
-                         [label
-                          (as-> (take (inc i) all-segments) segments
-                                (string/join "/" segments)
-                                (if-not (= i (dec (count all-segments))) (str segments "/") segments)
-                                (str "/" segments))]))
-                     (map (fn [[label href]] (if href [:a.no-underline {:href href
-                                                                        :key  href} label]
-                                                      label)))
-                     (interpose " / "))])))
+      (->> all-segments
+           (map-indexed
+             (fn [i label]
+               [label
+                (as-> (take (inc i) all-segments) segments
+                      (string/join "/" segments)
+                      (if-not (= i (dec (count all-segments))) (str segments "/") segments)
+                      (str "/" segments))]))
+           (map (fn [[label href]] (if href [:a.no-underline {:href href
+                                                              :key  href} label]
+                                            label)))
+           (interpose " / ")))))
 
-(defn page [{:keys [toolbar-items]} & content]
-  (let [breadcrumb (breadcrumb)]
-    [:.flex-grow.markdown-copy.mw-page.center.mv3
-     (when (or breadcrumb toolbar-items)
-       (into [:.flex.items-center.h2.mv2 breadcrumb] toolbar-items))
-     (into [:.mv2.lh-copy.relative] content)]))
+(defn page [& content]
+  (into [:.flex-grow.markdown-copy.mw-page.center.mv3.lh-copy] content))
 
 (defview click-copy
   {:view/spec {:props {:outer-class :String}}}
@@ -78,43 +82,65 @@
        (clj->js)
        (keep (comp (fn [{:keys [label level id]}]
                      (when (> level 1)
-                       [:a.db.no-underline {:href  (str "#" id)
-                                            :style {:padding-left (str (- level 2) "rem")}} label])) parse-header))))
+                       [:a.db.no-underline.f6.color-inherit
+                        {:href  (str "#" id)
+                         :style {:margin-left (str (* 0.5 (- level 2)) "rem")}} label])) parse-header))))
 
+(defview toc-page [])
 
 
 (defview markdown-page
-  {:update-toc              (fn [{:keys [view/state] :as this}]
+  {:view/spec               {:props {:read :String
+                                     :edit :String
+                                     :toc? :Boolean}}
+   :update-toc              (fn [{:keys [view/state] :as this}]
                               (swap! state assoc :TOC (element-TOC (v/dom-node this))))
-   :update                  (fn [{:keys [view/state]} url]
-                              (swap! state assoc :loading true :TOC nil)
-                              (util/GET :text url #(do (reset! state %))))
-   :life/did-mount          (fn [this url]
-                              (.update this url))
+   :update                  (fn [{:keys [view/state read edit]}]
+                              (swap! state assoc :loading true)
+                              (util/GET :text read #(do (reset! state %))))
+   :life/did-mount          (fn [this] (.update this))
    :life/will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
                               (when (not= children prev-children)
                                 (.update this (first children))))
-   :life/did-update         (fn [{:keys [view/state view/prev-state] :as this}]
-                              (.updateToc this))}
-  [{:keys [view/state]} url]
-  (let [{:keys [value error TOC]} @state]
-    [:div
-     (when-not (empty? TOC)
-       [:.f7.pa3.bg-darken.mr0.relative.z-1.fr-l.mv3.ml3-l
-        [:.b.f6 "On this page:"]
-        TOC])
-     (cond error [:div "Error fetching " url]
-           value (markdown/md value)
-           :else [:div "Loading..."])]))
+   :life/did-update         (fn [{:keys             [view/state view/prev-state]
+                                  read              :read
+                                  {prev-read :read} :view/prev-props
+                                  :as               this}]
+                              (if (not= read prev-read)
+                                (.update this)
+                                (.updateToc this)))}
+  [{:keys [view/state read edit toc?]
+    :or   {toc? true}}]
+  (let [{:keys [value error loading TOC]} @state]
+    (page [:div
+           {:class (when loading "o-50")}
+           (some->> (breadcrumb) (conj [:.f6.mt3.mb3]))
+           [(if toc? :.flex.flex-column.flex-row-ns
+                     :.center.w6)
+            [:.flex-auto (cond error [:div "Error fetching " read]
+                               value [:div
+                                      (markdown/md value)
+                                      (edit-button {:class "bg-darken mv3"
+                                                    :href  edit})]
+                               :else [:div "Loading..."])]
+            (when toc?
+              [:.mt4.ml3-ns (when (seq TOC)
+                              [:.bl.bw2.b--darken-5.ph2.lh-copy
+                               TOC])])]])))
 
-(defn edit-button [path]
-  (ui/Button {:href    path
-              :target  "_blank"
-              :icon    icons/ModeEdit
-              :label   "Edit"
-              :dense   true
-              :class   "flex items-center"
-              :compact true}))
+(defn index-page [children]
+  [:.flex.flex-column.flex-row-ns
+   [:.ph3-ns.w5]
+   [:div
+    [:.f6.mt3.mb3 (breadcrumb)]
+    [:h3.mv3 "Index"]
+    (->> (vals children)
+         (keep :*file)
+         (sort-by :title)
+         (map (fn [{:keys [title name path]}]
+                [:p [:a {:href (str "/docs/" (string/replace path #"\.md$" ""))} title]])))]])
+
+
 
 (def github-icon
   [:svg {:fill              "currentColor"

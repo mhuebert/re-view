@@ -9,11 +9,11 @@
 
 (defview repo-file-page
   [this repo file-path]
-  (views/page {:toolbar-items [[:.flex-auto]
-                               (views/edit-button (-> (str "https://github.com/re-view/" repo "/edit/master")
-                                                      (path/join file-path)))]}
-              (views/markdown-page (-> (str "https://raw.githubusercontent.com/re-view/" repo "/master/")
-                                       (path/join file-path)))))
+  (views/markdown-page (merge {:read (-> (str "https://raw.githubusercontent.com/re-view/" repo "/master/")
+                                         (path/join file-path))
+                               :edit (-> (str "https://github.com/re-view/" repo "/edit/master")
+                                         (path/join file-path))}
+                              (v/pass-props this))))
 
 
 (defview repository-row

@@ -66,7 +66,7 @@
          (ui/ToolbarSection
            {:classes ["flex items-center mw-page center"]}
            (for [[label href] main-nav-items]
-             [:a.pv2.mh2.no-underline.relative
+             [:a.pv2.mh2.no-underline.relative.color-inherit 
               {:href  href
                :class (when (layout/active? href) "mdc-toolbar--active-link")} label])
 
@@ -92,14 +92,14 @@
                        [:.serif.tc.mw-page.center.mv3
                         [:.f0.pt4 "Re-View"]
                         [:.f4 "Simple React apps in ClojureScript."]]
-                       (code/repo-file-page "docs" "intro.md")])
+                       (code/repo-file-page {:toc? false} "docs" "intro.md")])
            ["components"] (layout (examples/library {}))
            ["components" id] (layout (examples/library {:detail-view id}))
            ["docs"] (layout (docs/doc-page "/"))
            ["docs" & doc-path] (layout (docs/doc-page (string/join "/" doc-path)))
            ["code"] (layout (code/repositories-index))
            ["code" repo] (layout (code/repository-page repo))
-           ["code" repo file] (layout (code/repo-file-page repo file))
+           ["code" repo file] (layout (views/page (code/repo-file-page repo file)))
 
            :else [:div "not found"])))
 

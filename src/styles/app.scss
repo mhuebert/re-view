@@ -70,8 +70,12 @@ input, textarea, select, button {
   color: inherit;
 }
 
-a {
-  color: inherit; //var(--mdc-theme-primary, darkblue);
+a, a:visited {
+  color: darkblue;
+  color: var(--mdc-theme-primary, darkblue);
+}
+a.color-inherit, .color-inherit{
+  color: inherit;
 }
 
 .mdc-theme--dark a {
@@ -269,14 +273,29 @@ a.heading-anchor {
 
 h1, h2, h3, h4, h5, h6 {
   position: relative;
+  font-family: 'Vollkorn', georgia, times, serif;
+  margin: 1rem 0;
   &:hover a.heading-anchor {
     opacity: 1 !important;
   }
+}
+h1 {
+  font-size: 2.5rem;
+}
+h2 {
+  font-size: 2rem;
+}
+h3 {
+  font-size: 1.5rem;
 }
 
 .f0 {
   font-size: 4rem;
 }
 .mw-page {
+  max-width: 48rem;
+}
+
+.w6 {
   max-width: 40rem;
 }

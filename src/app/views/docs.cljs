@@ -54,18 +54,6 @@
                                                   (assoc-in m (concat (path->keys path) (list :*file)) doc)) {})))
                              (cb)))))
 
-(defn index-page [children]
-
-  [:div
-   [:h3.mv3 "Index"]
-   (->> (vals children)
-        (keep :*file)
-        (sort-by :title)
-        (map (fn [{:keys [title name path]}]
-               [:p [:a {:href (str "/docs/" (string/replace path #"\.md$" ""))} title]])))])
-
-
-
 (defview doc-page
   {:life/did-mount   (fn [{:keys [view/state
                                   edit-url] :as this} url]
@@ -74,11 +62,11 @@
   (let [path-ks (path->keys url)
         {{file-path :path} :*file
          :as               current-index} (get-in index (path->keys url))]
-    (views/page {:toolbar-items [[:.flex-auto] (when file-path (views/edit-button (path/join doc-edit-root file-path)))]}
-                (cond
-                  (nil? index) [:div "Loading..."]
-                  file-path (views/markdown-page (path/join download-root file-path))
-                  current-index (index-page current-index)))))
+    (cond
+      (nil? index) [:div "Loading..."]
+      file-path (views/markdown-page {:read (path/join download-root file-path)
+                                      :edit (path/join doc-edit-root file-path)})
+      current-index (views/index-page current-index))))
 
 (def sidebar
   [{:text-primary "Getting Started"
