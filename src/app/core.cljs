@@ -92,7 +92,7 @@
                        [:.serif.tc.mw-page.center.mv3
                         [:.f0.pt4 "Re-View"]
                         [:.f4 "Simple React apps in ClojureScript."]]
-                       (code/repo-file-page "re-view" "INTRO.md")])
+                       (code/repo-file-page "docs" "intro.md")])
            ["components"] (layout (examples/library {}))
            ["components" id] (layout (examples/library {:detail-view id}))
            ["docs"] (layout (docs/doc-page "/"))
