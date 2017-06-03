@@ -55,7 +55,7 @@
     [:.mdc-typography
      (layout/page-meta)
      (ui/ToolbarWithContent
-       {:class     ["z-3"
+       {:classes   ["z-3"
                     (when dark? "mdc-theme--dark")]
         :style     {:background-color (if dark? "#464646" "#eaeaea")
                     :color            "inherit"}
@@ -64,7 +64,7 @@
        (ui/ToolbarRow
          {:class "ph4-ns ph3"}
          (ui/ToolbarSection
-           {:classes ["flex items-center mw7 center"]}
+           {:classes ["flex items-center mw-page center"]}
            (for [[label href] main-nav-items]
              [:a.pv2.mh2.no-underline.relative
               {:href  href
@@ -89,10 +89,10 @@
   (let [segments (d/get :router/location :segments)]
     (match segments
            [] (layout [:div
-                       [:.serif.tc.mw7.center.mv3
+                       [:.serif.tc.mw-page.center.mv3
                         [:.f0.pt4 "Re-View"]
                         [:.f4 "Simple React apps in ClojureScript."]]
-                       (code/repo-file-page "re-view" "README.md")])
+                       (code/repo-file-page "re-view" "INTRO.md")])
            ["components"] (layout (examples/library {}))
            ["components" id] (layout (examples/library {:detail-view id}))
            ["docs"] (layout (docs/doc-page "/"))
@@ -108,4 +108,4 @@
     (fn [route] (d/transact! [(assoc route :db/id :router/location)])))
   (v/render-to-dom (root) "app"))
 
-(defonce _ (init)) 
+(defonce _ (init))

@@ -27,11 +27,10 @@
 
 (defn page [{:keys [toolbar-items]} & content]
   (let [breadcrumb (breadcrumb)]
-    [:.flex-grow.markdown-copy.mw7.center.mv3
+    [:.flex-grow.markdown-copy.mw-page.center.mv3
      (when (or breadcrumb toolbar-items)
        (into [:.flex.items-center.h2.mv2 breadcrumb] toolbar-items))
-
-     (into [:.ph4-ns.ph3.pv2.lh-copy.elevated-card.relative] content)]))
+     (into [:.mv2.lh-copy.relative] content)]))
 
 (defview click-copy
   {:view/spec {:props {:outer-class :String}}}
@@ -48,17 +47,21 @@
             :on-click  #(.select (-> (v/dom-node this)
                                      (gdom/findNode (fn [el] (= "INPUT" (.-tagName el))))))})]])
 
-(defview clojars-latest-version
-  {:life/will-mount (fn [{:keys [view/state]} group & [artefact]]
-                      (util/GET :json (str "https://clojars.org/" group "/" (or artefact group) "/latest-version.json")
+(defview WithClojarsVersion
+  {:life/will-mount (fn [{:keys [view/state]} group _]
+                      (util/GET :json (str "https://clojars.org/" group "/latest-version.json")
                                 (fn [{:keys [value]}]
                                   (when value (reset! state (aget value "version"))))))}
-  [{:keys [view/state]} group & [artefact]]
-  (click-copy
-    {:outer-class "mr2"
-     :class       "pa2 bg-darken f7"}
-    (str "[" group (some->> artefact (str "/")) (str " \"" (or @state "...") "\"]"))))
+  [{:keys [view/state]} repo f]
+  (or (some-> @state (f))
+      [:span]))
 
+(defn clickable-version [group & [artifact]]
+  (WithClojarsVersion (str group "/" (or artifact group))
+                      (fn [version]
+                        (click-copy {:outer-class "mr2"
+                                     :class       "pa1 bg-darken f7"}
+                                    (str "[" group (some->> artifact (str "/")) (str " \"" (or version "...") "\"]"))))))
 
 
 
@@ -110,6 +113,7 @@
               :icon    icons/ModeEdit
               :label   "Edit"
               :dense   true
+              :class   "flex items-center"
               :compact true}))
 
 (def github-icon

@@ -146,8 +146,8 @@
      (when detail-view
        (fixed-content {:on-close #(routing/nav! "/components")}
                       (component-detail (d/entity detail-view))))
-     (when-not query [:.tc.pb0.mw7.center.lh-copy (md "Views for Google's [Material Design Components](https://github.com/material-components/material-components-web), and a [ProseMirror](http://www.prosemirror.net) rich text editor that reads and writes Markdown.")])
-     [:div.br2.flex.justify-between.items-stretch.flex-wrap.mw7.center
+     (when-not query [:.tc.pb0.mw-page.center.lh-copy (md "Views for Google's [Material Design Components](https://github.com/material-components/material-components-web), and a [ProseMirror](http://www.prosemirror.net) rich text editor that reads and writes Markdown.")])
+     [:div.br2.flex.justify-between.items-stretch.flex-wrap.mw-page.center
       (let [query (d/get-in :router/location [:query :search])]
         [:.flex.items-center.w-100.ph3-ns
          (-> icons/Search
