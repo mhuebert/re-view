@@ -1,12 +1,12 @@
 
 ## Docs
 
-Use Re-View's core library to define and render components:
+Learn how to define and render components:
 
 - [Getting Started](re-view/getting-started)
 - [Advanced Topics](re-view/advanced-topics)
 
-Re-View uses [Hiccup](https://github.com/weavejester/hiccup)-like syntax as an alternative to HTML or JSX:
+We use [Hiccup](https://github.com/weavejester/hiccup)-like syntax as an alternative to HTML or JSX:
 
 - [Hiccup Syntax Guide](hiccup/syntax-guide)
 - [Re-View Hiccup Details](hiccup/overview)
