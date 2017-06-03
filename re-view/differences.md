@@ -58,5 +58,3 @@ Reagent uses [square brackets](https://github.com/Day8/re-frame/wiki/Using-%5Bsq
 Reagent is most commonly used with [re-frame](https://github.com/Day8/re-frame) for handling global state.
 
 Re-View integrates with **[Re-DB](https://www.github.com/re-view/re-db)** to automatically update views when relevant global state has changed.
-
-
