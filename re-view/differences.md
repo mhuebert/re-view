@@ -4,12 +4,10 @@
 
 ### Similarities
 
-Reagent and Re-View are similar because:
-
-- React is used to render components
-- Hiccup-like syntax is used for creating views
-- Components can react automatically to changes in state
-- Both offer good performance
+- **React** is used to render components
+- **Hiccup**-like syntax is used for creating views
+- **Reactivity**: components react automatically to changes in state
+- Good **Performance** is usually easy to achieve
 
 But there are also differences, explained below.
 
