@@ -1,8 +1,8 @@
 _Re-View,_ exposes all of the power of [React](https://facebook.github.io/react/) in a clear and straightforward way in ClojureScript. 
 
-## What does it look like?
+## The Basic Approach
 
-Create a component using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
+Components are created using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
 
 ```clj
 (defview greeting [this]
