@@ -2,7 +2,7 @@ Welcome! **Re-View** is a library for building React apps in ClojureScript. It h
 
 ## What are the advantages?
 
-Re-View exposes all the power of React in a clear and straightforward way. 
+Re-View exposes all the power of React in a clear and straightforward way:
 
 There is _one_ way to create components: the `defview` macro.
 
