@@ -30,7 +30,7 @@ When `greeting` is called, it will return a [React](https://facebook.github.io/r
 (view/render-to-dom (greeting) "some-element-id")
 ```
 
-### What you've seen so far
+**What you've seen so far**
 
 - Creating a view using `defview`
 - Using [hiccup syntax](/docs/hiccup/syntax-guide) to specify HTML elements
