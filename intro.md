@@ -2,7 +2,7 @@ _Re-View,_ exposes all of the power of [React](https://facebook.github.io/react/
 
 ## What does it look like?
 
-We create components using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
+Create a component using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
 
 ```clj
 (defview greeting [this]
@@ -23,7 +23,16 @@ Every component is assigned an atom for local state, returned via the `:view/sta
     [:div ...]))
 ```
 
-When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React. (Lifecycle methods are called as expected.)
+When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
+
+React Lifecycle methods can be included in a map, before the argument list:
+
+```clj
+(defview greeting
+  {:life/did-mount #(println "Mounted!")}
+  [this]
+  [:div ...])
+```
 
 ## How do I use it?
 
@@ -41,20 +50,6 @@ Require the core namespace like so:
 (ns app.core
   (:require [re-view.core :as view :refer [defview]]))
 ```
-
-Create a view using `defview` and [hiccup syntax](/docs/hiccup/syntax-guide):
-
-```clj
-(defview greeting [this]
-  [:div "Hello, world"])
-```
-
-When `greeting` is called, it will return a [React](https://facebook.github.io/react/) element, which you can render to the page:
-
-```clj
-(view/render-to-dom (greeting) "some-element-id")
-```
-
-For more, see the [Getting Started](/docs/re-view/getting-started) guide.
+See the [Getting Started](/docs/re-view/getting-started) guide for more.
 
 
