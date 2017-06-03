@@ -31,7 +31,7 @@ Require the core namespace like so:
   (:require [re-view.core :as view :refer [defview]]))
 ```
 
-**`defview`** is a macro similar to `defn`, which defines a view function.
+**`defview`** is a macro similar to `defn`, which defines a view function using [hiccup syntax](/docs/hiccup/syntax-guide).
 
 ```clj
 (defview greeting [this]
@@ -43,12 +43,6 @@ When `greeting` is called, it will return a [React](https://facebook.github.io/r
 ```clj
 (view/render-to-dom (greeting) "some-element-id")
 ```
-
-**What you've seen so far**
-
-- Creating a view using `defview`
-- Using [hiccup syntax](/docs/hiccup/syntax-guide) to specify HTML elements
-- Rendering a component to the page using `re-view.core/render-to-dom`
 
 Now let's define a view which expects a `:name` prop.
 
