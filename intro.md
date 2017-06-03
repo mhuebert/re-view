@@ -10,7 +10,7 @@ Views created with `defview` return plain React elements.
 
 Every component is assigned an atom for local state. When it changes, the component is re-rendered -- exactly like `setState` in React. Lifecycle methods are called as expected.
 
-Simple components are extremely simple to create, while 'advanced' components are created by progressively adding information to a simple component, and do not require entering a radically different headspace. Lifecycle methods are fully supported.
+Simple components are extremely simple to create. 'Advanced' components are created by progressively adding information to a simple component, and do not require entering a radically different headspace. Lifecycle methods are fully supported.
 
 Components feature an opt-in 'view spec' system for auto-documentation and prop validation, similar to React [prop types](https://github.com/facebook/prop-types).
 
@@ -31,7 +31,7 @@ Require the core namespace like so:
   (:require [re-view.core :as view :refer [defview]]))
 ```
 
-**`defview`** is a macro similar to `defn`, which defines a view function using [hiccup syntax](/docs/hiccup/syntax-guide).
+Create a view using `defview` (it behaves similar to `defn`), using [hiccup syntax](/docs/hiccup/syntax-guide).
 
 ```clj
 (defview greeting [this]
@@ -51,7 +51,7 @@ Now let's define a view which expects a `:name` prop.
   [:div "Hello, " (:name this)])
 ```
 
-Our `greeting` view will always be passed its React component as the first argument, which we've called `this`. We can read props from `this` just by looking up a key, eg. `(get this :name)`, or destructuring, `(let [{:keys [name]} this] ...)`.
+A view is always passed its React component as its first argument, which we've called `this`. We can read props from `this` just by looking up a key, eg. `(get this :name)`, or destructuring, `(let [{:keys [name]} this] ...)`.
 
 Let's render our component to the page, passing in a name:
 
@@ -59,5 +59,6 @@ Let's render our component to the page, passing in a name:
 (view/render-to-dom (greeting {:name "Herbert"}) "some-element-id")
 ```
 
+For more, see the [Getting Started](/docs/re-view/getting-started) guide.
 
 
