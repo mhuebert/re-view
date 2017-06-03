@@ -10,6 +10,7 @@
 (defview repo-file-page
   [this repo file-path]
   (views/page {:toolbar-items [(views/clojars-latest-version "re-view")
+                               [:.flex-auto]
                                (views/edit-button (-> (str "https://github.com/re-view/" repo "/edit/master")
                                                       (path/join file-path)))]}
               (views/markdown-page (-> (str "https://raw.githubusercontent.com/re-view/" repo "/master/")

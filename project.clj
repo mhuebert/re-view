@@ -42,7 +42,7 @@
                                        :source-map-timestamp true
                                        :source-map           true
 
-                                       :language-in          :es5
+                                       :language-in          :ecmascript5
 
 
                                        :optimizations        :none}}
@@ -50,7 +50,7 @@
                         :source-paths ["src"]
                         :compiler     {:main          "app.core"
                                        :infer-externs true
-                                       :language-in   :es5
+                                       :language-in   :ecmascript5
                                        ;:language-out  :es5
 
                                        ;:pseudo-names  true

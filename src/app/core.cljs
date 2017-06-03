@@ -23,21 +23,15 @@
             [re-view-material.util :as util]
 
             [goog.events :as events]
-            [goog.functions :as gf]
-            ))
+            [goog.functions :as gf]))
 
-
-(def header-background "/images/bg_sky.jpg")
-(def header-logo "/images/re-view-text.png")
 (def header-github-url "https://www.github.com/re-view/re-view")
 
 (def main-nav-items (list [(-> icons/Home
-                               (icons/styles :margin "-0.4rem 0")) "/"]
+                               (icons/style {:margin "-0.4rem 0"})) "/"]
                           ["Docs" "/docs/"]
                           ["Components" "/components"]
                           ["Code" "/code"]))
-
-
 
 
 (enable-console-print!)
@@ -61,14 +55,14 @@
     [:.mdc-typography
      (layout/page-meta)
      (ui/ToolbarWithContent
-       {:class     "z-3"
+       {:class     ["z-3"
+                    (when dark? "mdc-theme--dark")]
+        :style     {:background-color (if dark? "#464646" "#eaeaea")
+                    :color            "inherit"}
         :waterfall true
-        :fixed     :lastrow-only}
+        :fixed     true}
        (ui/ToolbarRow
-         {:classes ["mdc-theme--dark ph4-ns ph3"
-                    (if dark?
-                      "mdc-theme--primary-bg-dark"
-                      "mdc-theme--primary-bg")]}
+         {:class "ph4-ns ph3"}
          (ui/ToolbarSection
            {:classes ["flex items-center mw7 center"]}
            (for [[label href] main-nav-items]
@@ -85,41 +79,8 @@
                      (not mobile?) (assoc :label "Dark theme"
                                           :field-classes ["ph2"])))))
 
-       [:div
-        (when home?
-          [:div.overflow-hidden.relative
-           {:style {:background-color    "transparent"
-                    :background-image    (str "url(" header-background ")")
-                    :background-size     "cover"
-                    :background-position "center center"
-                    :background-repeat   "no-repeat"}}
-           #_(ui/Button {:label   "GitHub"
-                       :class   "absolute right-0 top-0 ma2"
-                       :dense   true
-                       :compact true
-                       :raised  true
-                       :color   :primary
-
-                       :target  "_blank"
-                       :icon    views/github-icon
-                       :href    header-github-url})
-           [:.ph5.ph0-ns.center.mt6-ns.mb5-ns.mt5.mb4
-            {:style {:width      450
-                     :transition "width 0.3s linear"
-                     :max-width  "100%"}}
-
-            [:a.relative.dib
-             {:href  "/"
-              ;; hard-code the image ratio so that toolbar size is calculated properly on image load
-              :style {:display     "block"
-                      :height      0
-                      :padding-top "23%"}}
-             [:.absolute.top-0.left-0.w-100
-              [:img {:src header-logo}]]]
-            [:.text-shadow.serif.tc.dib.mt4-ns.mt3.f4.f3-ns.white "Build fast, intuitive user interfaces in ClojureScript."]]])
-
-        [:.ph4-ns.ph3.pv1.relative
-         main-content]])]))
+       [:.ph4-ns.ph3.pv1.relative
+        main-content])]))
 
 (defview root
   "The root component reads current router location from re-db,
@@ -127,10 +88,11 @@
   []
   (let [segments (d/get :router/location :segments)]
     (match segments
-           [] (layout (views/page {:toolbar-items [(views/clojars-latest-version "re-view")
-                                                   [:.flex-auto]
-                                                   (views/edit-button (str "https://github.com/re-view/re-view/edit/master/INTRO.md"))]}
-                                  (views/markdown-page (str "https://raw.githubusercontent.com/re-view/re-view/master/INTRO.md"))))
+           [] (layout [:div
+                       [:.serif.tc.mw7.center.mv3
+                        [:.f0.pt4 "Re-View"]
+                        [:.f4 "Simple React apps in ClojureScript."]]
+                       (code/repo-file-page "re-view" "README.md")])
            ["components"] (layout (examples/library {}))
            ["components" id] (layout (examples/library {:detail-view id}))
            ["docs"] (layout (docs/doc-page "/"))
@@ -146,4 +108,4 @@
     (fn [route] (d/transact! [(assoc route :db/id :router/location)])))
   (v/render-to-dom (root) "app"))
 
-(defonce _ (init))
+(defonce _ (init)) 
