@@ -1,18 +1,29 @@
-Welcome to _Re-View,_ a library for building React apps in ClojureScript. It has one external dependency, [React](https://facebook.github.io/react/).
+_Re-View,_ exposes all of the power of [React](https://facebook.github.io/react/) in a clear and straightforward way in ClojureScript. 
 
-## What are the advantages?
+## What does it look like?
 
-Re-View exposes all the power of React in a clear and straightforward way.
+We create components using `defview`, which is similar to Clojure's `defn` but always returns a React element (using [hiccup syntax](/docs/hiccup/syntax-guide)).
 
-There is one way to create components: the `defview` macro.
+```clj
+(defview greeting [this]
+  [:div "Hello, world!"])
+```
 
-Views created with `defview` return plain React elements.
+Views return React elements that can be rendered to the page.
 
-Every component is assigned an atom for local state. When it changes, the component is re-rendered -- exactly like `setState` in React. Lifecycle methods are called as expected.
+```clj
+(view/render-to-dom (greeting) "some-element-id")
+```
 
-Simple components are extremely simple to create. 'Advanced' components are created by progressively adding information to a simple component, and do not require entering a radically different headspace. Lifecycle methods are fully supported.
+Every component is assigned an atom for local state, returned via the `:view/state` key on the component. 
 
-Components feature an opt-in 'view spec' system for auto-documentation and prop validation, similar to React [prop types](https://github.com/facebook/prop-types).
+```clj
+(defview counter [this]
+  (let [state-atom (:view/state this)]
+    [:div ...]))
+```
+
+When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React. (Lifecycle methods are called as expected.)
 
 ## How do I use it?
 
@@ -31,7 +42,7 @@ Require the core namespace like so:
   (:require [re-view.core :as view :refer [defview]]))
 ```
 
-Create a view using `defview` (it behaves similar to `defn`), using [hiccup syntax](/docs/hiccup/syntax-guide).
+Create a view using `defview` and [hiccup syntax](/docs/hiccup/syntax-guide):
 
 ```clj
 (defview greeting [this]
@@ -42,21 +53,6 @@ When `greeting` is called, it will return a [React](https://facebook.github.io/r
 
 ```clj
 (view/render-to-dom (greeting) "some-element-id")
-```
-
-Now let's define a view which expects a `:name` prop.
-
-```clj
-(defview greeting [this]
-  [:div "Hello, " (:name this)])
-```
-
-A view is always passed its React component as its first argument, which we've called `this`. We can read props from `this` just by looking up a key, eg. `(get this :name)`, or destructuring, `(let [{:keys [name]} this] ...)`.
-
-Let's render our component to the page, passing in a name:
-
-```clj
-(view/render-to-dom (greeting {:name "Herbert"}) "some-element-id")
 ```
 
 For more, see the [Getting Started](/docs/re-view/getting-started) guide.
