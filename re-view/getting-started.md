@@ -72,7 +72,7 @@ There is another way to read prop keys from the component. That is, Clojure [des
 
 ## State
 
-> What do we mean when we programmers talk about the word 'state'? If you're not sure, read our [guide to state](../explainers/state).
+> What do programmers mean by the word 'state'? If you're not sure, read [this](../explainers/state).
 
 ### Local state with the 'state atom'
 
