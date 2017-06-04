@@ -120,4 +120,4 @@ While there are similarities between view specs and Clojure Spec, they do not so
 2. Documentation: Clojure Spec does not yet support docstrings.
 3. Ease of learning: We'd like view specs to be as simple to learn and use as React prop-types. Clojure Spec's great power comes at the cost of a steeper learning curve. 
 
-However, you can absolutely use Clojure Spec _in addition_ to view specs, for more inspection and testing during development, 
+However, you can absolutely use Clojure Spec _in addition_ to view specs, for more inspection and testing during development.
