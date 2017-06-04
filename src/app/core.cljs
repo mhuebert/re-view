@@ -66,7 +66,7 @@
          (ui/ToolbarSection
            {:classes ["flex items-center mw-page center"]}
            (for [[label href] main-nav-items]
-             [:a.pv2.mh2.no-underline.relative.color-inherit 
+             [:a.pv2.mh2.no-underline.relative.color-inherit
               {:href  href
                :class (when (layout/active? href) "mdc-toolbar--active-link")} label])
 
