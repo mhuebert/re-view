@@ -1,8 +1,14 @@
-_Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript.
+_Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript. Benefits include:
+
+- Precise and transparent mechanisms for reactivity
+- Convenient access to React lifecycle methods
+- A smooth 'upgrade continuum': simple components are extremely simple to create, while 'advanced' components are created by progressively adding more information to a simple component (no need to switch paradigms along the way)
+
+Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/).
 
 ## Basic Usage
 
-Components are created using `defview`, which is similar to Clojure's `defn`.
+`defview`, similar to Clojure's `defn`, is how we create views. The first argument to a view is always its React component.
 
 ```clj
 (defview greeting [this]
@@ -17,7 +23,7 @@ When called, views return React elements that can be rendered to the page using 
 (view/render-to-dom (greeting) "some-element-id")
 ```
 
-Every component is assigned an atom, under the key `:view/state`.
+Every component is assigned an atom, under the key `:view/state` on the component. This is for local state.
 
 ```clj
 (defview counter [this]
@@ -26,6 +32,8 @@ Every component is assigned an atom, under the key `:view/state`.
 ```
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
+
+React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. In addition, if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
 
 React lifecycle methods can be included in a map before the argument list.
 
