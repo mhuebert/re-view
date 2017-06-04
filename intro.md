@@ -78,12 +78,11 @@ React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can
 
 ```clj
 (defview focused-input
-  {:life/did-mount (fn [this] (.. (v/dom-node this) (focus)))}
+  {:life/did-mount (fn [this] (.focus (v/dom-node this)))}
   [this]
   [:input (:view/props this)])
                  
-(focused-input {:placeholder "Email"
-                :on-change ...})
+(focused-input {:placeholder "Email"})
 ```
 
 See the [Getting Started](/docs/re-view/getting-started) guide for more.
