@@ -4,7 +4,7 @@ _Re-View_ is a library for building [React](https://facebook.github.io/react/) a
 
 - Precise and transparent mechanisms for reactivity
 - Convenient access to React lifecycle methods
-- A smooth 'upgrade continuum': simple components are extremely simple to create, while an 'advanced' component is created by progressively adding information to a simple component (no need to switch paradigms along the way)
+- A smooth 'upgrade continuum': simple components are extremely simple to create, while 'advanced' components are created by progressively adding information to simple components (no need to switch paradigms along the way)
 
 ## Motivation
 
