@@ -141,7 +141,7 @@ React [lifecycle methods](https://facebook.github.io/react/docs/react-component.
 
 ### Custom view methods
 
-Arbitrary keys may be included in the methods map. Functions here are **always** passed the component itself as their first argument, before any other arguments. Keys are converted to `camelCase` and should be accessed using dot syntax on the component (eg. `(.-someProperty this)` or `(.someFunction this)`.
+Arbitrary keys may be included in the methods map. Functions are **always** passed the component itself as the first argument. Keys are converted to `camelCase` and should be accessed using dot syntax on the component (eg. `(.-someProperty this)` or `(.someFunction this)`.
 
 ```clj
 (defview say-hello 
