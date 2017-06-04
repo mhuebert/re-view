@@ -30,7 +30,7 @@ Require the core namespace like so:
 `defview`, similar to Clojure's `defn`, is how we create views. The first argument to a view is always its React component.
 
 ```clj
-(defview greeting [this]
+(defview Greeting [this]
   [:div "Hello, world!"])
 ```
 
@@ -39,25 +39,33 @@ Require the core namespace like so:
 When called, views return React elements that can be rendered to the page using the `render-to-dom` function.
 
 ```clj
-(v/render-to-dom (greeting) "some-element-id")
+(v/render-to-dom (Greeting) "some-element-id")
 ```
 
 Every component is assigned an atom, under the key `:view/state` on the component. This is for local state.
 
+> React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. 
+
 ```clj
-(defview counter [this]
-  (let [state-atom (:view/state this)]
-    [:div ...]))
+(defview Counter [this]
+  [:div 
+    {:on-click #(swap! (:view/state this) inc)}
+    "Count: " @(:view/state this)])
 ```
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
 
-React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. 
-
-In addition, if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
+If you pass a Clojure map as the first argument to a view, it is considered the component's 'props'.
 
 ```clj
-(defview greeting [this]
+;; pass a props map to a view
+(Greeting {:name "Herbert"})
+```
+
+You can `get` props by key directly on the component, eg. `(:name this)`.
+
+```clj
+(defview Greeting [this]
   [:div "Hello, " (:name this)])
   
 (greeting {:name "Herbert"})
