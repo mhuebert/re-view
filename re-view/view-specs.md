@@ -97,11 +97,12 @@ To recap, we can include the following keys in a component's method map:
 | **:spec/props** | A map of the form `{<prop-key> <spec>}` |
 | **:spec/children** | A vector of specs, aligned to the child args accepted by the component |
 
-In the `:spec/props` map, we may include the special key:
+In the `:spec/props` map, we may include the special keys:
 
 | key | info |
 | --- | --- |
-| **:props/keys** | A vector of registered spec keys |
+| **:props/keys** | A vector of registered specs (keywords) |
+| **:props/required** | A vector of required prop keys |
 
 A spec can be the keyword of a registered spec, a function, a set, or a map. If it is a map, it must contain a `:spec` key (which is recursively resolved), and may also include:
 
@@ -113,10 +114,10 @@ A spec can be the keyword of a registered spec, a function, a set, or a map. If 
 
 **Why not just use Clojure Spec?**
 
-While there are similarities between view specs and Clojure Spec (which was a big inspiration for this effort), they do not solve precisely the same problems, and view specs were designed for particular requirements:
+While there are similarities between view specs and Clojure Spec, they do not solve precisely the same problems, and view specs were designed with particular requirements in mind:
 
-1. View specs support _runtime_ behaviour (eg. managing props flow, specifying prop defaults), which means whatever 'spec' code we choose to use must be included in app bundles. Clojure Spec has many dependencies and greatly increases bundle sizes; this problem is even more extreme with self-hosted ClojureScript, which Re-View is designed to support. `re-view.view-spec` is ~130 LOC.
-2. Clojure Spec does not yet support docstrings.
-3. Clojure Spec's great power comes at the cost of a steeper learning curve. We'd like view specs to be as simple to learn and use as React prop-types. 
+1. Compiled bundle size: View specs support _runtime_ behaviour (eg. managing props flow, specifying prop defaults), so whatever 'spec' code we choose will be included in app bundles. Clojure Spec has many dependencies and greatly increases bundle sizes; this problem is even more extreme with self-hosted ClojureScript, which Re-View is designed to support. `re-view.view-spec` is ~130 LOC.
+2. Documentation: Clojure Spec does not yet support docstrings.
+3. Ease of learning: We'd like view specs to be as simple to learn and use as React prop-types. Clojure Spec's great power comes at the cost of a steeper learning curve. 
 
 However, you can absolutely use Clojure Spec _in addition_ to view specs, for more inspection and testing during development, 
