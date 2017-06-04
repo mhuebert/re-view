@@ -1,4 +1,4 @@
-_Re-View,_ exposes all of the power of [React](https://facebook.github.io/react/) in a clear and straightforward way in ClojureScript. 
+_Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript.
 
 ## The Basic Approach
 
