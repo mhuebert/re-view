@@ -1,8 +1,8 @@
 _Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript.
 
-## The Basic Approach
+## Basic Usage
 
-Components are created using `defview`, which is similar to Clojure's `defn` but always returns a React element.
+Components are created using `defview`, which is similar to Clojure's `defn`.
 
 ```clj
 (defview greeting [this]
@@ -11,13 +11,13 @@ Components are created using `defview`, which is similar to Clojure's `defn` but
 
 (Note the [hiccup syntax](/docs/hiccup/syntax-guide).)
 
-Views return React elements that can be rendered to the page.
+When called, views return React elements that can be rendered to the page using the `render-to-dom` function.
 
 ```clj
 (view/render-to-dom (greeting) "some-element-id")
 ```
 
-Every component is assigned an atom for local state, returned via the `:view/state` key on the component. 
+Every component is assigned an atom, under the key `:view/state`.
 
 ```clj
 (defview counter [this]
@@ -27,7 +27,7 @@ Every component is assigned an atom for local state, returned via the `:view/sta
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
 
-React Lifecycle methods can be included in a map, before the argument list:
+React lifecycle methods can be included in a map before the argument list.
 
 ```clj
 (defview greeting
@@ -36,7 +36,7 @@ React Lifecycle methods can be included in a map, before the argument list:
   [:div ...])
 ```
 
-## How do I use it?
+## How to start
 
 Add the following dependencies to your project.clj or boot file:
 
