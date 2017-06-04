@@ -68,13 +68,13 @@
   ([kind element event-type]
    (fn [handler]
      (this-as this
-       (let [^js/Element target (cond->> element
-                                         (string? element)
-                                         (gobj/get this))
+       (let [^js/HTMLElement target (cond->> element
+                                             (string? element)
+                                             (gobj/get this))
              event (remapEvent event-type)]
-
-         (case kind :listen (.addEventListener target event handler (applyPassive))
-                    :unlisten (.removeEventListener target event handler))))))
+         (condp = kind
+           :listen (.addEventListener target event handler (applyPassive))
+           :unlisten (.removeEventListener target event handler))))))
   ([kind element]
    (fn [event-type handler]
      (this-as this
@@ -82,8 +82,9 @@
                                          (string? element)
                                          (gobj/get this))
              event-type (remapEvent event-type)]
-         (case kind :listen (.addEventListener target event-type handler (applyPassive))
-                    :unlisten (.removeEventListener target event-type handler)))))))
+         (condp = kind
+           :listen (.addEventListener target event-type handler (applyPassive))
+           :unlisten (.removeEventListener target event-type handler)))))))
 
 (defn adapter [component mdc-key]
   (aget component (str "mdc" (name mdc-key)) "adapter_"))
@@ -129,7 +130,7 @@
 (defn class-handler
   ([action] (class-handler action nil))
   ([action prefix]
-   (let [f (case action :add conj-set :remove disj-set)]
+   (let [f (condp = action :add conj-set :remove disj-set)]
      (fn [class-name]
        (this-as this
          (swap! (aget this "state") update (keyword "mdc" (str (aget this "name") (some-> prefix (str "-")) "-classes")) f class-name))))))
@@ -305,9 +306,9 @@
                                                   "height" (.-offsetHeight child)})))
      :setTransitionDelayForItemAtIndex (fn [index value]
                                          (this-as this
-                                           (-> (aget (children this) index)
-                                               (gobj/get "style")
-                                               (.setProperty "transition-delay" value))))
+                                           (let [^js/CSSStyleDeclaration style (-> (aget (children this) index)
+                                                                                   (gobj/get "style"))]
+                                             (.setProperty style "transition-delay" value))))
      :getIndexForEventTarget           (fn [target]
                                          (this-as this
                                            (index-of (children this) target)))
@@ -329,7 +330,7 @@
      :setPosition                      (fn [pos]
                                          (swap! state update :mdc/root-styles merge (reduce (fn [m k]
                                                                                               (assoc m k (or (aget pos k) nil))) {} ["left" "right" "top" "bottom"])))
-     :getAccurateTime                  #(.. Window -performance (now))}))
+     :getAccurateTime                  #(.. js/window -performance (now))}))
 
 (defadapter Radio [])
 
@@ -359,12 +360,6 @@
 (defn log-ret [msg x]
   (.log js/console msg x)
   x)
-
-(def wrap-log
-  (memoize (fn [msg f]
-             (fn [& args]
-               (prn msg)
-               (apply f args)))))
 
 (defadapter Toolbar [{:keys [with-content] :as component}]
   (let [^js/HTMLElement toolbar-element (cond-> (v/dom-node component)

@@ -3,8 +3,8 @@
 (defn size [icon size]
   (update icon 1 assoc :width size :height size))
 
-(defn styles [icon & args]
-  (apply update-in icon [1 :style] assoc args))
+(defn style [icon styles]
+  (apply update-in icon [1 :style] merge styles))
 
 (defn class [icon class]
   (update-in icon [1 :class] str " " class))
@@ -33,6 +33,11 @@
   ;; https://materialdesignicons.com/icon/arrow-expand
   [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
    [:path {:d "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.5,10.91L19,6.41V10H21V3H14V5H17.59L13.09,9.5L14.5,10.91Z"}]])
+
+(def Build
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:clip-rule "evenodd", :d "M0 0h24v24H0z", :fill "none"}]
+   [:path {:d "M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"}]])
 
 (def Cancel
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
