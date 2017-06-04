@@ -30,7 +30,7 @@ Require the core namespace like so:
 `defview`, similar to Clojure's `defn`, is how we create views. The first argument to a view is always its React component.
 
 ```clj
-(defview Greeting [this]
+(defview greeting [this]
   [:div "Hello, world!"])
 ```
 
@@ -39,7 +39,7 @@ Require the core namespace like so:
 When called, views return React elements that can be rendered to the page using the `render-to-dom` function.
 
 ```clj
-(v/render-to-dom (Greeting) "some-element-id")
+(v/render-to-dom (greeting) "some-element-id")
 ```
 
 Every component is assigned an atom, under the key `:view/state` on the component. This is for local state.
@@ -47,7 +47,7 @@ Every component is assigned an atom, under the key `:view/state` on the componen
 > React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. 
 
 ```clj
-(defview Counter [this]
+(defview counter [this]
   [:div 
     {:on-click #(swap! (:view/state this) inc)}
     "Count: " @(:view/state this)])
@@ -59,26 +59,31 @@ If you pass a Clojure map as the first argument to a view, it is considered the 
 
 ```clj
 ;; pass a props map to a view
-(Greeting {:name "Herbert"})
+(greeting {:name "Herbert"})
 ```
 
 You can `get` props by key directly on the component, eg. `(:name this)`.
 
 ```clj
-(defview Greeting [this]
+(defview greeting [this]
   [:div "Hello, " (:name this)])
   
 (greeting {:name "Herbert"})
 ;; => <div>Hello, Herbert</div>
 ```
 
-React lifecycle methods can be included in a map before the argument list.
+(The entire props map is at the `:view/props` key.)
+
+React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can be included in a map before the argument list.
 
 ```clj
-(defview greeting
-  {:life/did-mount #(println "Mounted!")}
+(defview focused-input
+  {:life/did-mount (fn [this] (.. (v/dom-node this) (focus)))}
   [this]
-  [:div ...])
+  [:input (:view/props this)])
+                 
+(focused-input {:placeholder "Email"
+                :on-change ...})
 ```
 
 See the [Getting Started](/docs/re-view/getting-started) guide for more.
