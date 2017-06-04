@@ -6,7 +6,7 @@ View specs are a way to add documentation and validation to components, inspired
 
 1. Documentation - Quickly identify how to use a view by looking at its spec.
 
-2. Debugging - Validate arguments passed to components to ensure correct usage and provide helpful error messages
+2. Debugging - Validate props and children passed to components to ensure correct usage and provide helpful error messages
 
 3. Productivity - Facilitate the pruning of props that are passed down to child components.
 
