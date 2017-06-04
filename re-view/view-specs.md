@@ -1,6 +1,6 @@
 # View Specs
 
-View specs are a way to add documentation and validation to components. They are inspired by Clojure's [Spec](https://clojure.org/about/spec).
+View specs are a way to add documentation and validation to components, lightly inspired by Clojure's [Spec](https://clojure.org/about/spec).
 
 ## Benefits
 
