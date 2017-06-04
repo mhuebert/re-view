@@ -70,24 +70,6 @@ There is another way to read prop keys from the component. That is, Clojure [des
   ... name ...)
 ```
 
-### Children
-
-If the first argument passed to a view is a map, it is considered the component's `props`. All other arguments are considered `children`, and passed as additional arguments **after** the component.
-
-Render the component again, but this time pass it a name directly, as a string, instead of inside a `props` map.
-
-```clj
-(v/render-to-dom (say-hello "fred") "my-app")
-```
-
-Now modify the view to accept a second argument, which will contain the string you passed in. Update the greeting text to use this value. 
-
-```clj
-(defview say-hello [this name]
-  [:div "hello, " name "!"])
-```
-Remember, the first argument to the view function always the component itself (`this`), and that's where we read `props` keys. All other arguments are passed in afterwards. `(say-hello "fred")` and `(say-hello {} "fred")` are equivalent, just as `[:div "fred"]` and `[:div {} "fred"]` are equivalent.
-
 ## State
 
 > What do we mean when we programmers talk about the word 'state'? If you're not sure, read our [guide to state](../explainers/state).
@@ -111,7 +93,7 @@ To set an initial value for a component's state atom, set the `:life/initial-sta
   [:div (:view/state this)])
 ```
 
-> If the value of `:life/initial-state` is a function, that function will be called (with the component as its only argument) and the return value is used.
+> If the value of `:life/initial-state` is a function, it will be called (with the component as its first argument) and initial-state is set to its return value.
 
 During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
 
@@ -128,17 +110,9 @@ Now let's add a click handler to make our Counter component complete:
 
 Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a tool for managing global state. When a view renders, we track which data is read from `re-db`, and update the view when that data changes. More information in the re-db [README](https://www.github.com/re-view/re-db).
 
-## Component Methods
+## Methods map
 
-`defview` accepts a map, immediately before the arguments list. Functions included in this map are passed the component as the first argument (by convention, `this`), and then additional arguments. Keys are converted to `camelCase` and should be accessed using dot syntax on the component (eg. `(.-someProperty this)` or `(.someFunction this)`.
-
-```clj
-(defview say-hello 
-  "Prints a greeting when clicked"
-  {:print-greeting (fn [this] (println (str "Hello, " (:name this) "!"))}
-  [this] 
-  [:div {:on-click (fn [e] (.printGreeting this))} "Print Greeting"])
-```
+`defview` accepts a map, immediately before the arguments list, where we can introduce additional, more advanced component features.
 
 ### Lifecycle methods 
 
@@ -160,16 +134,44 @@ React [lifecycle methods](https://facebook.github.io/react/docs/react-component.
 
 ```clj
 (defview say-hello 
-  "Prints a message when mounted"
   {:life/did-mount (fn [this] (println "Mounted!"))}
   [this]
   [:div "hello, world!"])
 ```
 
-There are two other special keys:
+### Custom view methods
+
+Arbitrary keys may be included in the methods map. Functions here are **always** passed the component itself as their first argument, before any other arguments. Keys are converted to `camelCase` and should be accessed using dot syntax on the component (eg. `(.-someProperty this)` or `(.someFunction this)`.
+
+```clj
+(defview say-hello 
+  {:print-greeting (fn [this] (println (str "Hello, " (:name this) "!"))}
+  [this] 
+  [:div {:on-click #(.printGreeting this)} "Print Greeting"])
+```
+## Special keys
+
+There are two additional keys which will be handled specially if included in the methods map.
 
 | key | description
 | --- | ---
 | **:key**  | React [key](https://facebook.github.io/react/docs/lists-and-keys.html). A unique value for components which occur in lists. `:key` can be a keyword, which will be applied to the component's `props` map, a function, which will be passed the component and its children, a string, or number.
 | **:display-name** | React _[displayName](https://facebook.github.io/react/docs/react-component.html#displayname)_. A friendly name for the component, which will show up in React Devtools. Re-View automatically supplies a display-name for all components, based on the name of the component and the immediate namespace it is defined in.
 
+### Children
+
+If the first argument passed to a view is a map, it is considered the component's `props`. All other arguments are considered `children`, and passed as additional arguments **after** the component.
+
+Render the component again, but this time pass it a name directly, as a string, instead of inside a `props` map.
+
+```clj
+(v/render-to-dom (say-hello "fred") "my-app")
+```
+
+Now modify the view to accept a second argument, which will contain the string you passed in. Update the greeting text to use this value. 
+
+```clj
+(defview say-hello [this name]
+  [:div "hello, " name "!"])
+```
+Remember, the first argument to the view function always the component itself (`this`), and that's where we read `props` keys. All other arguments are passed in afterwards. `(say-hello "fred")` and `(say-hello {} "fred")` are equivalent, just as `[:div "fred"]` and `[:div {} "fred"]` are equivalent.
