@@ -74,7 +74,7 @@ You can `get` props by key directly on the component, eg. `(:name this)`.
 ;; => <div>Hello, Herbert</div>
 ```
 
-(The entire props map is at the `:view/props` key.)
+(You can get the props map itself via the `:view/props` key, eg. `(:view/props this)`)
 
 React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can be included in a map before the argument list.
 
