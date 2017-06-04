@@ -1,6 +1,6 @@
 # View Specs
 
-View specs are a way to add documentation and validation to components, lightly inspired by Clojure's [Spec](https://clojure.org/about/spec).
+View specs are a way to add documentation and validation to components, inspired by Clojure's [Spec](https://clojure.org/about/spec).
 
 ## Benefits
 
@@ -12,9 +12,9 @@ View specs are a way to add documentation and validation to components, lightly 
 
 ## Usage
 
-You may recall that **defview** accepts a methods map, for lifecycle methods and so on. We can include a `:spec/props` and `:spec/children` keys here to specify the props and children handled by a component.
+**defview** accepts a methods map, where we can include `:spec/props` and `:spec/children` keys to specify the props and children handled by a component.
 
-`:spec/props` should be a map which pairs keys with 'specs' that describe the prop. Here's a quick example which says "expect a :name prop, which is a string":
+`:spec/props` should be a map which pairs keys with 'specs' that describe the prop:
 
 ```clj
 (defview greeting
@@ -29,9 +29,19 @@ Above, we used the built-in `:String` spec. A spec may be any of the following:
    ```clj
    :Boolean :String :Number :Function :Map :Vector :Element :Hiccup :SVG :Object :Keyword
    ```
-2. A Clojure set (eg. `#{"a", "b"}`
-3. A predicate function (eg. `even?` or `(fn [x] (< x 100))`)
+2. A Clojure set:
+    ```clj 
+    {:spec/props {:flavour #{:vanilla :chocolate}}}
+    ```
+3. A predicate function:
+    ```clj 
+    {:spec/props {:age #(> % 13)}}
+    ```
 3. A map containing a `:spec` key, which itself is a spec. (Specs are recursively resolved.)
+    ```clj 
+    {:spec/props {:age {:spec #(> % 13)
+                        :required true}}}
+    ```
 
 The map form is useful because we can add metadata to a spec. Here we add a docstring (`:doc`), and specify that the key is required (`:required`):
 
@@ -57,16 +67,14 @@ Now we can use the `::label` spec:
 {:spec/props {:label ::label}}
 ```
 
-In this case, we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a vector of registered specs, which will be paired with their equivalent non-namespaced prop keys:
+Now we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a vector of registered specs, which will be paired with their equivalent non-namespaced prop keys:
 
 ```clj
 {:spec/props {:props/keys [::label]}}
 ;; means the component expects a `:label` prop, which conforms to the `::label` spec
 ```
 
-This is a more concise way to declare props, and means we can reuse keys among many components.
-
-Specs in `:props/keys` are matched to _unqualified_ keywords in props. `::label` matches `:label`, and so on.
+This is more concise. Remember, specs in `:props/keys` are matched to _unqualified_ keywords in props. `::label` matches `:label`, and so on.
 
 Lastly, we can add `:spec/children` to spec the additional arguments passed to views. This should be a vector of specs, plus the special `:&` keyword, which behaves like the `&` in ordinary Clojure argument lists.
 
@@ -94,6 +102,7 @@ To recap, we can include the following keys in a component's method map:
 In the `:spec/props` map, we may include the special key:
 
 | key | info |
+| --- | --- |
 | **:props/keys** | A vector of registered spec keys |
 
 A spec can be the keyword of a registered spec, a function, a set, or a map. If it is a map, it must contain a `:spec` key (which is recursively resolved), and may also include:
