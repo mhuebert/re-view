@@ -120,7 +120,7 @@ React [lifecycle methods](https://facebook.github.io/react/docs/react-component.
 
 
 | key          | description          |
-|---|---|---|
+|---|---|
 | `:life/initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
 | `:life/will-mount`         | _componentWillMount_        |
 | `:life/did-mount`          | _componentDidMount_         |
