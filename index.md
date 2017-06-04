@@ -6,7 +6,7 @@ Learn how to define and render components:
 - [Getting Started](re-view/getting-started)
 - [Advanced Topics](re-view/advanced-topics)
 
-We use [Hiccup](https://github.com/weavejester/hiccup)-like syntax as an alternative to HTML or JSX:
+Make sure you understand hiccup syntax (if you're new to Clojure, hiccup is a way to write HTML using Clojure data structures):
 
 - [Hiccup Syntax Guide](hiccup/syntax-guide)
 - [Re-View Hiccup Details](hiccup/overview)
