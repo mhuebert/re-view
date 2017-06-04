@@ -52,7 +52,9 @@ Every component is assigned an atom, under the key `:view/state` on the componen
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
 
-React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. **In addition,** if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
+React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. 
+
+In addition, if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
 
 ```clj
 (defview greeting [this]
