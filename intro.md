@@ -8,7 +8,25 @@ _Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps
 
 Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/).
 
-## Basic Usage
+## How to start
+
+
+Add the following dependencies to your project.clj or boot file:
+
+```clj
+[re-view "0.3.16"]
+[cljsjs/react "15.5.0-0"]
+[cljsjs/react-dom "15.5.0-0"]
+```
+
+> Re-View requires, but does not include, `cljsjs/react` and `cljsjs/react-dom`. This is so you can use whatever version of React you want.
+
+Require the core namespace like so:
+
+```clj
+(ns app.core
+  (:require [re-view.core :as v :refer [defview]]))
+```
 
 `defview`, similar to Clojure's `defn`, is how we create views. The first argument to a view is always its React component.
 
@@ -22,7 +40,7 @@ Existing tools in the ClojureScript ecosystem, although excellent for their resp
 When called, views return React elements that can be rendered to the page using the `render-to-dom` function.
 
 ```clj
-(view/render-to-dom (greeting) "some-element-id")
+(v/render-to-dom (greeting) "some-element-id")
 ```
 
 Every component is assigned an atom, under the key `:view/state` on the component. This is for local state.
@@ -35,7 +53,15 @@ Every component is assigned an atom, under the key `:view/state` on the componen
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
 
-React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. In addition, if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
+React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. **In addition,** if you pass a Clojure map as 'props' to a view, such as `(greeting {:name "Fred"})`, you can `get` props by key directly on the component, eg. `(:name this)`.
+
+```clj
+(defview greeting [this]
+  [:div "Hello, " (:name this)])
+  
+(greeting {:name "Herbert"})
+;; => <div>Hello, Herbert</div>
+```
 
 React lifecycle methods can be included in a map before the argument list.
 
@@ -46,22 +72,6 @@ React lifecycle methods can be included in a map before the argument list.
   [:div ...])
 ```
 
-## How to start
-
-Add the following dependencies to your project.clj or boot file:
-
-```clj
-[re-view "0.3.16"]
-[cljsjs/react "15.5.0-0"]
-[cljsjs/react-dom "15.5.0-0"]
-```
-
-Require the core namespace like so:
-
-```clj
-(ns app.core
-  (:require [re-view.core :as view :refer [defview]]))
-```
 See the [Getting Started](/docs/re-view/getting-started) guide for more.
 
 
