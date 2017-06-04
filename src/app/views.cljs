@@ -37,7 +37,7 @@
   (into [:.flex-grow.markdown-copy.mw-page.center.mv3.lh-copy] content))
 
 (defview click-copy
-  {:view/spec {:props {:outer-class :String}}}
+  {:spec/props {:outer-class :String}}
   [{:keys [style outer-class] :as this} s]
   [:span.relative.di
    {:class outer-class}
@@ -90,9 +90,9 @@
 
 
 (defview markdown-page
-  {:view/spec               {:props {:read :String
-                                     :edit :String
-                                     :toc? :Boolean}}
+  {:spec/props              {:read :String
+                             :edit :String
+                             :toc? :Boolean}
    :update-toc              (fn [{:keys [view/state] :as this}]
                               (swap! state assoc :TOC (element-TOC (v/dom-node this))))
    :update                  (fn [{:keys [view/state read edit]}]

@@ -7,11 +7,11 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
 
-                 [re-view "0.3.14"]
+                 [re-view "0.3.17"]
                  [re-db "0.1.11"]
                  [re-view-routing "0.1.3"]
-                 [re-view-prosemirror "0.1.3"]
-                 [re-view-material "0.1.1"]
+                 [re-view-prosemirror "0.1.4"]
+                 [re-view-material "0.1.4"]
 
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [cljsjs/react "15.5.0-0"]
