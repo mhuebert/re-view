@@ -12,9 +12,7 @@ View specs are a way to add documentation and validation to components, inspired
 
 ## Usage
 
-**defview** accepts a methods map, where we can include `:spec/props` and `:spec/children` keys to specify the props and children handled by a component.
-
-`:spec/props` should be a map which pairs keys with 'specs' that describe the prop:
+**defview** accepts a methods map, where we can include `:spec/props` and `:spec/children` keys. `:spec/props` should be a map which pairs keys with 'specs' that describe the prop:
 
 ```clj
 (defview greeting
