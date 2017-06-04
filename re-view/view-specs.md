@@ -41,7 +41,7 @@ Above, we used the built-in `:String` spec. A spec may be any of the following:
                         :required true}}}
     ```
 
-The map form is useful because we can add metadata to a spec. Here we add a docstring (`:doc`), and specify that the key is required (`:required`):
+With the map form, can add metadata. Let's add a docstring (`:doc`), and specify that the key is required (`:required`):
 
 ```clj
 (defview greeting
@@ -65,7 +65,7 @@ Now we can use the `::label` spec:
 {:spec/props {:label ::label}}
 ```
 
-Now we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a vector of registered specs, which will be paired with their equivalent non-namespaced prop keys:
+Above, we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a vector of registered specs, which will be paired with their equivalent non-namespaced prop keys:
 
 ```clj
 {:spec/props {:props/keys [::label]}}
