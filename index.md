@@ -11,13 +11,13 @@ We use [Hiccup](https://github.com/weavejester/hiccup)-like syntax as an alterna
 - [Hiccup Syntax Guide](hiccup/syntax-guide)
 - [Re-View Hiccup Details](hiccup/overview)
 
-Document and debug views using 'view specs':
-
-- [View Specs](re-view/view-specs)
-
 Every web app needs to handle routing:
 
 - [Re-View Routing](routing)
+
+Document and debug with 'view specs':
+
+- [View Specs](re-view/view-specs)
 
 ## Explainers 
 
