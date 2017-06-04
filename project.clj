@@ -1,4 +1,4 @@
-(defproject re-view-material "0.1.4"
+(defproject re-view-material "0.1.5-SNAPSHOT"
   :description "Material design components in re-view"
   :url "https://www.github.com/re-view/re-view-material"
   :license {:name "MIT License"
