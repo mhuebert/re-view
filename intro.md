@@ -1,4 +1,4 @@
-_Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript. 
+_Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps in ClojureScript. It is a beginner-friendly tool that can underpin large, complex, production-grade apps.
 
 ## Benefits
 
@@ -6,10 +6,9 @@ _Re-View_ is a tool for building [React](https://facebook.github.io/react/) apps
 - Convenient access to React lifecycle methods
 - A smooth 'upgrade continuum': simple components are extremely simple to create, while 'advanced' components are created by progressively adding more information to a simple component (no need to switch paradigms along the way)
 
-Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/).
+Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/). 
 
 ## How to start
-
 
 Add the following dependencies to your project.clj or boot file:
 
