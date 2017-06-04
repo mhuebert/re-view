@@ -15,7 +15,7 @@ Existing tools in the ClojureScript ecosystem, although excellent for their resp
 Add the following dependencies to your project.clj or boot file:
 
 ```clj
-[re-view "0.3.16"]
+[re-view "0.3.17"]
 [cljsjs/react "15.5.0-0"]
 [cljsjs/react-dom "15.5.0-0"]
 ```
