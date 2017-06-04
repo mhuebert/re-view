@@ -6,6 +6,8 @@ _Re-View_ is a library for building [React](https://facebook.github.io/react/) a
 - Convenient access to React lifecycle methods
 - A smooth 'upgrade continuum': simple components are extremely simple to create, while 'advanced' components are created by progressively adding information to a simple component (no need to switch paradigms along the way)
 
+## Motivation
+
 Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/). 
 
 ## How to start
