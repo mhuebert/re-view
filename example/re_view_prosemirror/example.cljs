@@ -1,6 +1,7 @@
 (ns re-view-prosemirror.example
   (:require [re-view.core :as v :refer [defview view]]
             [re-view.example.helpers :as h]
+            [re-view.hoc :as hoc]
             [re-view-prosemirror.markdown :as prose]
             [re-view-prosemirror.toolbar :as prose-toolbar]))
 
@@ -46,8 +47,8 @@
 Paragraph  "
                          :on-mount      #(js/setTimeout (partial update-markdown %) 0)
                          :on-dispatch   update-markdown}])
-      :wrap      #(h/with-prop-atom* {} (view [{:keys [markdown]}]
-                                              [:.flex.items-stretch.pv3.flex-wrap.w-100
-                                               [:.flex-auto.mw6 %]
-                                               [:.pv4.ph3.code.f6
-                                                {:style {:white-space "pre-wrap"}} markdown]]) example-output)}]))
+      :wrap      #(hoc/bind-atom (view [{:keys [markdown]}]
+                                     [:.flex.items-stretch.pv3.flex-wrap.w-100
+                                      [:.flex-auto.mw6 %]
+                                      [:.pv4.ph3.code.f6
+                                       {:style {:white-space "pre-wrap"}} markdown]]) example-output)}]))

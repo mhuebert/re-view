@@ -15,24 +15,24 @@
                   :value :default-value])
 (defview Editor
          "A ProseMirror editor view."
-         {:view/spec         {:props {:serialize         {:spec :Function
-                                                          :doc  "Should convert a ProseMirror doc to Markdown."}
-                                      :parse             {:spec :Function
-                                                          :doc  "Should convert a Markdown string ot a ProseMirror doc."}
-                                      :on-mount          {:spec :Function
-                                                          :doc  "(this, EditorView) - called after mount."}
-                                      :on-dispatch       {:spec :Function
-                                                          :doc  "(this, EditorView) - called after every update."}
-                                      :editor-view-props {:spec :Map
-                                                          :doc  "Passed to the EditorView constructor."}
-                                      :keymap            {:spec :Object
-                                                          :doc  "Merged as the highest-priority keymap (http://prosemirror.net/docs/ref/#keymap)."}
-                                      :default-value     {:spec :String
-                                                          :doc  "Parsed as the initial editor state."
-                                                          :pass true}
-                                      :value             {:spec :String
-                                                          :doc  "Behaves differently from ordinary React controlled inputs. When a *new/different* :value is passed, it replaces the current doc, but continuing to pass the same :value does not freeze local state."
-                                                          :pass true}}}
+         {:spec/props        {:serialize         {:spec :Function
+                                                  :doc  "Should convert a ProseMirror doc to Markdown."}
+                              :parse             {:spec :Function
+                                                  :doc  "Should convert a Markdown string ot a ProseMirror doc."}
+                              :on-mount          {:spec :Function
+                                                  :doc  "(this, EditorView) - called after mount."}
+                              :on-dispatch       {:spec :Function
+                                                  :doc  "(this, EditorView) - called after every update."}
+                              :editor-view-props {:spec :Map
+                                                  :doc  "Passed to the EditorView constructor."}
+                              :keymap            {:spec :Object
+                                                  :doc  "Merged as the highest-priority keymap (http://prosemirror.net/docs/ref/#keymap)."}
+                              :default-value     {:spec :String
+                                                  :doc  "Parsed as the initial editor state."
+                                                  :pass true}
+                              :value             {:spec :String
+                                                  :doc  "Behaves differently from ordinary React controlled inputs. When a *new/different* :value is passed, it replaces the current doc, but continuing to pass the same :value does not freeze local state."
+                                                  :pass true}}
           :life/did-mount    (fn [{:keys [value
                                           default-value
                                           on-dispatch
