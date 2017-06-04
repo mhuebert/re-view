@@ -42,14 +42,14 @@
                [:Keyword keyword?]])
 
 (defspecs (into {} builtins))
-(def^:private spec-kinds (reduce (fn [m [name pred]] (assoc m pred name)) {} builtins))
+(def ^:private spec-kinds (reduce (fn [m [name pred]] (assoc m pred name)) {} builtins))
 
-(defn resolve-spec
+(defn resolve
   "Resolves a spec. Keywords are looked up in the spec registry recursively until a function or set is found.
   If a map's :spec is a namespaced keyword, it is resolved and merged (without overriding existing keys)"
   [k]
-  (cond (keyword? k) (resolve-spec (or (get spec-registry k)
-                                       (throw (js/Error (str "View spec not registered: " k)))))
+  (cond (keyword? k) (resolve (or (get spec-registry k)
+                                  (throw (js/Error (str "View spec not registered: " k)))))
         (set? k) {:spec      k
                   :spec-name :Set}
         (fn? k) {:spec k}
@@ -57,7 +57,7 @@
                    (if (or (fn? spec)
                            (set? spec))
                      k
-                     (merge k (resolve-spec spec))))
+                     (merge k (resolve spec))))
         :else (throw (js/Error (str "Invalid spec: " k)))))
 
 (defn spec-kind [{:keys [spec-name spec]}]
@@ -65,30 +65,32 @@
       (if (set? spec) :Set
                       spec-name)))
 
-(defn normalize-spec-map
-  "Resolve specs"
-  [{:keys [props
-           props/keys
-           props/require-keys] :as spec}]
-  (-> (as-> props props
-            (reduce-kv (fn [m k v]
-                         (assoc m k (resolve-spec v))) props props)
-            (reduce (fn [m k]
-                      (assoc m (keyword (name k)) (resolve-spec k))) props keys)
-            (reduce (fn [m k]
-                      (assoc m (keyword (name k)) (assoc (resolve-spec k) :required true))) props require-keys)
-            (reduce-kv (fn [m k v]
-                         (let [{:keys [default pass-through required] :as spec} v]
-                           (cond-> (assoc m k spec)
-                                   (not pass-through) (update :props/consume-keys conj k)
-                                   required (update :props/require-keys conj k)
-                                   default (assoc-in [:props/defaults k] default))))
-                       (assoc spec :props/consume-keys []
-                                   :props/require-keys []
-                                   :props props) props))
-      (update :children #(when % (let [[req opt] (split-with (partial not= :&) %)]
-                                   {:req   (map resolve-spec req)
-                                    :&more (some-> (second opt) (resolve-spec))})))))
+(defn normalize-props-map
+  "Resolves specs in map"
+  [{:keys [props/keys
+           props/required] :as props}]
+  (as-> props props
+        (reduce-kv (fn [m k v]
+                     (assoc m k (resolve v))) props (dissoc props :props/keys :props/required))
+        (reduce (fn [m k]
+                  (assoc m (keyword (name k)) (resolve k))) props keys)
+        (reduce (fn [m k]
+                  (assoc m (keyword (name k)) (assoc (resolve k) :required true))) props required)
+        (reduce-kv (fn [m k v]
+                     (let [{:keys [default pass-through required] :as spec} v]
+                       (cond-> (assoc m k spec)
+                               (not pass-through) (update :props/consumed conj k)
+                               required (update :props/required conj k)
+                               default (assoc-in [:props/defaults k] default))))
+                   (assoc props :props/consumed []
+                                :props/required []) props)))
+
+(defn resolve-spec-vector
+  "Resolves specs in vector"
+  [specs]
+  (when specs (let [[req opt] (split-with (partial not= :&) specs)]
+                {:req   (map resolve req)
+                 :&more (some-> (second opt) (resolve))})))
 
 (defn validate-spec [k {:keys [required spec spec-name] :as spec-map} value]
   (when (and spec-map (not (fn? spec)) (not (set? spec)))
@@ -96,24 +98,23 @@
   (if (nil? value)
     (when required (throw (js/Error (str "Prop is required: " k))))
     (when (and spec (not (spec value)))
-      (println spec-map)
-      (prn :spec spec-name :val value :spec spec)
+      (println "Failed Spec" spec-map)
+      (println :spec spec-name :val value :spec spec)
       (throw (js/Error (str "Validation failed for prop: " k " with spec " (or spec-name spec) " and value " value))))))
 
 (defn validate-props [display-name
-                      {prop-specs :props
-                       :keys      [props/require-keys]
-                       :as        specs} props]
+                      {:keys [props/required]
+                       :as   prop-specs} props]
   (let [prop-keys (keys props)]
     (try
-      (doseq [k (into require-keys (keys props))]
-        (validate-spec k (get specs k) (get props k)))
+      (doseq [k (into required (filterv #(not (#{"props" "spec"} (namespace %))) (keys props)))]
+        (validate-spec k (get prop-specs k) (get props k)))
       (catch js/Error e
         (println "Error validating props in " display-name)
         (throw e))))
   props)
 
-(defn validate-children [display-name {{:keys [req &more] :as children-spec} :children :as spec} children]
+(defn validate-children [display-name {:keys [req &more] :as children-spec} children]
   (when children-spec
     (try
       (let [children (util/flatten-seqs children)]

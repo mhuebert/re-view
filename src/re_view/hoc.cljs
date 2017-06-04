@@ -30,7 +30,7 @@
 
 (defview Frame
   "Renders component (passed in as child) to an iFrame."
-  {:view/spec         {:children [:Element]}
+  {:spec/children     [:Element]
    :life/did-mount    (fn [this content]
                         (-> (v/dom-node this)
                             (aget "contentDocument" "body")

@@ -28,7 +28,7 @@
                    (assoc-in m [(case (namespace k)
                                   "life" :lifecycle-keys
                                   "react" :react-keys
-                                  "view" :class-keys
+                                  ("spec" "view") :class-keys
                                   (case k
                                     (:key :display-name)
                                     :react-keys

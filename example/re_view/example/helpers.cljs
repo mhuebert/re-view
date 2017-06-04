@@ -107,9 +107,8 @@
    :life/did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
    :life/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
   [{:keys [component view/state container-props]} prop-atom]
-  (let [{prop-specs  :props
-         child-specs :children
-         defaults    :props/defaults} (v/element-get (component) :view/spec)
+  (let [{{defaults :props/defaults :as prop-specs} :spec/props
+         child-specs                               :spec/children} (v/mock (component))
         {:keys [editing?]} @state
         section :.b.pa2.pt3.f6
         children (some->> prop-atom deref (drop 1) (seq))]
@@ -125,7 +124,7 @@
                    (for [[k v] (->> prop-specs
                                     (seq)
                                     (sort-by first))
-                         :let [{:keys [doc] :as prop-spec} (s/resolve-spec v)
+                         :let [{:keys [doc] :as prop-spec} (s/resolve v)
                                v (get values k)]
                          :when (not= k :key)]
                      [:tr
