@@ -1,4 +1,4 @@
-(defproject re-view-prosemirror "0.1.4"
+(defproject re-view-prosemirror "0.1.5-SNAPSHOT"
   :description "Rich text editors built with ProseMirror in Re-View"
   :url "https://www.github.com/re-view/re-view-prosemirror"
   :license {:name "MIT License"
