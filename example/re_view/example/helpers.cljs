@@ -53,7 +53,6 @@
 
 (defn string-editor [props cb]
   (ui/Text (merge {:dense       true
-                   :compact     true
                    :field-props {:style {:height     32
                                          :margin-top 0}}
                    :on-change   #(cb (.. % -target -value))}
@@ -78,7 +77,7 @@
         id (-> (string/join "__" path)
                (string/replace ":" ""))
         kind-name (or (s/spec-kind spec-map) (value-kind v))]
-    [:.dib {:key id}
+    [:span {:key id}
      (case kind-name
        :Set (ui/Select {:value     v
                         :on-change #(set-val! (.. % -target -value))}
@@ -109,7 +108,7 @@
   [{:keys [component view/state container-props]} prop-atom]
   (let [{{defaults :props/defaults :as prop-specs} :spec/props
          child-specs                               :spec/children} (v/mock (component))
-        {:keys [editing?]} @state
+        editing? true
         section :.b.pa2.pt3.f6
         children (some->> prop-atom deref (drop 1) (seq))]
     (when (or (seq prop-specs) children)
@@ -117,13 +116,13 @@
        container-props
        (when-not (empty? prop-specs)
          (let [values (some->> prop-atom deref first)]
-           (list [section [:.flex.items-center "Props"
-                           [:.pointer.pa2.o-60.hover-o-100 {:on-click #(swap! state update :editing? not)} icons/ModeEdit]]]
+           (list [section "Props"]
                  [:table.f7.w-100
                   [:tbody
                    (for [[k v] (->> prop-specs
                                     (seq)
                                     (sort-by first))
+                         :when (not (= "props" (namespace k)))
                          :let [{:keys [doc] :as prop-spec} (s/resolve v)
                                v (get values k)]
                          :when (not= k :key)]

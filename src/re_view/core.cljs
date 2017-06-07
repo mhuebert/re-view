@@ -261,7 +261,7 @@
                     (when class-react-key
                       (cond (string? class-react-key) class-react-key
                             (keyword? class-react-key) (get props class-react-key)
-                            (fn? class-react-key) (apply class-react-key props children)
+                            (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
                             :else (throw (js/Error "Invalid key supplied to component"))))
                     display-name)]
 
