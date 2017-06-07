@@ -59,12 +59,12 @@
 
 (clojure.core/defn wrap-body
   "Wrap body in anonymous function form."
-  [body]
+  [name body]
   (cond (vector? (first body))
-        `(~'fn ~(first body) (~'re-view-hiccup.core/element (do ~@(rest body))))
+        `(~'fn ~name ~(first body) (~'re-view-hiccup.core/element (do ~@(rest body))))
         (list? (first body))
-        `(~'fn ~@(mapv (fn [body]
-                         `(~(first body) (~'re-view-hiccup.core/element (do ~@(rest body))))) body))
+        `(~'fn ~name ~@(mapv (fn [body]
+                               `(~(first body) (~'re-view-hiccup.core/element (do ~@(rest body))))) body))
         :else `(~'throw (~'js/Error ~(str "Invalid render function: " body)))))
 
 (defmacro defview
@@ -78,18 +78,21 @@
         methods (-> methods
                     (merge {:react/docstring docstring
                             :display-name    (display-name *ns* view-name)
-                            :life/render     (wrap-body body)})
+                            :life/render     (wrap-body view-name body)})
                     (group-methods))]
     `(def ~view-name ~docstring (~'re-view.core/view* ~methods))))
 
 (defmacro view
   "Returns anonymous view, given the same args as `defview`."
   [& args]
-  (let [[docstring methods body] (parse-view-args args)
+  (let [view-name (if (symbol? (first args))
+                    (first args)
+                    nil)
+        [docstring methods body] (parse-view-args (if view-name (rest args) args))
         methods (-> methods
                     (merge {:react/docstring docstring
-                            :display-name    (display-name *ns*)
-                            :life/render     (wrap-body body)})
+                            :display-name    (if view-name (display-name *ns* view-name) (display-name *ns*))
+                            :life/render     (wrap-body view-name body)})
                     (group-methods))]
     `(~'re-view.core/view* ~methods)))
 
