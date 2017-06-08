@@ -45,10 +45,10 @@
 (clojure.core/defn parse-view-args
   "Parse args for optional docstring and method map"
   [args]
-  (let [parsed-args [(if (string? (first args)) (first args) nil)]
-        remaining (cond-> args (string? (first args)) (next))
-        out (conj parsed-args (if (map? (first remaining)) (first remaining) nil))
-        remaining (cond-> remaining (map? (first remaining)) (next))]
+  (let [out [(if (string? (first args)) (first args) nil)]
+        remaining (if (string? (first args)) (next args) args)
+        out (conj out (if (map? (first remaining)) (first remaining) nil))
+        remaining (if (map? (first remaining)) (next remaining) remaining)]
     (conj out remaining)))
 
 (clojure.core/defn display-name
@@ -100,10 +100,9 @@
   "Defines a stateless view function"
   [name & args]
   (let [[docstring methods body] (parse-view-args args)]
-    `(def ~name ~@[docstring]
-       (~'fn [& args#]
-         (let [~(first body) (if (map? (first args#)) args# (cons {} args#))]
-           (~'re-view-hiccup.core/element (do ~@(rest body))))))))
+    `(clojure.core/defn ~name ~@(if docstring [docstring] [])
+       [& args#]
+       (apply ~(wrap-body name body) (if (map? (first args#)) args# (cons {} args#))))))
 
 (comment
   (assert (= (parse-view-args '("a" {:b 1} [c] 1 2))

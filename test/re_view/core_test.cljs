@@ -167,7 +167,13 @@
 
       (is (= @(:view/state this)
              (:view/prev-state this))
-          "After a component lifecycle, prev-state and state are the same."))))
+          "After a component lifecycle, prev-state and state are the same."))
+
+    (testing "Multiple arity defview/view"
+
+      (let [log (atom [])]))
+
+    ))
 
 
 ;; test react-key
