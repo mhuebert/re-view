@@ -6,3 +6,4 @@ Components for [Re-View](https://www.github.com/mhuebert/re-view) built on Googl
 
 ALPHA
 
+Dev: `webpack -p`

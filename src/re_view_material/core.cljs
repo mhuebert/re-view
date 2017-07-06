@@ -118,7 +118,7 @@
                         :scrollable?    :Boolean
                         :content-header :Element}
    :spec/children      [:& :Element]
-   :life/initial-state {:mdc/styles {"visibility" "hidden"}}
+   :life/initial-state {:mdc/styles {}}
    :life/did-mount     [#(mdc/init % mdc/Dialog)
                         (mdc/mdc-style-update :Dialog)]
    :life/did-update    (mdc/mdc-style-update :Dialog)
@@ -379,9 +379,6 @@
 
 (defn ListGroupSubheader [content]
   [:.mdc-list-group__subheader content])
-
-
-(def ^:private SimpleMenuProps [:on-cancel :on-selected])
 
 (defview SimpleMenu
   "Menus appear above all other in-app UI elements, and appear on top of the triggering element. [More](https://material.io/guidelines/components/menus.html#menus-behavior)"

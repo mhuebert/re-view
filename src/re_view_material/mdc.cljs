@@ -15,6 +15,7 @@
 (set! *warn-on-infer* true)
 (def browser? (exists? js/window))
 (def Document (when browser? js/document))
+(def ^js/HTMLElement Body (when Document (.-body Document)))
 (def Window (when browser? js/window))
 
 (def mdc (if browser? (gobj/get js/window "mdc") #js {}))
@@ -149,7 +150,9 @@
    :isRtl                            #(this-as this
                                         (let [^js/Element root (gobj/get this "root")
                                               ^js/CSSStyleDeclaration styles (js/getComputedStyle root)]
-                                          (= "rtl" (.getPropertyValue styles "direction"))))})
+                                          (= "rtl" (.getPropertyValue styles "direction"))))
+   :addBodyClass                     #(classes/add (gobj/get Document "body") %)
+   :removeBodyClass                  #(classes/remove (gobj/get Document "body") %)})
 
 (defn bind-adapter
   "Return methods that bind an adapter to a specific component instance"
@@ -198,17 +201,16 @@
    :forceLayout                   #(this-as this (gobj/get (gobj/get this "nativeInput") "offsetWidth"))
    :isAttachedToDOM               #(this-as this (boolean (gobj/get this "root")))
    :getNativeControl              #(this-as this (gobj/get this "nativeInput"))})
+
 (defadapter Dialog
   [{:keys [view/state on-accept on-cancel] :as ^js/React.Component component}]
   (let [root (v/dom-node component)
         accept-btn (gdom/findNode root #(classes/has % "mdc-dialog__footer__button--accept"))
         surface (gdom/findNode root #(classes/has % "mdc-dialog__surface"))
-        focus-trap (createFocusTrapInstance surface accept-btn)]
+        ^js/focusTrap focus-trap (createFocusTrapInstance surface accept-btn)]
     {:surface                             surface
      :acceptButton                        accept-btn
      :setStyle                            (style-handler :Dialog)
-     :addBodyClass                        #(classes/add (gobj/get Document "body") %)
-     :removeBodyClass                     #(classes/remove (gobj/get Document "body") %)
      :eventTargetHasClass                 (fn [target class-name]
                                             (util/closest target #(classes/has % class-name)))
      :registerSurfaceInteractionHandler   (interaction-handler :listen "surface")
@@ -217,8 +219,11 @@
      :deregisterDocumentKeydownHandler    (interaction-handler :unlisten Document "keydown")
      :notifyAccept                        (or on-accept #(println :accept))
      :notifyCancel                        (or on-cancel #(println :cancel))
-     :trapFocusOnSurface                  (fn [])
-     :untrapFocusOnSurface                (fn [])
+     :trapFocusOnSurface                  #(.activate focus-trap)
+     :untrapFocusOnSurface                #(.deactivate focus-trap)
+     :registerTransitionEndHandler        (interaction-handler :listen surface "transitionend")
+     :deregisterTransitionEndHandler      (interaction-handler :unlisten surface "transitionend")
+     :isDialog                            #(= % surface)
      }))
 
 
@@ -280,7 +285,8 @@
 
 (defadapter SimpleMenu
   [{:keys [view/state] :as component}]
-  (let [^js/Element menuItemContainer (util/find-node (v/dom-node component) (fn [el] (classes/has el "mdc-simple-menu__items")))
+  (let [^js/HTMLElement root (v/dom-node component)
+        ^js/Element menuItemContainer (util/find-node root (fn [el] (classes/has el "mdc-simple-menu__items")))
         children (fn [this] (gdom/getChildren menuItemContainer))]
     {:menuItemContainer                menuItemContainer
      :hasNecessaryDom                  #(do true)
@@ -312,6 +318,8 @@
      :getIndexForEventTarget           (fn [target]
                                          (this-as this
                                            (index-of (children this) target)))
+     :getAttributeForEventTarget       (fn [^js/EventTarget target attr]
+                                         (.getAttribute target attr))
      :notifySelected                   (fn [evtData]
                                          (when-let [f (get component :on-selected)]
                                            (f evtData)))
@@ -319,9 +327,10 @@
                                          (when-let [f (get component :on-cancel)]
                                            (f evtData)))
      :saveFocus                        #(this-as this (aset this "previousFocus" (.-activeElement Document)))
-     :isFocused                        #(this-as this (= (.-activeElement Document) (gobj/get this "root")))
-     :focus                            #(this-as this (let [^js/HTMLElement root (gobj/get this "root")]
-                                                        (.focus root)))
+     :restoreFocus                     #(this-as this (when-let [^js/HTMLElement prev-focus (aget this "previousFocus")]
+                                                        (.focus prev-focus)))
+     :isFocused                        #(= (.-activeElement Document) root)
+     :focus                            #(.focus root)
      :getFocusedItemIndex              #(this-as this (index-of (children this) (.-activeElement Document)))
      :focusItemAtIndex                 #(this-as this (let [^js/HTMLElement el (aget (children this) %)]
                                                         (.focus el)))
@@ -330,7 +339,9 @@
      :setPosition                      (fn [pos]
                                          (swap! state update :mdc/root-styles merge (reduce (fn [m k]
                                                                                               (assoc m k (or (aget pos k) nil))) {} ["left" "right" "top" "bottom"])))
-     :getAccurateTime                  #(.. js/window -performance (now))}))
+     :getAccurateTime                  #(.. js/window -performance (now))
+     :registerBodyClickHandler         #(.addEventListener Body "click" %)
+     :deregisterBodyClickHandler       #(.removeEventListener Body "click" %)}))
 
 (defadapter Radio [])
 
@@ -364,25 +375,29 @@
 (defadapter Toolbar [{:keys [with-content] :as component}]
   (let [^js/HTMLElement toolbar-element (cond-> (v/dom-node component)
                                                 with-content (gdom/getFirstElementChild))
-        ^js/HTMLElement flexible-row-element (-> toolbar-element
-                                                 (gdom/findNode #(classes/has % "mdc-toolbar__row")))
+        ^js/HTMLElement first-row-element (-> toolbar-element
+                                              (gdom/findNode #(classes/has % "mdc-toolbar__row")))
         ^js/Window parent-window (or (some-> toolbar-element (aget "ownerDocument") (aget "defaultView"))
                                      Window)]
-    (cond-> {:root                              toolbar-element
-             :flexibleRowElement                flexible-row-element
-             :titleElement                      (util/find-node toolbar-element #(classes/has % "mdc-toolbar__title"))
-             :registerScrollHandler             (interaction-handler :listen parent-window "scroll")
-             :deregisterScrollHandler           (interaction-handler :unlisten parent-window "scroll")
-             :registerResizeHandler             (interaction-handler :listen parent-window "resize")
-             :deregisterResizeHandler           (interaction-handler :unlisten parent-window "resize")
-             :getViewportWidth                  #(.-innerWidth parent-window)
-             :getViewportScrollY                #(.-pageYOffset parent-window)
-             :getOffsetHeight                   #(.-offsetHeight toolbar-element)
-             :getFlexibleRowElementOffsetHeight #(.-offsetHeight flexible-row-element)
-             :notifyChange                      (fn [ratio])
-             :setStyle                          (style-handler :Toolbar)
-             :setStyleForTitleElement           (style-handler :Toolbar :titleElement)
-             :setStyleForFlexibleRowElement     (style-handler :Toolbar :flexibleRowElement)}
+    (cond-> {:root                           toolbar-element
+             :firstRowElement                first-row-element
+             :titleElement                   (util/find-node toolbar-element #(classes/has % "mdc-toolbar__title"))
+
+
+             :registerScrollHandler          (interaction-handler :listen parent-window "scroll")
+             :deregisterScrollHandler        (interaction-handler :unlisten parent-window "scroll")
+
+             :registerResizeHandler          (interaction-handler :listen parent-window "resize")
+             :deregisterResizeHandler        (interaction-handler :unlisten parent-window "resize")
+             :getViewportWidth               #(.-innerWidth parent-window)
+             :getViewportScrollY             #(.-pageYOffset parent-window)
+             :getOffsetHeight                #(.-offsetHeight toolbar-element)
+             :getFirstRowElementOffsetHeight #(.-offsetHeight first-row-element)
+             :notifyChange                   (fn [ratio])
+             :setStyle                       (style-handler :Toolbar)
+             :setStyleForTitleElement        (fn [attr val]
+                                               (util/add-styles (aget (js-this) "titleElement") {attr val}))
+             :setStyleForFlexibleRowElement  (style-handler :Toolbar :firstRowElement)}
             with-content (merge {:fixedAdjustElement            (gdom/getNextElementSibling toolbar-element)
                                  :setStyleForFixedAdjustElement (style-handler :Toolbar :fixedAdjustElement)
                                  }))))
