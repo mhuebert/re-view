@@ -24,8 +24,8 @@
 
 (defview apple
   {:life/initial-state      (fn [this]
-                              (log-args :life/initial-state this)
-                              initial-state)
+                                (log-args :life/initial-state this)
+                                initial-state)
 
    :life/will-mount         #(log-args :life/will-mount %1)
 
