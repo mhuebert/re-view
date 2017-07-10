@@ -350,22 +350,29 @@
                 :text-primary   :Element
                 :text-secondary :Element
                 :detail-start   :Element
-                :detail-end     :Element}}
+                :detail-end     :Element
+                :dense          :Boolean}}
   [{:keys [text-primary
            text-secondary
            detail-start
            detail-end
            href
            ripple
+           dense
            view/props] :as this}]
   (when-let [dep (some #{:title :body :avatar} (set (keys props)))]
     (throw (js/Error. "Deprecated " dep "... title, body - primary/text-secondary, avatar - detail-start or detail-end")))
   (let [el (if href :a :div)]
     (cond-> [el (-> (v/pass-props this)
                     (update :classes into ["mdc-list-item"
-                                           (when ripple "mdc-ripple-target")]))
+                                           (when ripple "mdc-ripple-target")])
+                    (cond-> dense (update :style merge {:font-size   "1.1rem"
+                                                        :height      40
+                                                        :line-height "40px"
+                                                        :padding     "0 8px"})))
              (some->> detail-start (conj [:.mdc-list-item__start-detail]))
              [:.mdc-list-item__text
+              (when dense {:style {:font-size "80%"}})
               text-primary
               [:.mdc-list-item__text__secondary text-secondary]]
              (some->> detail-end (conj [:.mdc-list-item__end-detail]))]
@@ -384,16 +391,18 @@
   "Menus appear above all other in-app UI elements, and appear on top of the triggering element. [More](https://material.io/guidelines/components/menus.html#menus-behavior)"
   {:key               :id
    :spec/props        {:on-cancel   :Function
-                       :on-selected :Function}
+                       :on-selected :Function
+                       :open-from   #{:bottom-right :bottom-left :top-right :top-left}}
    :spec/children     [:& :Element]
    :life/did-mount    (fn [this] (mdc/init this mdc/SimpleMenu))
    :life/will-unmount (fn [this] (mdc/destroy this mdc/SimpleMenu))
    :open              (fn [this] (.open (gobj/get this "mdcSimpleMenu")))
    :life/did-update   [(mdc/mdc-style-update :SimpleMenu "menuItemContainer")
                        (mdc/mdc-style-update :SimpleMenu)]}
-  [{:keys [view/state view/props classes] :as this} & items]
+  [{:keys [view/state view/props classes open-from] :as this} & items]
   [:.mdc-simple-menu (merge (v/pass-props this)
                             {:tab-index -1
+                             :class  (when open-from (str "mdc-simple-menu--open-from-" (name open-from)))
                              :classes   (into classes (:mdc/SimpleMenu-classes @state))})
    (into [:.mdc-simple-menu__items.mdc-list
           {:role        "menu"

@@ -39,6 +39,11 @@
   [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :width "24", :height "24", :view-box "0 0 24 24"}
    [:path {:d "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.5,10.91L19,6.41V10H21V3H14V5H17.59L13.09,9.5L14.5,10.91Z"}]])
 
+(def Backup
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]
+   [:path {:d "M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"}]])
+
 (def Build
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:clip-rule "evenodd", :d "M0 0h24v24H0z", :fill "none"}]
@@ -68,6 +73,10 @@
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M0 0h24v24H0V0z", :fill "none"}]
    [:path {:d "M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"}]])
+
+(def ContentDuplicate
+  [:svg {:fill "currentColor", :xmlns "http://www.w3.org/2000/svg", :version "1.1", :width "24", :height "24", :view-box "0 0 24 24"}
+   [:path {:d "M11,17H4A2,2 0 0,1 2,15V3A2,2 0 0,1 4,1H16V3H4V15H11V13L15,16L11,19V17M19,21V7H8V13H6V7A2,2 0 0,1 8,5H19A2,2 0 0,1 21,7V21A2,2 0 0,1 19,23H8A2,2 0 0,1 6,21V19H8V21H19Z"}]])
 
 (def ModeEdit
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
@@ -174,6 +183,16 @@
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
    [:path {:d "M0 0h24v24H0z", :fill "none"}]
    [:path {:d "M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"}]])
+
+(def Person
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"}]
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]])
+
+(def Publish
+  [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}
+   [:path {:d "M0 0h24v24H0z", :fill "none"}]
+   [:path {:d "M5 4v2h14V4H5zm0 10h4v6h6v-6h4l-7-7-7 7z"}]])
 
 (def Redo
   [:svg {:fill "currentColor", :height "24", :view-box "0 0 24 24", :width "24", :xmlns "http://www.w3.org/2000/svg"}

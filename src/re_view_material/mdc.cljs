@@ -286,8 +286,8 @@
 (defadapter SimpleMenu
   [{:keys [view/state] :as component}]
   (let [^js/HTMLElement root (v/dom-node component)
-        ^js/Element menuItemContainer (util/find-node root (fn [el] (classes/has el "mdc-simple-menu__items")))
-        children (fn [this] (gdom/getChildren menuItemContainer))]
+        get-container #(util/find-node root (fn [el] (classes/has el "mdc-simple-menu__items")))
+        ^js/Element menuItemContainer (get-container)]
     {:menuItemContainer                menuItemContainer
      :hasNecessaryDom                  #(do true)
      :getInnerDimensions               #(do #js {"width"  (.-offsetWidth menuItemContainer)
@@ -304,20 +304,17 @@
                                          (swap! state assoc-in [:mdc/root-styles (getTransformPropertyName)] (str "scale(" x ", " y ")")))
      :setInnerScale                    (fn [x y]
                                          (swap! state assoc-in [:mdc/inner-styles (getTransformPropertyName)] (str "scale(" x ", " y ")")))
-     :getNumberOfItems                 #(count (v-util/flatten-seqs (:view/children component)))
+     :getNumberOfItems                 #(aget (gdom/getChildren (get-container)) "length")
      :getYParamsForItemAtIndex         (fn [index]
-                                         (this-as this
-                                           (let [^js/HTMLElement child (aget (children this) index)]
-                                             #js {"top"    (.-offsetTop child)
-                                                  "height" (.-offsetHeight child)})))
+                                         (let [^js/HTMLElement child (aget (gdom/getChildren (get-container)) index)]
+                                           #js {"top"    (.-offsetTop child)
+                                                "height" (.-offsetHeight child)}))
      :setTransitionDelayForItemAtIndex (fn [index value]
-                                         (this-as this
-                                           (let [^js/CSSStyleDeclaration style (-> (aget (children this) index)
-                                                                                   (gobj/get "style"))]
-                                             (.setProperty style "transition-delay" value))))
+                                         (let [^js/CSSStyleDeclaration style (-> (aget (gdom/getChildren (get-container)) index)
+                                                                                 (gobj/get "style"))]
+                                           (.setProperty style "transition-delay" value)))
      :getIndexForEventTarget           (fn [target]
-                                         (this-as this
-                                           (index-of (children this) target)))
+                                         (index-of (gdom/getChildren (get-container)) target))
      :getAttributeForEventTarget       (fn [^js/EventTarget target attr]
                                          (.getAttribute target attr))
      :notifySelected                   (fn [evtData]
@@ -331,9 +328,9 @@
                                                         (.focus prev-focus)))
      :isFocused                        #(= (.-activeElement Document) root)
      :focus                            #(.focus root)
-     :getFocusedItemIndex              #(this-as this (index-of (children this) (.-activeElement Document)))
-     :focusItemAtIndex                 #(this-as this (let [^js/HTMLElement el (aget (children this) %)]
-                                                        (.focus el)))
+     :getFocusedItemIndex              #(index-of (gdom/getChildren (get-container)) (.-activeElement Document))
+     :focusItemAtIndex                 #(let [^js/HTMLElement el (aget (gdom/getChildren (get-container)) %)]
+                                          (.focus el))
      :isRtl                            #(get component :rtl)
      :setTransformOrigin               #(swap! state assoc-in [:mdc/root-styles (str (getTransformPropertyName) "-origin")] %)
      :setPosition                      (fn [pos]
