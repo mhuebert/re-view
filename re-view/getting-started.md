@@ -84,16 +84,16 @@ Every component is automatically assigned a Clojure [atom](../explainers/atoms),
   [:div (:view/state this)])
 ```
 
-To set an initial value for a component's state atom, set the `:initial-state` key in its methods map:
+To set an initial value for a component's state atom, set the `:view/initial-state` key in its methods map:
 
 ```
 (defview Counter 
-  {:initial-state 0}
+  {:view/initial-state 0}
   [this]
   [:div (:view/state this)])
 ```
 
-> If the value of `:initial-state` is a function, it will be called (with the component as its first argument) and initial-state is set to its return value.
+> If the value of `:view/initial-state` is a function, it will be called (with the component as its first argument) and initial-state is set to its return value.
 
 During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
 
@@ -101,7 +101,7 @@ Now let's add a click handler to make our Counter component complete:
 
 ```clj
 (defview Counter
-  {:initial-state 0}
+  {:view/initial-state 0}
   [this]
   [:div {:on-click #(swap! (:view/state this) inc)} "Current count: " @(:view/state this)])
 ```
@@ -121,20 +121,20 @@ React [lifecycle methods](https://facebook.github.io/react/docs/react-component.
 
 | key          | description          |
 |---|---|
-| `:initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
-| `:will-mount`         | _componentWillMount_        |
-| `:did-mount`          | _componentDidMount_         |
-| `:will-receive-props` | _componentWillReceiveProps_ |
-| `:should-update`      | _shouldComponentUpdate_     |
-| `:will-update`        | _componentWillUpdate_       |
-| `:did-update`         | _componentDidUpdate_        |
-| `:will-unmount`       | _componentWillUnmount_      |
+| `:view/initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
+| `:view/will-mount`         | _componentWillMount_        |
+| `:view/did-mount`          | _componentDidMount_         |
+| `:view/will-receive-props` | _componentWillReceiveProps_ |
+| `:view/should-update`      | _shouldComponentUpdate_     |
+| `:view/will-update`        | _componentWillUpdate_       |
+| `:view/did-update`         | _componentDidUpdate_        |
+| `:view/will-unmount`       | _componentWillUnmount_      |
 
 **Example:**
 
 ```clj
 (defview say-hello 
-  {:did-mount (fn [this] (println "Mounted!"))}
+  {:view/did-mount (fn [this] (println "Mounted!"))}
   [this]
   [:div "hello, world!"])
 ```

@@ -25,7 +25,7 @@ Reagent has [three ways](https://github.com/Day8/re-frame/wiki/Creating-Reagent-
 
 ;; component with lifecycle method
 (defview my-component
-  {:did-mount #(println "mounted!")}
+  {:view/did-mount #(println "mounted!")}
   []
   [:div "Hello, world"])
 

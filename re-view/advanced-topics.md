@@ -45,7 +45,7 @@ However, you can specify a vector of functions for any lifecycle key and they wi
 
 ```clj
 (defview my-app 
-  {:did-mount [register-view focus-input]}
+  {:view/did-mount [register-view focus-input]}
   [this]
   ...)
 ```
