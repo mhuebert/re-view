@@ -20,21 +20,24 @@
 (defn breadcrumb []
   (let [all-segments (d/get :router/location :segments)]
     (when (second all-segments)
-      (->> all-segments
-           (map-indexed
-             (fn [i label]
-               [label
-                (as-> (take (inc i) all-segments) segments
-                      (string/join "/" segments)
-                      (if-not (= i (dec (count all-segments))) (str segments "/") segments)
-                      (str "/" segments))]))
-           (map (fn [[label href]] (if href [:a.no-underline {:href href
-                                                              :key  href} label]
-                                            label)))
-           (interpose " / ")))))
+      [:.f6.b.ttu.mt3
+       (->> all-segments
+            (map-indexed
+              (fn [i label]
+                [i
+                 label
+                 (as-> (take (inc i) all-segments) segments
+                       (string/join "/" segments)
+                       (if-not (= i (dec (count all-segments))) (str segments "/") segments)
+                       (str "/" segments))]))
+            (map (fn [[i label href]] (if href [:a.no-underline.o-70.hover-o-100
+                                                {:href href
+                                                 :key  href} label]
+                                               label)))
+            (interpose [:span.o-50 " / "]))])))
 
 (defn page [& content]
-  (into [:.flex-grow.markdown-copy.mw-page.center.mv3.lh-copy] content))
+  (into [:.flex-grow.mw-page.center.mv3.lh-copy] content))
 
 (defview click-copy
   {:spec/props {:outer-class :String}}
@@ -52,10 +55,10 @@
                                      (gdom/findNode (fn [el] (= "INPUT" (.-tagName el))))))})]])
 
 (defview WithClojarsVersion
-  {:life/will-mount (fn [{:keys [view/state]} group _]
-                      (util/GET :json (str "https://clojars.org/" group "/latest-version.json")
-                                (fn [{:keys [value]}]
-                                  (when value (reset! state (aget value "version"))))))}
+  {:will-mount (fn [{:keys [view/state]} group _]
+                 (util/GET :json (str "https://clojars.org/" group "/latest-version.json")
+                           (fn [{:keys [value]}]
+                             (when value (reset! state (aget value "version"))))))}
   [{:keys [view/state]} repo f]
   (or (some-> @state (f))
       [:span]))
@@ -82,7 +85,7 @@
        (clj->js)
        (keep (comp (fn [{:keys [label level id]}]
                      (when (> level 1)
-                       [:a.db.no-underline.f6.color-inherit
+                       [:a.db.no-underline.f6.color-inherit.mv1.o-70.hover-o-100
                         {:href  (str "#" id)
                          :style {:margin-left (str (* 0.5 (- level 2)) "rem")}} label])) parse-header))))
 
@@ -90,49 +93,48 @@
 
 
 (defview markdown-page
-  {:spec/props              {:read :String
-                             :edit :String
-                             :toc? :Boolean}
-   :update-toc              (fn [{:keys [view/state] :as this}]
-                              (swap! state assoc :TOC (element-TOC (v/dom-node this))))
-   :update                  (fn [{:keys [view/state read edit]}]
-                              (swap! state assoc :loading true)
-                              (util/GET :text read #(do (reset! state %))))
-   :life/did-mount          (fn [this] (.update this))
-   :life/will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
-                              (when (not= children prev-children)
-                                (.update this (first children))))
-   :life/did-update         (fn [{:keys             [view/state view/prev-state]
-                                  read              :read
-                                  {prev-read :read} :view/prev-props
-                                  :as               this}]
-                              (if (not= read prev-read)
-                                (.update this)
-                                (.updateToc this)))}
+  {:spec/props         {:read :String
+                        :edit :String
+                        :toc? :Boolean}
+   :update-toc         (fn [{:keys [view/state] :as this}]
+                         (swap! state assoc :TOC (element-TOC (v/dom-node this))))
+   :update             (fn [{:keys [view/state read edit]}]
+                         (swap! state assoc :loading true)
+                         (util/GET :text read #(do (reset! state %))))
+   :did-mount          (fn [this] (.update this))
+   :will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
+                         (when (not= children prev-children)
+                           (.update this (first children))))
+   :did-update         (fn [{:keys             [view/state view/prev-state]
+                             read              :read
+                             {prev-read :read} :view/prev-props
+                             :as               this}]
+                         (if (not= read prev-read)
+                           (.update this)
+                           (.updateToc this)))}
   [{:keys [view/state read edit toc?]
     :or   {toc? true}}]
   (let [{:keys [value error loading TOC]} @state]
     (page [:div
            {:class (when loading "o-50")}
-           (some->> (breadcrumb) (conj [:.f6.mt3.mb3]))
+           (breadcrumb)
            [(if toc? :.flex.flex-column.flex-row-ns
                      :.center.w6)
-            [:.flex-auto (cond error [:div "Error fetching " read]
-                               value [:div
-                                      (markdown/md value)
-                                      (edit-button {:class "bg-darken mv3"
-                                                    :href  edit})]
-                               :else [:div "Loading..."])]
+            [:.flex-auto.markdown-copy (cond error [:div "Error fetching " read]
+                                             value [:div
+                                                    (markdown/md value)
+                                                    (edit-button {:class "bg-darken mv3"
+                                                                  :href  edit})]
+                                             :else [:div "Loading..."])]
             (when toc?
-              [:.mt4.ml3-ns (when (seq TOC)
-                              [:.bl.bw2.b--darken-5.ph2.lh-copy
-                               TOC])])]])))
+              [:.mt4.ml3-ns (some->> (seq TOC)
+                                     (conj [:.bl.bw2.b--darken-5.ph2]))])]])))
 
 (defn index-page [children]
   [:.flex.flex-column.flex-row-ns
    [:.ph3-ns.w5]
    [:div
-    [:.f6.mt3.mb3 (breadcrumb)]
+    (breadcrumb)
     [:h3.mv3 "Index"]
     (->> (vals children)
          (keep :*file)

@@ -1,8 +1,14 @@
 $mdc-theme-primary: #23005e; //#230a62;
 $mdc-theme-accent: #c51162; //#d50c6f;
 $mdc-theme-background: #fff;
-
 @import '../../node_modules/@material/theme/mdc-theme';
+
+a, a:visited {
+  color: darkblue;
+  color: var(--mdc-theme-primary, darkblue);
+}
+
+
 @import '../../node_modules/prosemirror-view/style/prosemirror';
 @import '../../node_modules/@material/animation/mdc-animation';
 @import '../../node_modules/@material/button/mdc-button';
@@ -71,10 +77,7 @@ input, textarea, select, button {
   color: inherit;
 }
 
-a, a:visited {
-  color: darkblue;
-  color: var(--mdc-theme-primary, darkblue);
-}
+
 a.color-inherit, .color-inherit{
   color: inherit;
 }

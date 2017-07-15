@@ -41,7 +41,7 @@
               (.scrollIntoView)))))
 
 (defview md
-  {:life/did-update scroll-to-anchor
-   :life/did-mount scroll-to-anchor}
+  {:did-update scroll-to-anchor
+   :did-mount  scroll-to-anchor}
   [{:keys [view/props]} s]
   [:div (assoc props :dangerouslySetInnerHTML {:__html (.render MD s)})])

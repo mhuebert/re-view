@@ -23,24 +23,24 @@
 (d/transact! (->> (concat material-example/examples-data
                           prosemirror-example/examples-data)
                   (map (fn [{:keys [component label] :as example}]
-                         (let [{{:keys [react/docstring display-name] :as r} :react-keys} (aget component "re$view$base")
+                         (let [{{:keys [docstring display-name] :as r} :react-keys} (aget component "re$view$base")
                                label (or label (-> display-name
                                                    (string/split "/")
                                                    (last)
                                                    (string/replace #"([a-z])([A-Z])" "$1 $2")))]
-                           (merge example {:db/id           (str "ui-" (-> label
+                           (merge example {:db/id     (str "ui-" (-> label
                                                                            (string/lower-case)
                                                                            (string/replace " " "-")))
-                                           :label           label
-                                           :react/docstring docstring
-                                           :kind            :re-view/component}))))))
+                                           :label     label
+                                           :docstring docstring
+                                           :kind      :re-view/component}))))))
 
 (defview component-card
   {:key :label}
   [{:keys [view/state
            label
            db/id
-           react/docstring
+           docstring
            prop-atom
            component
            children
@@ -67,14 +67,16 @@
        (if custom-view (custom-view)
                        (try (cond-> (hoc/bind-atom component prop-atom)
                                     wrap (wrap))
-                            (catch js/Error e "Error")))]]]))
+                            (catch js/Error e
+                              (.log js/console e)
+                              "Error")))]]]))
 
 (defview component-detail
   {:key :label}
   [{:keys [view/state
            label
            db/id
-           react/docstring
+           docstring
            prop-atom
            component
            children
@@ -116,12 +118,12 @@
   [:div "Tested this" body])
 
 (defview fixed-content
-  {:spec/props        {:on-close {:spec :Function
-                                  :doc  "Function will be called when full-screen mode is exited."}}
-   :spec/children     [{:spec :Element
-                        :doc  "Element will be displayed centered on a full-screen, fixed background"}]
-   :life/did-mount    #(classes/add js/document.body "overflow-hidden")
-   :life/will-unmount #(classes/remove js/document.body "overflow-hidden")}
+  {:spec/props    {:on-close {:spec :Function
+                              :doc  "Function will be called when full-screen mode is exited."}}
+   :spec/children [{:spec :Element
+                    :doc  "Element will be displayed centered on a full-screen, fixed background"}]
+   :did-mount     #(classes/add js/document.body "overflow-hidden")
+   :will-unmount  #(classes/remove js/document.body "overflow-hidden")}
   [{:keys [on-close]} content]
   [:.fixed.left-0.right-0.top-0.bottom-0.z-999.flex.items-center
    {:on-click #(when (let [current-target (aget % "currentTarget")]

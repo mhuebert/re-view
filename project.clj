@@ -7,11 +7,11 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
 
-                 [re-view "0.3.17"]
+                 [re-view "0.3.19"]
                  [re-db "0.1.11"]
                  [re-view-routing "0.1.3"]
                  [re-view-prosemirror "0.1.4"]
-                 [re-view-material "0.1.4"]
+                 [re-view-material "0.1.5"]
 
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [cljsjs/react "15.5.0-0"]
@@ -28,8 +28,11 @@
                                     "target"]
 
 
-  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
+  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]
+                                  [figwheel-pushstate-server "0.1.1-SNAPSHOT"]]}}
   :source-paths ["src"]
+
+  :figwheel {:ring-handler figwheel-server.core/handler}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
@@ -41,10 +44,7 @@
                                        :asset-path           "/js/out"
                                        :source-map-timestamp true
                                        :source-map           true
-
                                        :language-in          :ecmascript5
-
-
                                        :optimizations        :none}}
                        {:id           "prod"
                         :source-paths ["src"]

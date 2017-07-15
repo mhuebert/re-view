@@ -55,9 +55,9 @@
                              (cb)))))
 
 (defview doc-page
-  {:life/did-mount   (fn [{:keys [view/state
-                                  edit-url] :as this} url]
-                       (when-not index (get-index #(v/force-update this))))}
+  {:did-mount (fn [{:keys [view/state
+                           edit-url] :as this} url]
+                (when-not index (get-index #(v/force-update this))))}
   [this url]
   (let [path-ks (path->keys url)
         {{file-path :path} :*file
