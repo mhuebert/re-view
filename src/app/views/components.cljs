@@ -118,12 +118,12 @@
   [:div "Tested this" body])
 
 (defview fixed-content
-  {:spec/props    {:on-close {:spec :Function
-                              :doc  "Function will be called when full-screen mode is exited."}}
-   :spec/children [{:spec :Element
-                    :doc  "Element will be displayed centered on a full-screen, fixed background"}]
-   :did-mount     #(classes/add js/document.body "overflow-hidden")
-   :will-unmount  #(classes/remove js/document.body "overflow-hidden")}
+  {:spec/props        {:on-close {:spec :Function
+                                  :doc  "Function will be called when full-screen mode is exited."}}
+   :spec/children     [{:spec :Element
+                        :doc  "Element will be displayed centered on a full-screen, fixed background"}]
+   :view/did-mount    #(classes/add js/document.body "overflow-hidden")
+   :view/will-unmount #(classes/remove js/document.body "overflow-hidden")}
   [{:keys [on-close]} content]
   [:.fixed.left-0.right-0.top-0.bottom-0.z-999.flex.items-center
    {:on-click #(when (let [current-target (aget % "currentTarget")]

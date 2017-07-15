@@ -55,10 +55,10 @@
                                      (gdom/findNode (fn [el] (= "INPUT" (.-tagName el))))))})]])
 
 (defview WithClojarsVersion
-  {:will-mount (fn [{:keys [view/state]} group _]
-                 (util/GET :json (str "https://clojars.org/" group "/latest-version.json")
-                           (fn [{:keys [value]}]
-                             (when value (reset! state (aget value "version"))))))}
+  {:view/will-mount (fn [{:keys [view/state]} group _]
+                      (util/GET :json (str "https://clojars.org/" group "/latest-version.json")
+                                (fn [{:keys [value]}]
+                                  (when value (reset! state (aget value "version"))))))}
   [{:keys [view/state]} repo f]
   (or (some-> @state (f))
       [:span]))
@@ -93,25 +93,25 @@
 
 
 (defview markdown-page
-  {:spec/props         {:read :String
-                        :edit :String
-                        :toc? :Boolean}
-   :update-toc         (fn [{:keys [view/state] :as this}]
-                         (swap! state assoc :TOC (element-TOC (v/dom-node this))))
-   :update             (fn [{:keys [view/state read edit]}]
-                         (swap! state assoc :loading true)
-                         (util/GET :text read #(do (reset! state %))))
-   :did-mount          (fn [this] (.update this))
-   :will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
-                         (when (not= children prev-children)
-                           (.update this (first children))))
-   :did-update         (fn [{:keys             [view/state view/prev-state]
-                             read              :read
-                             {prev-read :read} :view/prev-props
-                             :as               this}]
-                         (if (not= read prev-read)
-                           (.update this)
-                           (.updateToc this)))}
+  {:spec/props              {:read :String
+                             :edit :String
+                             :toc? :Boolean}
+   :update-toc              (fn [{:keys [view/state] :as this}]
+                              (swap! state assoc :TOC (element-TOC (v/dom-node this))))
+   :update                  (fn [{:keys [view/state read edit]}]
+                              (swap! state assoc :loading true)
+                              (util/GET :text read #(do (reset! state %))))
+   :view/did-mount          (fn [this] (.update this))
+   :view/will-receive-props (fn [{:keys [view/children view/prev-children] :as this}]
+                              (when (not= children prev-children)
+                                (.update this (first children))))
+   :view/did-update         (fn [{:keys             [view/state view/prev-state]
+                                  read              :read
+                                  {prev-read :read} :view/prev-props
+                                  :as               this}]
+                              (if (not= read prev-read)
+                                (.update this)
+                                (.updateToc this)))}
   [{:keys [view/state read edit toc?]
     :or   {toc? true}}]
   (let [{:keys [value error loading TOC]} @state]
