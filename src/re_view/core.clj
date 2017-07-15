@@ -25,14 +25,19 @@
   "Groups methods by role in a React component."
   [methods]
   (-> (reduce-kv (fn [m k v]
-                   (assoc-in m [(case (namespace k)
-                                  "life" :lifecycle-keys
-                                  "react" :react-keys
-                                  ("spec" "view") :class-keys
-                                  (case k
-                                    (:key :display-name)
-                                    :react-keys
-                                    :instance-keys)) k] v)) {} methods)
+                   (assoc-in m [(case k (:initial-state
+                                          :will-mount
+                                          :did-mount
+                                          :will-receive-props
+                                          :will-receive-state
+                                          :should-update
+                                          :will-update
+                                          :did-update
+                                          :will-unmount
+                                          :render) :lifecycle-keys
+                                        (:key :display-name :docstring) :react-keys
+                                        (if (= "spec" (namespace k))
+                                          :class-keys :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
       ;; must use set! for the keys, otherwise they will
       ;; be modified in advanced compilation.
@@ -42,17 +47,21 @@
       ;; in the macro so there's no way to reuse specs.
       ))
 
-(clojure.core/defn parse-view-args
-  "Parse args for optional docstring and method map"
-  [args]
-  (let [out []
-        out (conj out (if (symbol? (first args)) (first args) (gensym)))
-        args (if (symbol? (first args)) (next args) args)
-        out (conj out (if (string? (first args)) (first args) nil))
-        args (if (string? (first args)) (next args) args)
-        out (conj out (if (map? (first args)) (first args) nil))
-        args (if (map? (first args)) (next args) args)]
-    (conj out args)))
+(clojure.core/defn parse-opt-args [preds args]
+  (loop [preds preds
+         args args
+         out []]
+    (if (empty? preds)
+      (conj out args)
+      (let [match? ((first preds) (first args))]
+        (recur (rest preds)
+               (cond-> args match? (rest))
+               (conj out (if match? (first args) nil)))))))
+
+(clojure.core/defn parse-view-args [args]
+      (let [args (parse-opt-args [symbol? string? map?] args)]
+        (cond-> args
+                (nil? (first args)) (assoc 0 (gensym)))))
 
 (clojure.core/defn display-name
   "Generate a meaningful name to identify React components while debugging"
@@ -77,9 +86,9 @@
   (let [[view-name docstring methods body] (parse-view-args args)
         _ (assert (symbol? view-name))
         methods (-> methods
-                    (merge {:react/docstring docstring
-                            :display-name    (display-name *ns* view-name)
-                            :life/render     (wrap-body view-name body)})
+                    (merge {:docstring    docstring
+                            :display-name (display-name *ns* view-name)
+                            :render       (wrap-body view-name body)})
                     (group-methods))]
     `(def ~view-name ~@(some-> docstring (list)) (~'re-view.core/view* ~methods))))
 
@@ -88,9 +97,9 @@
   [& args]
   (let [[view-name docstring methods body] (parse-view-args args)
         methods (-> methods
-                    (merge {:react/docstring docstring
-                            :display-name    (display-name *ns* view-name)
-                            :life/render     (wrap-body view-name body)})
+                    (merge {:docstring    docstring
+                            :display-name (display-name *ns* view-name)
+                            :render       (wrap-body view-name body)})
                     (group-methods))]
     `(~'re-view.core/view* ~methods)))
 
