@@ -25,16 +25,16 @@
   "Groups methods by role in a React component."
   [methods]
   (-> (reduce-kv (fn [m k v]
-                   (assoc-in m [(case k (:initial-state
-                                          :will-mount
-                                          :did-mount
-                                          :will-receive-props
-                                          :will-receive-state
-                                          :should-update
-                                          :will-update
-                                          :did-update
-                                          :will-unmount
-                                          :render) :lifecycle-keys
+                   (assoc-in m [(case k (:view/initial-state
+                                          :view/will-mount
+                                          :view/did-mount
+                                          :view/will-receive-props
+                                          :view/will-receive-state
+                                          :view/should-update
+                                          :view/will-update
+                                          :view/did-update
+                                          :view/will-unmount
+                                          :view/render) :lifecycle-keys
                                         (:key :display-name :docstring) :react-keys
                                         (if (= "spec" (namespace k))
                                           :class-keys :instance-keys)) k] v)) {} methods)
@@ -88,7 +88,7 @@
         methods (-> methods
                     (merge {:docstring    docstring
                             :display-name (display-name *ns* view-name)
-                            :render       (wrap-body view-name body)})
+                            :view/render  (wrap-body view-name body)})
                     (group-methods))]
     `(def ~view-name ~@(some-> docstring (list)) (~'re-view.core/view* ~methods))))
 
@@ -99,7 +99,7 @@
         methods (-> methods
                     (merge {:docstring    docstring
                             :display-name (display-name *ns* view-name)
-                            :render       (wrap-body view-name body)})
+                            :view/render  (wrap-body view-name body)})
                     (group-methods))]
     `(~'re-view.core/view* ~methods)))
 

@@ -23,29 +23,29 @@
 (def initial-state {:eaten? false})
 
 (defview apple
-  {:initial-state      (fn [this]
-                         (log-args :initial-state this)
-                         initial-state)
+  {:view/initial-state      (fn [this]
+                              (log-args :view/initial-state this)
+                              initial-state)
 
-   :will-mount         #(log-args :will-mount %1)
+   :view/will-mount         #(log-args :view/will-mount %1)
 
-   :did-mount          #(log-args :did-mount %1)
+   :view/did-mount          #(log-args :view/did-mount %1)
 
-   :will-receive-props #(log-args :will-receive-props %1)
+   :view/will-receive-props #(log-args :view/will-receive-props %1)
 
-   :will-receive-state #(log-args :will-receive-state %1)
+   :view/will-receive-state #(log-args :view/will-receive-state %1)
 
-   :should-update      #(log-args :should-update %1)
+   :view/should-update      #(log-args :view/should-update %1)
 
-   :will-update        #(log-args :will-update %1)
+   :view/will-update        #(log-args :view/will-update %1)
 
-   :did-update         #(log-args :did-update %1)
+   :view/did-update         #(log-args :view/did-update %1)
 
-   :will-unmount       #(log-args :will-unmount %1)
-   :pRef               (fn [& args]
-                         (println "I am a ref that was called!" args))}
+   :view/will-unmount       #(log-args :view/will-unmount %1)
+   :pRef                    (fn [& args]
+                              (println "I am a ref that was called!" args))}
   [{:keys [view/state] :as this} _]
-  (log-args :render this)
+  (log-args :view/render this)
   (swap! render-count inc)
   [:div "I am an apple."
    (when-not (:eaten? @state)
@@ -74,7 +74,7 @@
     (testing "initial state"
       (is (false? (:eaten? @(:view/state c))))
       (is (= 1 @render-count))
-      (is (= "red" (get-in @lifecycle-log [:initial-state :view/props :color]))
+      (is (= "red" (get-in @lifecycle-log [:view/initial-state :view/props :color]))
           "Read props from GetInitialState")
       (is (= "red" (get-in c [:view/props :color]))
           "Read props"))
@@ -134,18 +134,18 @@
       (render {:color "pink"})
       (render {:color "blue"})
 
-      (is (= "pink" (get-in @lifecycle-log [:did-update :view/prev-props :color])))
+      (is (= "pink" (get-in @lifecycle-log [:view/did-update :view/prev-props :color])))
       (is (= "blue" (:color this)))
 
 
       (render {:color "yellow"})
       (render {:color "mink"})
 
-      (is (= "yellow" (get-in @lifecycle-log [:did-update :view/prev-props :color])))
+      (is (= "yellow" (get-in @lifecycle-log [:view/did-update :view/prev-props :color])))
       (is (= "mink" (:color this)))
 
       (render {:color "bear"})
-      (is (= "mink" (get-in @lifecycle-log [:will-update :view/prev-props :color])))
+      (is (= "mink" (get-in @lifecycle-log [:view/will-update :view/prev-props :color])))
       (is (= "bear" (:color this))))
 
     (testing "state transition"
@@ -158,9 +158,9 @@
       (swap! (:view/state this) assoc :shiny? true)
       (v/flush!)
 
-      (is (false? (get-in @lifecycle-log [:will-receive-state :view/prev-state :shiny?]))
+      (is (false? (get-in @lifecycle-log [:view/will-receive-state :view/prev-state :shiny?]))
           "Prev-state recalls previous state")
-      (is (true? (get-in @lifecycle-log [:will-receive-state :view/state :shiny?]))
+      (is (true? (get-in @lifecycle-log [:view/will-receive-state :view/state :shiny?]))
           "State has updated")
 
       (render {:color "violet"})

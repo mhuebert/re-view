@@ -102,9 +102,9 @@
 
 (defview props-editor
   "Editor for atom containing Clojure map"
-  {:key          :label
-   :did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
-   :will-unmount (fn [_ a] (remove-watch a :prop-editor))}
+  {:key               :label
+   :view/did-mount    (fn [this a] (add-watch a :prop-editor #(v/force-update this)))
+   :view/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
   [{:keys [component view/state container-props]} prop-atom]
   (let [{{defaults :props/defaults :as prop-specs} :spec/props
          child-specs                               :spec/children} (v/mock (component))
@@ -127,11 +127,12 @@
                                v (get values k)]
                          :when (not= k :key)]
                      [:tr
-                      (when editing?
-                        [:td (value-edit prop-spec prop-atom [0 k])])
                       [:td
                        [:.b.pre-wrap.mb1 (key-field k)]
-                       [:.o-60 doc]]])]])))
+                       [:.o-60 doc]]
+                      (when editing?
+                        [:td (value-edit prop-spec prop-atom [0 k])])
+                      ])]])))
 
        (when children
          (list [section "Children"]
@@ -147,8 +148,8 @@
                       (value-edit nil prop-atom [(inc i)])]]])]]))])))
 
 (defview example-inspector
-  {:key           :label
-   :initial-state (fn [{:keys [prop-atom]}] prop-atom)}
+  {:key                :label
+   :view/initial-state (fn [{:keys [prop-atom]}] prop-atom)}
   [{:keys [component orientation label view/state]
     :or   {orientation :horizontal}}]
   [:div

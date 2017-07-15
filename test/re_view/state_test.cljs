@@ -13,8 +13,8 @@
           local-state (atom nil)
           el (append-el)
           view (v/view
-                 {:initial-state 0
-                  :did-mount     #(reset! local-state (:view/state %))}
+                 {:view/initial-state 0
+                  :view/did-mount     #(reset! local-state (:view/state %))}
                  [{:keys [view/state]}]
                  (swap! log conj @state)
                  [:div "hello"])
