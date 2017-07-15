@@ -48,7 +48,7 @@ Paragraph  "
                          :on-mount      #(js/setTimeout (partial update-markdown %) 0)
                          :on-dispatch   update-markdown}])
       :wrap      #(hoc/bind-atom (view [{:keys [markdown]}]
-                                     [:.flex.items-stretch.pv3.flex-wrap.w-100
-                                      [:.flex-auto.mw6 %]
-                                      [:.pv4.ph3.code.f6
-                                       {:style {:white-space "pre-wrap"}} markdown]]) example-output)}]))
+                                       [:.flex.items-stretch.pv3.flex-wrap.w-100
+                                        [:.flex-auto.mw6 %]
+                                        [:.pv4.ph3.code.f6
+                                         {:style {:white-space "pre-wrap"}} markdown]]) example-output)}]))

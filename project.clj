@@ -7,7 +7,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.518"]
                  [cljsjs/markdown-it "7.0.0-0"]]
-  :provided {:dependencies [[re-view "0.3.17"]
+  :provided {:dependencies [[re-view "0.3.19"]
                             [re-view-material "0.1.4"]]}
   :cljsbuild {:builds []}
   :plugins [[lein-npm "0.6.2"]]
