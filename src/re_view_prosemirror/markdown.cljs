@@ -7,24 +7,25 @@
 
 (def pmMarkdown (.-pmMarkdown js/window))
 (def Schema (aget js/pm "Schema"))
-(def schema (let [s (gobj/get pmMarkdown "schema")
-                  add-table-nodes (aget js/pm "table" "addTableNodes")]
-              (Schema. #js {"nodes" (-> (aget s "spec" "nodes")
-                                        (.append (clj->js {:table        {:toDOM   (fn [] #js ["table" 0])
-                                                                          :content "table_header table_body"
-                                                                          :group   "block"}
-                                                           :table_header {:toDOM   (fn [] #js ["thead" 0])
-                                                                          :content "table_row"}
-                                                           :table_body   {:toDOM   (fn [] #js ["tbody" 0])
-                                                                          :content "table_row+"}
-                                                           :table_row    {:content  "table_cell+"
-                                                                          :toDOM    (fn [] #js ["tr" 0])
-                                                                          :tableRow true}
-                                                           :table_cell   {:attrs     {:cellType {:default "td"}}
-                                                                          :toDOM     (fn [x] #js [(aget x "attrs" "cellType") 0])
-                                                                          :content   "inline<_>*"
-                                                                          :isolating true}})))
-                            "marks" (aget s "spec" "marks")})))
+(def base-schema (gobj/get pmMarkdown "schema"))
+(def schema (let [table-nodes {:table        {:toDOM   #(to-array ["table" 0])
+                                              :content "table_header table_body"
+                                              :group   "block"}
+                               :table_header {:toDOM   #(to-array ["thead" 0])
+                                              :content "table_row"}
+                               :table_body   {:toDOM   #(to-array ["tbody" 0])
+                                              :content "table_row+"}
+                               :table_row    {:content  "table_cell+"
+                                              :toDOM    #(to-array ["tr" 0])
+                                              :tableRow true}
+                               :table_cell   {:attrs     {:cellType {:default "td"}}
+                                              :toDOM     #(to-array [(aget % "attrs" "cellType") 0])
+                                              :content   "inline<_>*"
+                                              :isolating true}}]
+              (Schema. #js {:nodes (-> base-schema
+                                       (gobj/getValueByKeys "spec" "nodes")
+                                       (.append (clj->js table-nodes)))
+                            :marks (aget base-schema "spec" "marks")})))
 
 (def ^js/pmMarkdown.MarkdownSerializer serializer
   (let [MarkdownSerializer (.-MarkdownSerializer pmMarkdown)
@@ -40,6 +41,7 @@
                                        :table_header      (fn [^js/pmMarkdown.MarkdownSerializerState state node]
                                                             (.renderContent state node)
                                                             (let [columns (aget node "firstChild" "content" "childCount")]
+                                                              ;; only take as many columns as are in the first row
                                                               (.write state
                                                                       (str "|" (string/join
                                                                                  (take columns (repeat "---|")))
@@ -57,18 +59,19 @@
                                                             (.write state " "))}))) marks)))
 
 (def ^js/pmMarkdown.MarkdownParser parser
-  (let [MarkdownParser (.-MarkdownParser pmMarkdown)]
+  (let [MarkdownParser (.-MarkdownParser pmMarkdown)
+        token->node {:table {:block "table"}
+                     :thead {:block "table_header"}
+                     :tbody {:block "table_body"}
+                     :tr    {:block "table_row"}
+                     :th    {:block "table_cell"
+                             :attrs {:cellType "th"}}
+                     :td    {:block "table_cell"}}]
     (MarkdownParser.
       schema (js/markdownit "default" #js {"html" false})
       (-> (.-defaultMarkdownParser pmMarkdown)
           (.-tokens)
-          (doto (gobj/extend (clj->js {:table {:block "table"}
-                                       :thead {:block "table_header"}
-                                       :tbody {:block "table_body"}
-                                       :tr    {:block "table_row"}
-                                       :th    {:block "table_cell"
-                                               :attrs {:cellType "th"}}
-                                       :td    {:block "table_cell"}})))))))
+          (doto (gobj/extend (clj->js token->node)))))))
 
 (def Editor (v/partial base/Editor {:serialize #(.serialize serializer %)
                                     :parse     #(.parse parser %)

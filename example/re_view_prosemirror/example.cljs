@@ -42,13 +42,15 @@
 | a | b | c |
 | d | e | f |
 
+[a link](https://maria.cloud)
+
     Code
 
 Paragraph  "
                          :on-mount      #(js/setTimeout (partial update-markdown %) 0)
                          :on-dispatch   update-markdown}])
       :wrap      #(hoc/bind-atom (view [{:keys [markdown]}]
-                                       [:.flex.items-stretch.pv3.flex-wrap.w-100
-                                        [:.flex-auto.mw6 %]
-                                        [:.pv4.ph3.code.f6
+                                       [:.w-100
+                                        [:div %]
+                                        [:.code.f6.pa3
                                          {:style {:white-space "pre-wrap"}} markdown]]) example-output)}]))
