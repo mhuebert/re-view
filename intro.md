@@ -81,7 +81,7 @@ React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can
 
 ```clj
 (defview focused-input
-  {:life/did-mount (fn [this] (.focus (v/dom-node this)))}
+  {:did-mount (fn [this] (.focus (v/dom-node this)))}
   [this]
   [:input (:view/props this)])
                  

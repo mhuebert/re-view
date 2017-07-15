@@ -84,16 +84,16 @@ Every component is automatically assigned a Clojure [atom](../explainers/atoms),
   [:div (:view/state this)])
 ```
 
-To set an initial value for a component's state atom, set the `:life/initial-state` key in its methods map:
+To set an initial value for a component's state atom, set the `:initial-state` key in its methods map:
 
 ```
 (defview Counter 
-  {:life/initial-state 0}
+  {:initial-state 0}
   [this]
   [:div (:view/state this)])
 ```
 
-> If the value of `:life/initial-state` is a function, it will be called (with the component as its first argument) and initial-state is set to its return value.
+> If the value of `:initial-state` is a function, it will be called (with the component as its first argument) and initial-state is set to its return value.
 
 During each component lifecycle, the previous state value is accessible via the `:view/prev-state` key.
 
@@ -101,7 +101,7 @@ Now let's add a click handler to make our Counter component complete:
 
 ```clj
 (defview Counter
-  {:life/initial-state 0}
+  {:initial-state 0}
   [this]
   [:div {:on-click #(swap! (:view/state this) inc)} "Current count: " @(:view/state this)])
 ```
@@ -116,25 +116,25 @@ Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a 
 
 ### Lifecycle methods 
 
-React [lifecycle methods](https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle) are supported via the following keys, all with the namespace `life`:
+React [lifecycle methods](https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle) are supported via the following keys:
 
 
 | key          | description          |
 |---|---|
-| `:life/initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
-| `:life/will-mount`         | _componentWillMount_        |
-| `:life/did-mount`          | _componentDidMount_         |
-| `:life/will-receive-props` | _componentWillReceiveProps_ |
-| `:life/should-update`      | _shouldComponentUpdate_     |
-| `:life/will-update`        | _componentWillUpdate_       |
-| `:life/did-update`         | _componentDidUpdate_        |
-| `:life/will-unmount`       | _componentWillUnmount_      |
+| `:initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
+| `:will-mount`         | _componentWillMount_        |
+| `:did-mount`          | _componentDidMount_         |
+| `:will-receive-props` | _componentWillReceiveProps_ |
+| `:should-update`      | _shouldComponentUpdate_     |
+| `:will-update`        | _componentWillUpdate_       |
+| `:did-update`         | _componentDidUpdate_        |
+| `:will-unmount`       | _componentWillUnmount_      |
 
 **Example:**
 
 ```clj
 (defview say-hello 
-  {:life/did-mount (fn [this] (println "Mounted!"))}
+  {:did-mount (fn [this] (println "Mounted!"))}
   [this]
   [:div "hello, world!"])
 ```
