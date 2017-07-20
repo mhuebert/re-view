@@ -1,6 +1,7 @@
-## Changelog
+# Changelog
 
-### 0.1.11
+## 0.1.11
+
 - pattern listener format has been changed to accept minimal necessary data. Call re-db.core/listen with a pattern map of the form:
 
 ```clj
@@ -10,10 +11,12 @@
    :_av [[<attribute>, <value>], [<attribute>, <value>]]}      ;; vector of attribute-value pairs
 ```
 
-### 0.1.10
+## 0.1.10
+
 - rename core/listen! -> core/listen and core/unlisten! -> core/listen
 
-### 0.1.9
+## 0.1.9
+
 - Listeners are called with the tx-report map instead of data related to the pattern(s) the listener was registered on.
 - `listen!` now accepts a map of patterns, ie. {<kind>, <collection of patterns>}, instead of multiple patterns as args, for clarity and performance.
    To register a :tx-log listener, don't the 2-arity version.
@@ -21,7 +24,7 @@
 - Pattern-related functions moved to re-db.patterns namespace
 - `entity-ids` and `entities` take a vector of patterns instead of multiple args.
 
-### 0.1.8
+## 0.1.8
 
 - Overall transaction time reduced by ~60%, w/ a further 30% reduction with option `{:notify false}`, which supercedes the :mute option.
 - :cardinality/many attributes must be passed as sets, eg/
@@ -34,6 +37,6 @@
  for all attributes, a `:ave` index for indexed/unique entities, and a `:vae` index for `ref` attributes.
   A `:aev` index may be added in the future to support faster queries.
 
-### 0.1.4
+## 0.1.4
 
 - `listen!` returns an unlisten! function for the supplied arguments.

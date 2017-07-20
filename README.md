@@ -2,17 +2,17 @@
 
 ![badge](https://img.shields.io/clojars/v/re-db.svg)
 
-Re-DB is a reactive client-side data store for handling global state in ClojureScript apps. It was built in tandem with [re-view](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
+Re-DB is a client-side data store for handling global state in ClojureScript apps. It was built in tandem with [Re-View](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
 
-# Installation
+## Installation
 
 In `project.clj`, include the dependency `[re-db "xx"]`.
 
-# Background
+## Background
 
-ClojureScript apps usually store state in atoms (because state can change) which are looked up via namespace or symbol references. `re-db` offers an alternative perspective: all of an app's global state is stored in a single location, as a collection of maps (`entities`), each of which has a unique ID (under the `:db/id` key). Data is read via unique ID, or by indexed attributes. We spend less time thinking about 'locations' in the namespaces of our app, and more time thinking about data itself.
+ClojureScript apps usually store state in [atoms](https://www.re-view.io/docs/explainers/atoms) which are looked up via namespace or symbol references. With `re-db`, global state is stored in a single location, as a collection of maps (`entities`), each of which has a unique ID (under the `:db/id` key). Data is read via unique ID, or by indexed attributes. We spend less time thinking about 'locations' in namespaces (or bindings in closures) and more time thinking about data itself.
 
-# Usage
+## Usage
 
 It is normal to use just one re-db namespace, `re-db.d`, for reads and writes throughout an app.
 
@@ -21,7 +21,7 @@ It is normal to use just one re-db namespace, `re-db.d`, for reads and writes th
   (:require [re-db.d :as d))
 ```
 
-## Writing data
+### Writing data
 
 To write data, pass a collection of transactions to `d/transact!`. There are two kinds of transactions.
 
@@ -56,7 +56,7 @@ To write data, pass a collection of transactions to `d/transact!`. There are two
 
     ```
 
-## Reading data
+### Reading data
 
 Read a single entity by passing its ID to `d/entity`.
 
@@ -74,7 +74,7 @@ Read an attribute by passing an ID and attribute to `d/get`.
 ;; => "Matt"
 ```
 
-An entity-attribute pattern read (:ea_) is logged.
+An entity-attribute pattern read (:ea\_) is logged.
 
 Read nested attributes via `d/get-in`.
 
@@ -84,22 +84,23 @@ Read nested attributes via `d/get-in`.
 
 An entity-attribute pattern read (:ea_) is logged.
 
-## Listening for changes
+### Listening for changes
 
-Use `d/listen!` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
+Use `d/listen` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
 
-    Value                Pattern name         Description
-    [id _ _]             :e__                 entity pattern
-    [id attr _]          :ea_                 entity-attribute pattern
-    [_ attr val]         :_av                 attribute-value pattern
-    [_ attr _]           :_a_                 attribute pattern
-    [_ _ _] or :tx-log   :___                 Matches all transactions
+    Value Format         Pattern              Description
+    id                   :e__                 entity pattern
+    [id attr]            :ea_                 entity-attribute pattern
+    [attr val]           :_av                 attribute-value pattern
+    attr                 :_a_                 attribute pattern
+   
 
-_\__ may be a quoted '\_ or `nil`.
 
-Pass `d/listen!` a collection of patterns, and the function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
+
+Pass `d/listen` a map of the form `{<pattern> [<...values...>]}`, and a function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
 
 Examples:
+TODO: update examples to new syntax
 
 ```clj
 ;; entity
@@ -118,7 +119,7 @@ Examples:
 (d/listen! [:tx-log] #(println "The database has been changed"))
 ```
 
-## Indexes
+### Indexes
 
 Use `d/merge-schema!` to update indexes.
 
@@ -126,7 +127,7 @@ Use `d/merge-schema!` to update indexes.
 (d/merge-schema! {:children {:db/index true, :db/cardinality :db.cardinality/many}})
 ```
 
-## Finding entities
+### Finding entities
 
 Use `d/entity-ids` and `d/entities` to find entities which match a collection of predicates, each of which should be:
 
@@ -136,6 +137,6 @@ Use `d/entity-ids` and `d/entities` to find entities which match a collection of
 
 `d/entities` logs an entity pattern read (:e__) for every entity returned.
 
-# Pattern read logging
+### Pattern read logging
 
 The `re-db.d/capture-patterns` macro logs read patterns which occur during execution. This is to support reactive views which update when underlying data changes.
