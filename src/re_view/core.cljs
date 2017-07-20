@@ -351,4 +351,3 @@
   (apply dissoc (get this :view/props) (get-in this [:spec/props :props/consumed])))
 
 (def is-react-element? v-util/is-react-element?)
- 

@@ -110,29 +110,30 @@
          child-specs                               :spec/children} (v/mock (component))
         editing? true
         section :.b.pa2.pt3.f6
-        children (some->> prop-atom deref (drop 1) (seq))]
-    (when (or (seq prop-specs) children)
+        children (some->> prop-atom deref (drop 1) (seq))
+        prop-specs (->> prop-specs
+                        (remove #(= "props" (namespace (first %))))
+                        (sort-by first)
+                        (seq))]
+    (when (or prop-specs children)
       [:div
        container-props
-       (when-not (empty? prop-specs)
-         (let [values (some->> prop-atom deref first)]
-           (list [section "Props"]
-                 [:table.f7.w-100
-                  [:tbody
-                   (for [[k v] (->> prop-specs
-                                    (seq)
-                                    (sort-by first))
-                         :when (not (= "props" (namespace k)))
-                         :let [{:keys [doc] :as prop-spec} (s/resolve v)
-                               v (get values k)]
-                         :when (not= k :key)]
-                     [:tr
-                      [:td
-                       [:.b.pre-wrap.mb1 (key-field k)]
-                       [:.o-60 doc]]
-                      (when editing?
-                        [:td (value-edit prop-spec prop-atom [0 k])])
-                      ])]])))
+       (let [values (some->> prop-atom deref first)]
+         (list [section "Props"]
+               [:table.f7.w-100
+                [:tbody
+                 (for [[k v] prop-specs
+                       :when (not (= "props" (namespace k)))
+                       :let [{:keys [doc] :as prop-spec} (s/resolve v)
+                             v (get values k)]
+                       :when (not= k :key)]
+                   [:tr
+                    [:td
+                     [:.b.pre-wrap.mb1 (key-field k)]
+                     [:.o-60 doc]]
+                    (when editing?
+                      [:td (value-edit prop-spec prop-atom [0 k])])
+                    ])]]))
 
        (when children
          (list [section "Children"]
