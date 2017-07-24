@@ -9,7 +9,7 @@
                  [re-view-hiccup "0.1.6"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
-            [lein-figwheel "0.5.0-2"]
+            #_[lein-figwheel "0.5.0-2"]
             [lein-doo "0.1.6"]]
 
   :source-paths ["src" "example"]
