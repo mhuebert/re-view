@@ -11,7 +11,7 @@
 
 
     (are [name result]
-      (= (s/resolve name) result)
+      (= (s/resolve-spec name) result)
 
       ;; def'd function spec
       ::even? {:spec      even?
@@ -28,14 +28,14 @@
       :Boolean {:spec      boolean?
                 :spec-name :Boolean})
 
-    (is (= (s/spec-kind (s/resolve ::color))
+    (is (= (s/spec-kind (s/resolve-spec ::color))
            :Set))
-    (is (= (s/spec-kind (s/resolve ::even?))
+    (is (= (s/spec-kind (s/resolve-spec ::even?))
            ::even?))
-    (is (= (s/spec-kind (s/resolve :Function))
+    (is (= (s/spec-kind (s/resolve-spec :Function))
            :Function))
 
-    (is (= (s/resolve {:spec :Function})
+    (is (= (s/resolve-spec {:spec :Function})
            {:spec      fn?
             :spec-name :Function}))
 
@@ -56,8 +56,8 @@
             :props/required [:y]
             :props/defaults {:y "y-value"}}))
 
-    (is (thrown? js/Error (s/validate-spec :x (s/resolve :Function) "s")))
-    (is (nil? (s/validate-spec :x (s/resolve :Function) even?)))
+    (is (thrown? js/Error (s/validate-spec :x (s/resolve-spec :Function) "s")))
+    (is (nil? (s/validate-spec :x (s/resolve-spec :Function) even?)))
 
 
 
