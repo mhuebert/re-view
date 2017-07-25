@@ -4,7 +4,7 @@ target
 pom.xml*
 *.log
 *.iml
-resources
+resources/public
 doo*.html
 checkouts
 docs/marginalia

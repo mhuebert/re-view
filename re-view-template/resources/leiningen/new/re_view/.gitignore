@@ -1,0 +1,4 @@
+resources/public/js/compiled/out*
+target
+.idea
+*.iml
