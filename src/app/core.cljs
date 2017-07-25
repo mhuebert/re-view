@@ -25,7 +25,7 @@
             [goog.events :as events]
             [goog.functions :as gf]))
 
-(def header-github-url "https://www.github.com/re-view/re-view")
+(def header-github-url "https://www.github.com/braintripping/re-view")
 
 (def main-nav-items (list [(-> icons/Home
                                (icons/style {:margin "-0.4rem 0"})) "/"]

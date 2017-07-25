@@ -29,8 +29,8 @@
                                                    (last)
                                                    (string/replace #"([a-z])([A-Z])" "$1 $2")))]
                            (merge example {:db/id     (str "ui-" (-> label
-                                                                           (string/lower-case)
-                                                                           (string/replace " " "-")))
+                                                                     (string/lower-case)
+                                                                     (string/replace " " "-")))
                                            :label     label
                                            :docstring docstring
                                            :kind      :re-view/component}))))))
@@ -98,10 +98,10 @@
        (when docstring
          (md {:class "o-70 f6"} docstring))
        [:.flex-auto]
-       [:.mv3.center (if custom-view (custom-view)
-                                     (try (cond-> (hoc/bind-atom component prop-atom)
-                                                  wrap (wrap))
-                                          (catch js/Error e "Error")))]
+       [:.mv3 (if custom-view (custom-view)
+                              (try (cond-> (hoc/bind-atom component prop-atom)
+                                           wrap (wrap))
+                                   (catch js/Error e "Error")))]
        [:.flex-auto]]
 
       (some->> prop-atom (h/props-editor {:component       component
