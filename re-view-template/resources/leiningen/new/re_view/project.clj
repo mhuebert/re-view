@@ -20,13 +20,13 @@
             :source-paths ["src"]
 
             :figwheel {:ring-handler figwheel-server.core/handler
-                       :server-port  5300}
+                       :server-port  {{port}}}
 
             :profiles {:dev {:dependencies [[figwheel-pushstate-server "0.1.1-SNAPSHOT"]]}}
 
             :cljsbuild {:builds [{:id           "dev"
                                   :source-paths ["src"]
-                                  :figwheel     true
+                                  :figwheel     {:open-urls ["http://localhost:{{port}}/"]}
                                   :compiler     {:main           "{{name}}.core"
                                                  :parallel-build true
                                                  :infer-externs  true
