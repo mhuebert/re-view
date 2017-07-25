@@ -1,5 +1,6 @@
 (ns re-view-hiccup.core
   (:require [cljsjs.react]
+            [cljsjs.react.dom]
             [clojure.string :as string]
             [re-view-hiccup.react.attrs :as react-html]))
 
