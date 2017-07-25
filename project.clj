@@ -22,14 +22,14 @@
                  ]
 
   :plugins [[lein-figwheel "0.5.10"]
-            [lein-cljsbuild "1.1.5" :exclusions [org.clojure/clojure]]]
+            [lein-cljsbuild "1.1.6" :exclusions [org.clojure/clojure]]]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
                                     "target"]
 
 
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]
-                                  [figwheel-pushstate-server "0.1.1-SNAPSHOT"]]}}
+                                  [figwheel-sidecar "0.5.9"]]}}
   :source-paths ["src"]
 
   :figwheel {:ring-handler figwheel-server.core/handler}
