@@ -15,8 +15,8 @@
       (-write writer (str "\"" (.toString sym) "\"")))))
 
 (defn parse-key
-  "Parses a hiccup key like :div#id.class1.class2 to return the base name, id, and classes.
-   If base-name is ommitted, defaults to 'div'. Class names are padded with spaces."
+  "Parses a hiccup key like :div#id.class1.class2 to return the tag name, id, and classes.
+   If tag-name is ommitted, defaults to 'div'. Class names are padded with spaces."
   [x]
   (-> (re-find #":([^#.]*)(?:#([^.]+))?(.*)?" (str x))
       (update 1 #(if (= "" %) "div" (string/replace % "/" ":")))
@@ -81,12 +81,15 @@
 (defn props->js
   "Returns a React-conformant javascript object. An alternative to clj->js,
   allowing for key renaming without an extra loop through every prop map."
-  [k-id k-classes {:keys [class class-name classes] :as props}]
+  [tag k-id k-classes props]
   (when props
-    (let [prop-js (cond-> (js-obj)
+    (let [{:keys [class class-name classes] :as props} (cond-> props
+                                                               (boolean *wrap-props*)
+                                                               (*wrap-props* tag))
+          prop-js (cond-> (js-obj)
                           k-id (doto (aset "id" k-id))
                           (or k-classes class class-name classes) (doto (aset "className" (concat-classes k-classes (or class class-name) classes))))]
-      (doseq [[k v] (cond-> props (not (nil? *wrap-props*)) (*wrap-props*))]
+      (doseq [[k v] props]
         (cond
           ;; convert :style and :dangerouslySetInnerHTML to js objects
           (or (keyword-identical? k :style)
@@ -106,9 +109,9 @@
   "Recursively create React elements from Hiccup vectors."
   [form]
   (try
-    (let [[_ k id classes] (parse-key-memoized (form 0))
+    (let [[_ tag id classes] (parse-key-memoized (form 0))
           [props children] (parse-args form)
-          args (reduce-concat render-hiccup-node [k (props->js id classes props)] children)]
+          args (reduce-concat render-hiccup-node [tag (props->js tag id classes props)] children)]
       (apply *create-element* args))
     (catch js/Error e
       (println "Error in render-hiccup-node:")
@@ -130,5 +133,5 @@
   ([form {:keys [wrap-props
                  create-element]}]
    (binding [*wrap-props* wrap-props
-             *create-element* create-element]
+             *create-element* (or *create-element* create-element)]
      (element form))))

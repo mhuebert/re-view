@@ -1,8 +1,6 @@
 (ns re-view-hiccup.spec
-  (:require [clojure.spec :as s :include-macros true]
-            [cljs.spec.impl.gen :as gen]
-            [cljs.spec.test :as t]
-            [clojure.test.check.generators]
+  (:require [cljs.spec.alpha :as s :include-macros true]
+            [cljs.spec.gen.alpha]
             [clojure.string :as string]
             [re-view-hiccup.core :as hiccup]
             [re-view-hiccup.react.attrs :as attrs]))

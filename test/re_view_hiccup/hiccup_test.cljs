@@ -1,6 +1,5 @@
-(ns re-view-hiccup-test
+(ns re-view-hiccup.hiccup-test
   (:require [cljs.test :refer [deftest is are testing]]
-            [clojure.test.check.generators]
             [re-view-hiccup.core :as hiccup]
             [re-view-hiccup.react.html :as html]))
 
@@ -9,7 +8,7 @@
 (defn element-args [form]
   (let [[_ k id classes] (hiccup/parse-key-memoized (form 0))
         [props children] (hiccup/parse-args form)]
-    (-> (into [k (hiccup/props->js id classes props)] children)
+    (-> (into [k (hiccup/props->js k id classes props)] children)
         (update 1 js->clj :keywordize-keys true))))
 
 (deftest hiccup
@@ -81,9 +80,23 @@
 (deftest html
   "Client-side HTML strings from React elements"
 
+
+
   (is (= "<div class=\"red\">abc</div>"
          (html/string (hiccup/element [:div {:class "red"} "abc"])))
       "div with class")
+
+  (is (= "<div class=\"redx\"></div>"
+         (html/string (hiccup/element [:div {:class "red"}]
+                                      {:wrap-props #(update % :class str "x")})))
+      "using wrap-props")
+
+  (is (= "<input class=\"X\">"
+         (html/string (hiccup/element [:input]
+                                      {:wrap-props (fn [props tag]
+                                                     (cond-> props
+                                                             (= tag "input") (assoc :class "X")))})))
+      "using tag in wrap-props")
 
   (is (= "<div style=\"font-size: 10px;\">abc</div>"
          (html/string (hiccup/element [:div {:style {:font-size 10}} "abc"])))
