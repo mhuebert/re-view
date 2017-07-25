@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.8
+- Fixed behaviour of `wrap-props` option to `element`. Also, pass `tag` to `wrap-props`.
+
 ## 0.1.4
 - Added `:create-element` option to override `React.createElement`
 - Moved to re-view.hiccup namespace
