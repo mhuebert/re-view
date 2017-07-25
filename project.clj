@@ -43,7 +43,8 @@
                                        [cljsjs/react-dom-server "15.5.0-0"]]}
              :dev      {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
                                        [cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]]}
+                                       [cljsjs/react-dom-server "15.5.0-0"]
+                                       [org.clojure/test.check "0.9.0"]]}
              :test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
                                        [cljsjs/react "15.5.0-0"]
                                        [cljsjs/react-dom-server "15.5.0-0"]

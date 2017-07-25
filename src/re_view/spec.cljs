@@ -1,10 +1,8 @@
 (ns re-view.spec
-  (:require [clojure.spec :as s :include-macros true]
-            [cljs.spec.impl.gen :as gen]
-            [cljs.spec.test :as t]
-            [clojure.test.check.generators]
-            [clojure.string :as string]
-            [re-view-hiccup.spec]))
+  (:require [cljs.spec.alpha :as s :include-macros true]
+            [cljs.spec.gen.alpha :as gen]
+            [re-view-hiccup.spec]
+            [re-view.core :include-macros true]))
 
 
 (s/fdef re-view.core/defview
