@@ -51,8 +51,8 @@
 
 (defview layout [this]
          [:div
-          (example-text)
+          (example-text {:name "{{name}}"})
           (example-counter)
           (example-local-state)])
 
-(v/render-to-dom (layout {:name "{{name}}"}) "{{name}}")
+(v/render-to-dom (layout) "{{name}}")
