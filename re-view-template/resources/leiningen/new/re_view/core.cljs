@@ -1,8 +1,6 @@
 (ns {{name}}.core
   (:require
-    [re-view.core :as v :refer [defview]]
-    [cljsjs.react]
-    [cljsjs.react.dom]))
+    [re-view.core :as v :refer [defview]]))
 
 
 (enable-console-print!)
