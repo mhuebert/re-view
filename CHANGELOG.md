@@ -1,6 +1,10 @@
 
 # Changelog
 
+## 0.3.21
+
+- Wrap :on-change callbacks of text inputs to render synchronously.
+
 ## 0.3.16
 
 - new re-view.hoc namespace for higher order components
