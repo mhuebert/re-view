@@ -13,6 +13,7 @@
            (main/info "Generating fresh 'lein new' re-view project.")
            (->files data
                     ["src/{{sanitized}}/core.cljs" (render "core.cljs" data)]
+                    ["src/{{sanitized}}/examples.cljs" (render "examples.cljs" data)]
                     ["project.clj" (render "project.clj" data)]
                     ["resources/public/index.html" (render "index.html" data)]
                     [".gitignore" (render ".gitignore" data)]
