@@ -9,8 +9,8 @@
 
             :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                            [org.clojure/clojurescript "1.9.671"]
-                           [re-view "0.3.20"]
 
+                           [re-view "0.3.20"]
                            [cljsjs/react "15.6.1-0"]
                            [cljsjs/react-dom "15.6.1-0"]]
 
@@ -26,7 +26,11 @@
 
             :cljsbuild {:builds [{:id           "dev"
                                   :source-paths ["src"]
+
+                                  ;; change this to `:figwheel true` to stop figwheel from
+                                  ;; automatically opening the page after compile.
                                   :figwheel     {:open-urls ["http://localhost:{{port}}/"]}
+
                                   :compiler     {:main           "{{name}}.core"
                                                  :parallel-build true
                                                  :infer-externs  true
@@ -36,7 +40,7 @@
                                                  :output-dir     "resources/public/js/compiled/out-dev"
                                                  :optimizations  :none}}
 
-                                 {:id           "advanced"
+                                 {:id           "prod"
                                   :source-paths ["src"]
                                   :compiler     {:main           "{{name}}.core"
                                                  :infer-externs  true
