@@ -74,7 +74,7 @@
   (assert (vector? args))
   `(~'fn ~name ~args
      (do ~@(drop-last body)
-         (~'re-view-hiccup.core/element ~(last body)))))
+         (~'re-view-hiccup.core/element ~(last body) {:wrap-props ~'re-view.core/wrap-props}))))
 
 (defmacro defview
   "Define a view function.

@@ -1,8 +1,6 @@
 (ns re-view.view-spec
   (:require [re-view.util :as util]
-            [clojure.string :as string]
-            [clojure.set :as set])
-  (:require-macros [re-view.core :as v]))
+            [clojure.string :as string]))
 
 (def spec-registry
   "Global registry for view specs"

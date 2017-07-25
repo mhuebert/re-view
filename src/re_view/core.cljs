@@ -33,6 +33,21 @@
   [this]
   (not (true? (aget this "unmounted"))))
 
+(defn apply-sync!
+  "Wraps function `f` to flush the render loop before returning."
+  [f]
+  (fn [& args]
+    (let [result (apply f args)]
+      (flush!)
+      result)))
+
+(defn wrap-props
+  "Wraps :on-change handlers of text inputs to apply changes synchronously."
+  [props tag]
+  (cond-> props
+          (and (contains? props :on-change)
+               (#{"input" "textarea"} tag)) (update :on-change apply-sync!)))
+
 (defn reactive-render
   "Wrap a render function to force-update the component when re-db patterns accessed during evaluation are invalidated."
   [f]

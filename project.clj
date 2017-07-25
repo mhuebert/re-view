@@ -3,10 +3,10 @@
   :url "https://www.github.com/re-view/re-view"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.521"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
+                 [org.clojure/clojurescript "1.9.671"]
                  [re-db "0.1.11"]
-                 [re-view-hiccup "0.1.7"]]
+                 [re-view-hiccup "0.1.8"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             #_[lein-figwheel "0.5.0-2"]

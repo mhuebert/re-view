@@ -44,11 +44,7 @@
                                  :margin     "10px 0"
                                  :box-sizing "border-box"}
                    :placeholder "Add item..."
-                   :on-change   #(do (swap! state assoc :next-item-label (.. % -target -value))
-                                     ;; state changes are normally batched in an event loop.
-                                     ;; we run force-update! here to ensure that the input
-                                     ;; component updates immediately.
-                                     (v/force-update! this))
+                   :on-change   #(swap! state assoc :next-item-label (.. % -target -value))
                    :on-key-down #(when (= 13 (.-keyCode %))
                                    (reset! state (-> @state
                                                      (update :items conj {:label   (:next-item-label @state)

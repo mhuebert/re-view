@@ -10,12 +10,12 @@
             :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                            [org.clojure/clojurescript "1.9.671"]
 
-                           [re-view "0.3.20"]
+                           [re-view "0.3.21"]
                            [cljsjs/react "15.6.1-0"]
                            [cljsjs/react-dom "15.6.1-0"]]
 
-            :plugins [[lein-cljsbuild "1.1.5"]
-                      [lein-figwheel "0.5.10"]]
+            :plugins [[lein-cljsbuild "1.1.6"]
+                      [lein-figwheel "0.5.11"]]
 
             :source-paths ["src"]
 
