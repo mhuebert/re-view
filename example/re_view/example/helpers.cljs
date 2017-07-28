@@ -124,7 +124,7 @@
                 [:tbody
                  (for [[k v] prop-specs
                        :when (not (= "props" (namespace k)))
-                       :let [{:keys [doc] :as prop-spec} (s/resolve v)
+                       :let [{:keys [doc] :as prop-spec} (s/resolve-spec v)
                              v (get values k)]
                        :when (not= k :key)]
                    [:tr
