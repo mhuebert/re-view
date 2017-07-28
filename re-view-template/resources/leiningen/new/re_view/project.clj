@@ -22,7 +22,7 @@
             :figwheel {:ring-handler figwheel-server.core/handler
                        :server-port  {{port}}}
 
-            :profiles {:dev {:dependencies [[figwheel-pushstate-server "0.1.1-SNAPSHOT"]]}}
+            :profiles {:dev {:dependencies [[figwheel-pushstate-server "0.1.2"]]}}
 
             :cljsbuild {:builds [{:id           "dev"
                                   :source-paths ["src"]
