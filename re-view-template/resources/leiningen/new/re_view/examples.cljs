@@ -6,14 +6,11 @@
          "A more advanced example using the :view/state atom, a lifecycle method,
           and a custom method."
          {:view/initial-state    {:mouse-position [150 100]}
-          :view/did-mount        (fn [this]
+          :update-mouse-position (fn [{:keys [view/state] :as this} e]
                                    (let [element (v/dom-node this)
                                          position (.getBoundingClientRect element)]
-                                     (swap! (:view/state this) assoc :base-position [(.-left position) (.-top position)])))
-          :update-mouse-position (fn [{:keys [view/state]} e]
-                                   (let [[left-offset top-offset] (:base-position @state)]
-                                     (swap! state assoc :mouse-position [(- (.-clientX e) left-offset)
-                                                                         (- (.-clientY e) top-offset)])))}
+                                     (swap! state assoc :mouse-position [(- (.-clientX e) (.-left position))
+                                                                         (- (.-clientY e) (.-top position))])))}
          [this]
          (let [{[mouse-left mouse-top] :mouse-position} @(:view/state this)]
            [:div
