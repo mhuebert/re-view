@@ -118,17 +118,16 @@ Re-View was written in tandem with [re-db](https://github.com/re-view/re-db), a 
 
 React [lifecycle methods](https://facebook.github.io/react/docs/react-component.html#the-component-lifecycle) are supported via the following keys:
 
-
 | key          | description          |
 |---|---|
-| `:view/initial-state`      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
-| `:view/will-mount`         | _componentWillMount_        |
-| `:view/did-mount`          | _componentDidMount_         |
-| `:view/will-receive-props` | _componentWillReceiveProps_ |
-| `:view/should-update`      | _shouldComponentUpdate_     |
-| `:view/will-update`        | _componentWillUpdate_       |
-| `:view/did-update`         | _componentDidUpdate_        |
-| `:view/will-unmount`       | _componentWillUnmount_      |
+| **:view/initial-state**      | _getInitialState_ (Initial value for the `:view/state` atom. Can be function (of `this`) or other value.)           |
+| **:view/will-mount**         | _componentWillMount_        |
+| **:view/did-mount**          | _componentDidMount_         |
+| **:view/will-receive-props** | _componentWillReceiveProps_ |
+| **:view/should-update**      | _shouldComponentUpdate_     |
+| **:view/will-update**        | _componentWillUpdate_       |
+| **:view/did-update**         | _componentDidUpdate_        |
+| **:view/will-unmount**       | _componentWillUnmount_      |
 
 **Example:**
 
