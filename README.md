@@ -34,7 +34,7 @@ lein figwheel;
 ;; open browser window to http://localhost:5300
 ```
 
-## Navigating this repo
+## What's in this repo?
 
 core + utilities
 
@@ -52,5 +52,4 @@ docs & examples
 
 - [/website](/re-view/tree/master/website), the source code for https://re-view.io
 - [/docs](/re-view/tree/master/docs), the docs that re-view.io reads from
-- Also check out the [source code for Maria](https://www.github.com/mhuebert/maria), a browser-based ClojureScript editor that uses re-view
 
