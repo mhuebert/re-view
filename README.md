@@ -21,24 +21,24 @@ lein figwheel;
 ;; open browser window to http://localhost:5300
 ```
 
-## In this repo
+## Navigating this repo
 
 ### core
 
-- [re-view](/re-view/tree/master/re_view), the main thing you will use -- a ClojureScript view library built on top of React
+- [/re_view](/re-view/tree/master/re_view), the main thing you will use -- a ClojureScript view library built on top of React
 
 ### reusable components
 
-- [re-view-material](/re-view/tree/master/re_view_material), implementations of Google's Material Design components
-- [re-view-prosemirror](/re-view/tree/master/re_view_prosemirror), wrapper around [ProseMirror](http://prosemirror.net/)
+- [/re_view_material](/re-view/tree/master/re_view_material), implementations of Google's Material Design components
+- [/re_view_prosemirror](/re-view/tree/master/re_view_prosemirror), wrapper around [ProseMirror](http://prosemirror.net/)
 
 ### utilities
 
-- [re-view-routing](/re-view/tree/master/re_view_routing), a small routing library
-- [re-view-hiccup](/re-view/tree/master/re_view_hiccup), a small hiccup parser
+- [/re_view_routing](/re-view/tree/master/re_view_routing), a small routing library
+- [/re_view_hiccup](/re-view/tree/master/re_view_hiccup), a small hiccup parser
 
 ### docs & examples
 
-- [website](/re-view/tree/master/website), the source code for https://re-view.io
-- [docs](/re-view/tree/master/docs), the docs that re-view.io reads from
+- [/website](/re-view/tree/master/website), the source code for https://re-view.io
+- [/docs](/re-view/tree/master/docs), the docs that re-view.io reads from
 
