@@ -99,7 +99,9 @@
 
 (defn query-nav!
   [query]
-  (nav! (str (.. js/window -location -pathname) "?" (query-string query))))
+  (let [query-string (query-string query)]
+    (nav! (cond-> (.. js/window -location -pathname)
+                  (not (#{nil ""} query-string)) (str "?" query-string)))))
 
 (defn swap-query!
   [f & args]

@@ -4,7 +4,7 @@
 
 ----
 
-Full details on the **[wiki](https://github.com/mhuebert/re-view/wiki/Re-View-Routing)**.
+Full details: https://re-view.io/docs/routing
 
 ----
 
@@ -53,5 +53,4 @@ Use `core.match` for wildcard segments or other patterns.
     ;; bind `id` to the second path segment, eg. '8' in the path `/posts/8`
     ["post" id] (app-views/posts {:id id}))
 ```
- 
-Read more on the **[wiki](https://github.com/mhuebert/re-view/wiki/Re-View-Routing)**.
+
