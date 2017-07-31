@@ -8,8 +8,8 @@
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]]
 
 
-  :plugins [[lein-cljsbuild "1.1.3"]
-            [lein-figwheel "0.5.0-2"]
+  :plugins [[lein-cljsbuild "1.1.6"]
+            [lein-figwheel "0.5.11"]
             [lein-doo "0.1.6"]]
 
   :source-paths ["src" "example"]

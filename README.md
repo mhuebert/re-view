@@ -2,7 +2,7 @@
 
 ![badge](https://img.shields.io/clojars/v/re-db.svg)
 
-Re-DB is a client-side data store for handling global state in ClojureScript apps. It was built in tandem with [Re-View](https://www.github.com/mhuebert/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
+Re-DB is a client-side data store for handling global state in ClojureScript apps. It was built in tandem with [Re-View](https://www.github.com/braintripping/re-view) to support views which automatically update when underlying data changes. It is inspired by Datomic and DataScript.
 
 ## Installation
 
