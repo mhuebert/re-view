@@ -6,5 +6,5 @@ pom.xml*
 *.iml
 */resources/public/js/compiled
 doo*.html
-checkouts
+*/checkouts
 docs/marginalia
