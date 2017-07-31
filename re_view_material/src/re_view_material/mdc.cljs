@@ -374,7 +374,7 @@
                                                 with-content (gdom/getFirstElementChild))
         ^js/HTMLElement first-row-element (-> toolbar-element
                                               (gdom/findNode #(classes/has % "mdc-toolbar__row")))
-        ^js/Window parent-window (or (some-> toolbar-element (aget "ownerDocument") (aget "defaultView"))
+        ^js/Window parent-window (or (some-> toolbar-element (gobj/get "ownerDocument") (gobj/get "defaultView"))
                                      Window)]
     (cond-> {:root                           toolbar-element
              :firstRowElement                first-row-element
@@ -386,14 +386,15 @@
 
              :registerResizeHandler          (interaction-handler :listen parent-window "resize")
              :deregisterResizeHandler        (interaction-handler :unlisten parent-window "resize")
-             :getViewportWidth               #(.-innerWidth parent-window)
-             :getViewportScrollY             #(.-pageYOffset parent-window)
-             :getOffsetHeight                #(.-offsetHeight toolbar-element)
-             :getFirstRowElementOffsetHeight #(.-offsetHeight first-row-element)
+             :getViewportWidth               #(gobj/get parent-window "innerWidth")
+             :getViewportScrollY             #(gobj/get parent-window "pageYOffset")
+             :getOffsetHeight                #(gobj/get toolbar-element "offsetHeight")
+             :getFirstRowElementOffsetHeight #(gobj/get first-row-element "offsetHeight")
              :notifyChange                   (fn [ratio])
              :setStyle                       (style-handler :Toolbar)
              :setStyleForTitleElement        (fn [attr val]
-                                               (util/add-styles (aget (js-this) "titleElement") {attr val}))
+                                                 (this-as this
+                                                          (util/add-styles (gobj/get this "titleElement") {attr val})))
              :setStyleForFlexibleRowElement  (style-handler :Toolbar :firstRowElement)}
             with-content (merge {:fixedAdjustElement            (gdom/getNextElementSibling toolbar-element)
                                  :setStyleForFixedAdjustElement (style-handler :Toolbar :fixedAdjustElement)
