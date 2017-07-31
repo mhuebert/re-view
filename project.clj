@@ -22,9 +22,9 @@
 
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
-                        :compiler     {:output-to     "resources/public/js/test.js"
-                                       :output-dir    "resources/public/js/test"
-                                       :asset-path    "/base/resources/public/js/test"
+                        :compiler     {:output-to     "resources/public/js/compiled/test.js"
+                                       :output-dir    "resources/public/js/compiled/out"
+                                       :asset-path    "/base/resources/public/js/compiled/out"
                                        :main          tests.runner
                                        :optimizations :none}}]}
   :plugins [[lein-doo "0.1.6"]]

@@ -6,7 +6,7 @@
 
 ---- 
 
-New to Hiccup? Read the **[syntax guide](https://github.com/mhuebert/re-view/wiki/Hiccup-Syntax)**.
+New to Hiccup? Read the **[syntax guide](https://re-view.io/docs/hiccup/syntax-guide)**.
 
 ---
 

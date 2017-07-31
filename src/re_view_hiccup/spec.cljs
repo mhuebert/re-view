@@ -1,9 +1,8 @@
 (ns re-view-hiccup.spec
-  (:require [cljs.spec.alpha :as s :include-macros true]
-            [cljs.spec.gen.alpha]
+  (:require [clojure.spec.alpha :as s :include-macros true]
+            [clojure.spec.gen.alpha :as gen]
             [clojure.string :as string]
-            [re-view-hiccup.core :as hiccup]
-            [re-view-hiccup.react.attrs :as attrs]))
+            [re-view-hiccup.core :as hiccup]))
 
 
 (defn gen-wrap
