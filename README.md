@@ -10,9 +10,9 @@ Re-View is a library for building React apps in ClojureScript. [https://re-view.
 
 ## Getting started
 
-If you're new here, you probably want to check out the [website](https://re-view.io) or the [quickstart](https://github.com/braintripping/re-view/tree/master/re_view#quickstart)
+Start by reading the [website](https://re-view.io) or the [quickstart](https://github.com/braintripping/re-view/tree/master/re_view#quickstart)
 
-Build an example app using our lein template:
+For the impatient, build an example app using our lein template:
 
 ```clj
 lein new re-view my-example-app;
