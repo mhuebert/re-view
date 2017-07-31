@@ -1,7 +1,4 @@
 {
-  "scripts": {
-    "postinstall": "cd node_modules/prosemirror-markdown; yarn install"
-  },
   "dependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
