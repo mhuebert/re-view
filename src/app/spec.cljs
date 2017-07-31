@@ -1,8 +1,6 @@
 (ns re-view-material.spec
-  (:require [clojure.spec :as s :include-macros true]
-            [re-view-hiccup.spec]
-            [cljs.spec.impl.gen :as gen]
-            [clojure.test.check.generators]))
+  (:require [clojure.spec.alpha :as s :include-macros true]
+            [re-view-hiccup.spec]))
 
 
 (enable-console-print!)

@@ -4,10 +4,10 @@
 
   :min-lein-version "2.7.1"
 
-  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.518"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
+                 [org.clojure/clojurescript "1.9.671"]
 
-                 [re-view "0.3.20"]
+                 [re-view "0.3.22"]
                  [re-db "0.1.11"]
                  [re-view-routing "0.1.3"]
                  [re-view-prosemirror "0.1.4"]
@@ -21,7 +21,7 @@
                  [cljsjs/highlight "9.6.0-0"]
                  ]
 
-  :plugins [[lein-figwheel "0.5.10"]
+  :plugins [[lein-figwheel "0.5.11"]
             [lein-cljsbuild "1.1.6" :exclusions [org.clojure/clojure]]]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
@@ -29,19 +29,20 @@
 
 
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]
-                                  [figwheel-sidecar "0.5.9"]]}}
+                                  [figwheel-pushstate-server "0.1.2"]]}}
   :source-paths ["src"]
 
-  :figwheel {:ring-handler figwheel-server.core/handler}
+  :figwheel {:ring-handler figwheel-server.core/handler
+             :server-port 5301}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
                         :figwheel     true
                         :compiler     {:main                 "app.core"
                                        :closure-defines      {re-view.core/INSTRUMENT! true}
-                                       :output-to            "resources/public/js/app.js"
-                                       :output-dir           "resources/public/js/out"
-                                       :asset-path           "/js/out"
+                                       :output-to            "resources/public/js/compiled/app.js"
+                                       :output-dir           "resources/public/js/compiled/out"
+                                       :asset-path           "/js/compiled/out"
                                        :source-map-timestamp true
                                        :source-map           true
                                        :language-in          :ecmascript5
@@ -55,8 +56,8 @@
 
                                        ;:pseudo-names  true
                                        :asset-path    "/js/out"
-                                       :output-dir    "resources/public/js/out-prod"
-                                       :output-to     "resources/public/js/app.js"
-                                       :source-map    "resources/public/js/app.js.map"
+                                       :output-dir    "resources/public/js/compiled/out-prod"
+                                       :output-to     "resources/public/js/compiled/app.js"
+                                       :source-map    "resources/public/js/compiled/app.js.map"
                                        :optimizations :advanced
                                        }}]})

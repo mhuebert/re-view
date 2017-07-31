@@ -5,7 +5,6 @@ target
 *.codekit3
 resources/public/js/out*
 .firebaserc
-firebase.json
 *.iml
 checkouts
 .idea

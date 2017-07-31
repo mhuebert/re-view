@@ -9,9 +9,9 @@
 
 (defview repo-file-page
   [this repo file-path]
-  (views/markdown-page (merge {:read (-> (str "https://raw.githubusercontent.com/braintripping/" repo "/master/")
+  (views/markdown-page (merge {:read (-> (str "https://raw.githubusercontent.com/braintripping/re-view/master/" (munge repo))
                                          (path/join file-path))
-                               :edit (-> (str "https://github.com/braintripping/" repo "/edit/master")
+                               :edit (-> (str "https://github.com/braintripping/re-view/edit/master/" (munge repo))
                                          (path/join file-path))}
                               (v/pass-props this))))
 
@@ -20,7 +20,7 @@
   {:key (fn [_ repo] repo)}
   [_ repo]
   [:.f6.flex.items-center
-   [:a.mr2 {:href (str "https://www.github.com/braintripping/" repo)} "source"]
+   [:a.mr2 {:href (str "https://www.github.com/braintripping/re-view/" (munge repo))} "source"]
    [:a.mr2 {:href (str "/code/" repo "/CHANGELOG.md")} "changelog"]
    (views/clickable-version repo)])
 
