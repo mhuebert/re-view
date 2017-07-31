@@ -1,6 +1,6 @@
 (defproject re-view "0.3.23-SNAPSHOT"
   :description "Tiny React wrapper"
-  :url "https://www.github.com/re-view/re-view"
+  :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]

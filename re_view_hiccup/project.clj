@@ -1,7 +1,7 @@
 (defproject re-view-hiccup "0.1.9-SNAPSHOT"
   :description "Hiccup parser for re-view"
 
-  :url "https://www.github.com/re-view/re-view-hiccup"
+  :url "https://www.github.com/braintripping/re-view/tree/master/re_view_hiccup"
 
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}

@@ -1,6 +1,6 @@
 (defproject re-view-prosemirror "0.1.5-SNAPSHOT"
   :description "Rich text editors built with ProseMirror in Re-View"
-  :url "https://www.github.com/re-view/re-view-prosemirror"
+  :url "https://www.github.com/braintripping/re-view/tree/master/re_view_prosemirror"
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}
   :min-lein-version "2.7.1"

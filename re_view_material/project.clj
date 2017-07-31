@@ -1,6 +1,6 @@
 (defproject re-view-material "0.1.6-SNAPSHOT"
   :description "Material design components in re-view"
-  :url "https://www.github.com/re-view/re-view-material"
+  :url "https://www.github.com/braintripping/re-view/tree/master/re_view_material"
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"}
   :min-lein-version "2.7.1"
