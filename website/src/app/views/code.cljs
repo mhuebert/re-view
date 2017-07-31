@@ -20,7 +20,7 @@
   {:key (fn [_ repo] repo)}
   [_ repo]
   [:.f6.flex.items-center
-   [:a.mr2 {:href (str "https://www.github.com/braintripping/re-view/" (munge repo))} "source"]
+   [:a.mr2 {:href (str "https://www.github.com/braintripping/re-view/tree/master/" (munge repo))} "source"]
    [:a.mr2 {:href (str "/code/" repo "/CHANGELOG.md")} "changelog"]
    (views/clickable-version repo)])
 

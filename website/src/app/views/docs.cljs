@@ -13,7 +13,7 @@
             [app.util :as util]
             [app.views :as views]))
 
-(def download-root "https://braintripping.github.io/re-view/docs")
+(def download-root "https://braintripping.github.io/re-view")
 (def doc-edit-root "https://github.com/braintripping/re-view/docs/edit/master")
 
 (defn hyphens->readable [s]
@@ -46,7 +46,7 @@
         (string/split #"/"))))
 
 (def get-index (fn [cb]
-                 (util/GET :json "https://braintripping.github.io/re-view/docs/json/index.json"
+                 (util/GET :json "https://braintripping.github.io/re-view/json/index.json"
                            (fn [{:keys [value]}]
                              (set! index
                                    (->> (js->clj value :keywordize-keys true)
