@@ -28,7 +28,7 @@
                                         :rtl       false
                                         :value     "enabled"
                                         :on-change #(swap! example-props assoc-in [0 :checked] (.. % -target -checked))}])}
-   (let [prop-atom (atom)]
+   (let [prop-atom (atom nil)]
      {:component      ui/Dialog
       :wrap-component #(do ui/DialogWithTrigger)
       :prop-atom      (atom [{:content-header "Sample dialog"

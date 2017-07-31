@@ -57,10 +57,10 @@
    :key                (fn [_ element]
                          (or (get-in element [1 :key])
                              (get-in element [1 :id])))
-   :life/did-mount     #(mdc/init % mdc/Ripple)
-   :life/should-update #(do true)
-   :life/did-update    (mdc/mdc-style-update :Ripple "rippleTarget")
-   :life/will-unmount  #(mdc/destroy % mdc/Ripple)}
+   :view/did-mount     #(mdc/init % mdc/Ripple)
+   :view/should-update #(do true)
+   :view/did-update    (mdc/mdc-style-update :Ripple "rippleTarget")
+   :view/will-unmount  #(mdc/destroy % mdc/Ripple)}
   [{:keys [view/state]} hiccup-element]
   (update-attrs hiccup-element update :classes into (:mdc/Ripple-classes @state)))
 
@@ -118,11 +118,11 @@
                         :scrollable?    :Boolean
                         :content-header :Element}
    :spec/children      [:& :Element]
-   :life/initial-state {:mdc/styles {}}
-   :life/did-mount     [#(mdc/init % mdc/Dialog)
+   :view/initial-state {:mdc/styles {}}
+   :view/did-mount     [#(mdc/init % mdc/Dialog)
                         (mdc/mdc-style-update :Dialog)]
-   :life/did-update    (mdc/mdc-style-update :Dialog)
-   :life/will-unmount  #(mdc/destroy % mdc/Dialog)
+   :view/did-update    (mdc/mdc-style-update :Dialog)
+   :view/will-unmount  #(mdc/destroy % mdc/Dialog)
    :open               (fn [this]
                          (.open (gobj/get this "mdcDialog")))
    :close              (fn [this]
@@ -164,13 +164,13 @@
                                        :default :input}
                              :mask    {:spec :Function
                                        :doc  "Function to restrict input"}}
-   :life/initial-state      #(get % :value)
-   :life/will-receive-props (fn [{{prev-value :value} :view/prev-props
+   :view/initial-state      #(get % :value)
+   :view/will-receive-props (fn [{{prev-value :value} :view/prev-props
                                   {value :value}      :view/props
                                   state               :view/state :as this}]
                               (when-not (= prev-value value)
                                 (reset! state value)))
-   :life/did-mount          (fn [{:keys [auto-focus] :as this}]
+   :view/did-mount          (fn [{:keys [auto-focus] :as this}]
                               (when (true? auto-focus) (-> (v/dom-node this)
                                                            (util/closest (fn [^js/Element el]
                                                                            (#{"INPUT" "TEXTAREA"} (aget el "tagName"))))
@@ -238,13 +238,13 @@
                                                :pass-through true}
                         :default-value        {:spec         ::default-value
                                                :pass-through true}}
-   :life/initial-state {:dirty                 false
+   :view/initial-state {:dirty                 false
                         :mdc/Textfield-classes #{"mdc-textfield--upgraded"}
                         :mdc/label-classes     #{"mdc-textfield__label"}
                         :mdc/help-classes      #{"mdc-textfield-helptext"}}
-   :life/did-mount     (fn [this]
+   :view/did-mount     (fn [this]
                          (mdc/init this mdc/Textfield))
-   :life/will-unmount  (fn [this]
+   :view/will-unmount  (fn [this]
                          (mdc/destroy this mdc/Textfield))
    :reset              #(swap! (:view/state %) assoc :dirty false)}
   [{:keys [id
@@ -394,10 +394,10 @@
                        :on-selected :Function
                        :open-from   #{:bottom-right :bottom-left :top-right :top-left}}
    :spec/children     [:& :Element]
-   :life/did-mount    (fn [this] (mdc/init this mdc/SimpleMenu))
-   :life/will-unmount (fn [this] (mdc/destroy this mdc/SimpleMenu))
+   :view/did-mount    (fn [this] (mdc/init this mdc/SimpleMenu))
+   :view/will-unmount (fn [this] (mdc/destroy this mdc/SimpleMenu))
    :open              (fn [this] (.open (gobj/get this "mdcSimpleMenu")))
-   :life/did-update   [(mdc/mdc-style-update :SimpleMenu "menuItemContainer")
+   :view/did-update   [(mdc/mdc-style-update :SimpleMenu "menuItemContainer")
                        (mdc/mdc-style-update :SimpleMenu)]}
   [{:keys [view/state view/props classes open-from] :as this} & items]
   [:.mdc-simple-menu (merge (v/pass-props this)
@@ -471,9 +471,9 @@
                                     ::id]
                        :checked    :Boolean
                        :align-end  :Boolean}
-   :life/did-mount    #(mdc/init % mdc/Ripple mdc/Checkbox mdc/FormField)
-   :life/will-unmount #(mdc/destroy % mdc/Ripple mdc/Checkbox mdc/FormField)
-   :life/did-update   (mdc/mdc-style-update :Ripple)}
+   :view/did-mount    #(mdc/init % mdc/Ripple mdc/Checkbox mdc/FormField)
+   :view/will-unmount #(mdc/destroy % mdc/Ripple mdc/Checkbox mdc/FormField)
+   :view/did-update   (mdc/mdc-style-update :Ripple)}
   [{:keys [id name label view/props view/state
            dense
            label-class
@@ -508,8 +508,8 @@
 
 #_(defview FormField
     {:key               (fn [_ _ {:keys [id]} _] id)
-     :life/did-mount    #(mdc/init % mdc/FormField)
-     :life/will-unmount #(mdc/destroy % mdc/FormField)}
+     :view/did-mount    #(mdc/init % mdc/FormField)
+     :view/will-unmount #(mdc/destroy % mdc/FormField)}
     [{:keys [rtl align-end]} field label]
     [:.mdc-form-field
      {:class (when align-end "mdc-form-field--align-end")
@@ -541,16 +541,16 @@
 
 (defview TemporaryDrawer
   "Slides in from the left and contains the navigation destinations for your app. [More](https://material.io/guidelines/patterns/navigation-drawer.html)"
-  {:life/did-mount          (fn [{:keys [open? view/state] :as this}]
+  {:view/did-mount          (fn [{:keys [open? view/state] :as this}]
                               (mdc/init this mdc/TemporaryDrawer)
                               (swap! state assoc :route-listener (routing/listen (aget this "close") {:fire-now? false}))
                               (when open? (.open this)))
-   :life/will-receive-props (fn [{open? :open? {prev-open? :open?} :view/prev-props :as this}]
+   :view/will-receive-props (fn [{open? :open? {prev-open? :open?} :view/prev-props :as this}]
                               (cond (and open? (not prev-open?)) (.open this)
                                     (and prev-open? (not open?)) (.close this)))
-   :life/will-unmount       #(do (mdc/destroy % mdc/TemporaryDrawer)
+   :view/will-unmount       #(do (mdc/destroy % mdc/TemporaryDrawer)
                                  (routing/unlisten (:route-listener @(:view/state %))))
-   :life/did-update         (mdc/mdc-style-update :TemporaryDrawer "drawer")
+   :view/did-update         (mdc/mdc-style-update :TemporaryDrawer "drawer")
    :foundation              (fn [this]
                               (let [^js/mdc.Foundation foundation (gobj/get this "mdcTemporaryDrawer")]
                                 foundation))
@@ -605,8 +605,8 @@
                        :with-content {:spec :Boolean
                                       :doc  "If true, last child element will be rendered as sibling of Toolbar, with margin applied to adjust for fixed toolbar size."}}
    :spec/children     [:& :Element]
-   :life/did-mount    #(mdc/init % mdc/Toolbar)
-   :life/did-update   [update-toolbar-styles
+   :view/did-mount    #(mdc/init % mdc/Toolbar)
+   :view/did-update   [update-toolbar-styles
                        (fn [{:keys [view/props
                                     view/prev-props
                                     view/children
@@ -617,7 +617,7 @@
                            (let [foundation (aget this "mdcToolbar")
                                  set-key-heights (aget foundation "setKeyHeights_")]
                              (.call set-key-heights foundation))))]
-   :life/will-unmount #(mdc/destroy % mdc/Toolbar)}
+   :view/will-unmount #(mdc/destroy % mdc/Toolbar)}
   [{:keys [view/state
            view/props
            fixed
@@ -801,8 +801,8 @@
 #_(defview Select
     "Select..."
     {:key               (fn [{:keys [id name]}] (or id name))
-     :life/did-mount    (fn [this] (mdc/init this mdc/Select))
-     :life/will-unmount (fn [this] (mdc/destroy this mdc/Select))
+     :view/did-mount    (fn [this] (mdc/init this mdc/Select))
+     :view/will-unmount (fn [this] (mdc/destroy this mdc/Select))
      :spec/props        {:label {:spec :String}}}
     [{:keys [label]}]
     [:.mdc-select

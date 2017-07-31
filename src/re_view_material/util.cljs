@@ -91,13 +91,13 @@
 (defview sync-element!
   "Manage classes and styles for an uncontrolled DOM element (eg. `body` or `html`).
   :getElement should return the DOM element, :class and :style behave as normal."
-  {:life/did-mount  (fn [{:keys [view/state get-element] :as this}]
+  {:view/did-mount  (fn [{:keys [view/state get-element] :as this}]
                       (let [^js/Element element (get-element this)]
                         (swap! state assoc
                                :element element
                                :style-obj (.-style element)))
                       (.componentDidUpdate this))
-   :life/did-update (fn [{{style :style
+   :view/did-update (fn [{{style :style
                            class :class}      :view/props
                           {prev-style :style
                            prev-class :class} :view/prev-props

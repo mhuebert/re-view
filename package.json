@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": {
-    "url": "git@github.com:mhuebert/re-view-material.git",
+    "url": "git@github.com:braintripping/re-view-material.git",
     "type": "git"
   },
   "author": "Matthew Huebert <no-email@gmail.com>",
