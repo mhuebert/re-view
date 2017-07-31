@@ -1,0 +1,16 @@
+.env
+node_modules
+*.log
+target
+*.codekit3
+resources/public/js/out*
+.firebaserc
+*.iml
+checkouts
+.idea
+*.js.map
+resources/public/js/out*
+resources/public/js/app.js
+*app.min.js
+Design
+deploy.sh
