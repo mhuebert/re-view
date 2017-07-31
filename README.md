@@ -36,21 +36,19 @@ lein figwheel;
 
 ## Navigating this repo
 
-### core
+core + utilities
 
 - [/re_view](/re-view/tree/master/re_view), the main thing you will use -- a ClojureScript view library built on top of React
+- [/re_view_routing](/re-view/tree/master/re_view_routing), a small routing library
+- [/re_view_hiccup](/re-view/tree/master/re_view_hiccup), a small hiccup parser
 
-### reusable components
+reusable components
 
 - [/re_view_material](/re-view/tree/master/re_view_material), implementations of Google's Material Design components
 - [/re_view_prosemirror](/re-view/tree/master/re_view_prosemirror), wrapper around [ProseMirror](http://prosemirror.net/)
 
-### utilities
 
-- [/re_view_routing](/re-view/tree/master/re_view_routing), a small routing library
-- [/re_view_hiccup](/re-view/tree/master/re_view_hiccup), a small hiccup parser
-
-### docs & examples
+docs & examples
 
 - [/website](/re-view/tree/master/website), the source code for https://re-view.io
 - [/docs](/re-view/tree/master/docs), the docs that re-view.io reads from
