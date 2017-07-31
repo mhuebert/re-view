@@ -9,14 +9,26 @@ _Re-View_ is a library for building [React](https://facebook.github.io/react/) a
 
 ## Motivation
 
-Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/). 
+Existing tools in the ClojureScript ecosystem, although excellent for their respective use cases, were found to be either too magical or too verbose for my particular needs. Re-View was originally "programmed in anger" (but with lotsa love) during the development of a [reactive-dataflow coding environment](http://px16.matt.is/), and powers the online ClojureScript playground [Maria](https://www.maria.cloud).
 
-## How to start
+## Quickstart
+
+Quickly create a new project from the command line using the lein template:
+
+```bash
+lein new re-view my-great-app;
+cd my-great-app;
+lein figwheel;
+```
+
+By default, `lein figwheel` will compile your project, open a browser window to http://localhost:5300, and then automatically refresh when you make edits to the source files.
+
+## Basic usage
 
 Add the following dependencies to your project.clj or boot file:
 
 ```clj
-[re-view "0.3.17"]
+[re-view "0.3.20"]
 [cljsjs/react "15.5.0-0"]
 [cljsjs/react-dom "15.5.0-0"]
 ```
@@ -81,7 +93,7 @@ React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can
 
 ```clj
 (defview focused-input
-  {:did-mount (fn [this] (.focus (v/dom-node this)))}
+  {:view/did-mount (fn [this] (.focus (v/dom-node this)))}
   [this]
   [:input (:view/props this)])
                  
