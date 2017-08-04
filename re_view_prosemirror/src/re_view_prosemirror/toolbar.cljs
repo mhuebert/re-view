@@ -21,10 +21,10 @@
      (update icon 1 assoc :width 18)]))
 
 (defn mark-strong [state dispatch]
-  (menu-item :strong state dispatch (pm/toggle-mark state :strong) (pm/has-mark? state :strong) icons/FormatBold))
+  (menu-item :strong state dispatch (pm/toggle-mark :strong) (pm/has-mark? state :strong) icons/FormatBold))
 
 (defn mark-em [state dispatch]
-  (menu-item :em state dispatch (pm/toggle-mark state :em) (pm/has-mark? state :em) icons/FormatItalic))
+  (menu-item :em state dispatch (pm/toggle-mark :em) (pm/has-mark? state :em) icons/FormatItalic))
 
 
 (defn list-bullet [state dispatch]
@@ -32,7 +32,7 @@
     (menu-item :bullet-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :bullet_list))
                                                     in-bullet-list? (pm/chain
                                                                       pm/lift
-                                                                      (pm/lift-list-item (pm/get-node state :list_item))))
+                                                                      pm/lift-list-item))
                in-bullet-list? icons/FormatListBulleted)))
 
 (defn list-ordered [state dispatch]
@@ -40,21 +40,21 @@
     (menu-item :ordered-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :ordered_list))
                                                      in-ordered-list? (pm/chain
                                                                         pm/lift
-                                                                        (pm/lift-list-item (pm/get-node state :list_item))))
+                                                                        pm/lift-list-item))
                in-ordered-list? icons/FormatListOrdered)))
 
 (defn tab-outdent [state dispatch]
   (menu-item :outdent state dispatch (pm/chain
-                                       (pm/lift-list-item (pm/get-node state :list_item))
+                                       pm/lift-list-item
                                        pm/lift) false icons/FormatOutdent))
 
 (defn tab-indent [state dispatch]
-  (menu-item :indent state dispatch (pm/sink-list-item (pm/get-node state :list_item)) false icons/FormatIndent))
+  (menu-item :indent state dispatch pm/sink-list-item false icons/FormatIndent))
 
 (defn block-code [state dispatch]
   (menu-item :code-block state dispatch (pm/chain
-                                          (pm/set-block-type (pm/get-node state :code_block) nil)
-                                          (pm/set-block-type (pm/get-node state :paragraph) nil)) (pm/is-block-type? state :code_block nil) icons/Code))
+                                          (pm/set-block-type :code_block)
+                                          (pm/set-block-type :paragraph)) (pm/has-markup? state :code_block nil) icons/Code))
 
 (defn wrap-quote [state dispatch]
   (menu-item :blockquote state dispatch (pm/wrap-in state :blockquote) false icons/FormatQuote))
@@ -63,8 +63,8 @@
   "Dropdown menu with paragraph and header block types"
   [heading-n]
   (fn [state dispatch]
-    (let [set-p (pm/set-block-type (pm/get-node state :paragraph) nil)
-          set-h1 (pm/set-block-type (pm/get-node state :heading) #js {"level" 1})
+    (let [set-p (pm/set-block-type :paragraph)
+          set-h1 (pm/set-block-type :heading #js {"level" 1})
           active? (or (set-p state) (set-h1 state))]
       (ui/SimpleMenuWithTrigger
         [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
@@ -74,7 +74,7 @@
                             :disabled     (false? (set-p state))
                             :on-click     #(set-p state dispatch)})
         (for [i (range 1 (inc heading-n))
-              :let [cmd (pm/set-block-type (pm/get-node state :heading) #js {"level" i})]]
+              :let [cmd (pm/set-block-type :heading #js {"level" i})]]
           (ui/SimpleMenuItem {:key          i
                               :disabled     (false? (cmd state))
                               :on-click     #(cmd state dispatch)

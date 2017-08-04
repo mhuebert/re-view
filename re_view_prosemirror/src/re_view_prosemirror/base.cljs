@@ -10,15 +10,14 @@
 ;; passing the same value does not prevent edits to the local editor state.
 
 
-(def EditorProps [:serialize :parse :schema
-                  :on-mount :on-dispatch
-                  :value :default-value])
 (defview Editor
          "A ProseMirror editor view."
-         {:spec/props        {:serialize         {:spec :Function
+         {:spec/props        {:input-rules       :Vector
+                              :serialize         {:spec :Function
                                                   :doc  "Should convert a ProseMirror doc to Markdown."}
                               :parse             {:spec :Function
                                                   :doc  "Should convert a Markdown string ot a ProseMirror doc."}
+                              :schema            :Object
                               :on-mount          {:spec :Function
                                                   :doc  "(this, EditorView) - called after mount."}
                               :on-dispatch       {:spec :Function
@@ -40,18 +39,21 @@
                                           view/state
                                           editor-view-props
                                           keymap
-                                          serialize
+                                          input-rules
+                                          plugins
                                           parse
                                           schema] :as this}]
                                (let [editor-state (.create pm/EditorState
                                                            #js {"doc"     (parse (or value default-value ""))
                                                                 "schema"  schema
-                                                                "plugins" (-> [(.history pm/history)
-                                                                               (pm/keymap-markdown schema)
-                                                                               (pm/input-rules schema)
-                                                                               (pm/keymap pm/keymap-base)]
-                                                                              (cond-> keymap (conj (pm/user-keymap keymap)))
-                                                                              (to-array))})
+                                                                "plugins" (cond-> [(.history pm/history)
+                                                                                   (.inputRules pm/pm
+                                                                                                #js {:rules (to-array (into input-rules
+                                                                                                                            (.-allInputRules pm/pm)))})]
+                                                                                  keymap (conj (pm/keymap (clj->js keymap)))
+                                                                                  plugins (into plugins)
+                                                                                  false (conj (pm/keymap pm/keymap-base))
+                                                                                  true (to-array))})
                                      editor-view (-> (v/dom-node this)
                                                      (pm/EditorView. (clj->js (merge editor-view-props
                                                                                      {:state      editor-state
@@ -74,14 +76,17 @@
                                    (.updateState view (.create pm/EditorState #js {"doc"     (parse value)
                                                                                    "schema"  schema
                                                                                    "plugins" (aget view "state" "plugins")})))))
+          :pm-view           #(:pm-view @(:view/state %))
           :view/will-unmount (fn [{:keys [view/state]}]
                                (pm/destroy! (:pm-view @state)))
           :serialize         (fn [{:keys [view/state serialize]}]
                                (when-let [doc (some-> (:pm-view @state)
                                                       (aget "state" "doc"))]
                                  (serialize doc)))}
-         [{:keys [view/props] :as this}]
-         [:.prosemirror-content.ph3.cf
-          (-> (apply dissoc props EditorProps)
+         [this]
+         [:.prosemirror-content
+          (-> (merge {:on-click #(when (= (.-target %) (.-currentTarget %))
+                                   (.focus (.pmView this)))}
+                     (v/pass-props this))
               (assoc :dangerouslySetInnerHTML {:__html ""}))])
 

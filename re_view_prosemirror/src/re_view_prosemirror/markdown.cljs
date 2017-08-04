@@ -1,77 +1,63 @@
 (ns re-view-prosemirror.markdown
   (:require [re-view.core :as v]
-            [goog.object :as gobj]
+            [cljsjs.markdown-it]
             [pack.prosemirror-markdown]
             [re-view-prosemirror.base :as base]
-            [clojure.string :as string]))
+            [re-view-prosemirror.tables :as tables]
+            [re-view-prosemirror.core :as pm]
+            [goog.object :as gobj]))
+
+(def *tables?* true)
+(def *fenced-code-blocks?* true)
 
 (def pmMarkdown (.-pmMarkdown js/window))
-(def Schema (aget js/pm "Schema"))
-(def base-schema (gobj/get pmMarkdown "schema"))
-(def schema (let [table-nodes {:table        {:toDOM   #(to-array ["table" 0])
-                                              :content "table_header table_body"
-                                              :group   "block"}
-                               :table_header {:toDOM   #(to-array ["thead" 0])
-                                              :content "table_row"}
-                               :table_body   {:toDOM   #(to-array ["tbody" 0])
-                                              :content "table_row+"}
-                               :table_row    {:content  "table_cell+"
-                                              :toDOM    #(to-array ["tr" 0])
-                                              :tableRow true}
-                               :table_cell   {:attrs     {:cellType {:default "td"}}
-                                              :toDOM     #(to-array [(aget % "attrs" "cellType") 0])
-                                              :content   "inline<_>*"
-                                              :isolating true}}]
-              (Schema. #js {:nodes (-> base-schema
-                                       (gobj/getValueByKeys "spec" "nodes")
-                                       (.append (clj->js table-nodes)))
-                            :marks (aget base-schema "spec" "marks")})))
+(def markdown-schema (gobj/get pmMarkdown "schema"))
+(def defaultMarkdownSerializer (gobj/get pmMarkdown "defaultMarkdownSerializer"))
+(def defaultMarkdownParser (gobj/get pmMarkdown "defaultMarkdownParser"))
+(def MarkdownSerializerState (gobj/get pmMarkdown "MarkdownSerializerState"))
 
-(def ^js/pmMarkdown.MarkdownSerializer serializer
-  (let [MarkdownSerializer (.-MarkdownSerializer pmMarkdown)
-        nodes (.. pmMarkdown -defaultMarkdownSerializer -nodes)
-        marks (.. pmMarkdown -defaultMarkdownSerializer -marks)]
-    (MarkdownSerializer. (doto nodes
-                           (gobj/extend
-                             (clj->js {:table             (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.renderContent state node)
-                                                            (.write state "\n"))
-                                       :table_body        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.renderContent state node))
-                                       :table_header      (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.renderContent state node)
-                                                            (let [columns (aget node "firstChild" "content" "childCount")]
-                                                              ;; only take as many columns as are in the first row
-                                                              (.write state
-                                                                      (str "|" (string/join
-                                                                                 (take columns (repeat "---|")))
-                                                                           "\n"))))
-                                       :table_header_cell (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.write state "| ")
-                                                            (.renderInline state node)
-                                                            (.write state " "))
-                                       :table_row         (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.renderContent state node)
-                                                            (.write state "|\n"))
-                                       :table_cell        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
-                                                            (.write state "| ")
-                                                            (.renderInline state node)
-                                                            (.write state " "))}))) marks)))
+(def default-serializer-nodes (gobj/get defaultMarkdownSerializer "nodes"))
+(def default-serializer-marks (gobj/get defaultMarkdownSerializer "marks"))
 
-(def ^js/pmMarkdown.MarkdownParser parser
-  (let [MarkdownParser (.-MarkdownParser pmMarkdown)
-        token->node {:table {:block "table"}
-                     :thead {:block "table_header"}
-                     :tbody {:block "table_body"}
-                     :tr    {:block "table_row"}
-                     :th    {:block "table_cell"
-                             :attrs {:cellType "th"}}
-                     :td    {:block "table_cell"}}]
-    (MarkdownParser.
-      schema (js/markdownit "default" #js {"html" false})
-      (-> (.-defaultMarkdownParser pmMarkdown)
-          (.-tokens)
-          (doto (gobj/extend (clj->js token->node)))))))
+(defn patch-state
+  "Patch markdown serializer state to emit tight lists."
+  [st]
+  (let [render-list (.-renderList st)]
+    (aset st "renderList" (fn [node delim first-delim]
+                            (aset node "attrs" #js {:tight true})
+                            (this-as this
+                              (.apply render-list this (js-arguments)))))
+    st))
+
+(defn MarkdownSerializer [nodes marks]
+  #js {:serialize (fn [content]
+                    (let [state (patch-state (MarkdownSerializerState.
+                                               (doto default-serializer-nodes (gobj/extend (clj->js (or nodes #js {}))))
+                                               (doto default-serializer-marks (gobj/extend (clj->js (or marks #js {})))) nil))]
+                      (.renderContent state content)
+                      (.-out state)))})
+
+(def fenced-code-nodes {:code_block  (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+                                       (.write state (str "```" (.-params (.-attrs node)) "\n"))
+                                       (.text state (.-textContent node) false)
+                                       (.ensureNewLine state)
+                                       (.write state "```")
+                                       (.closeBlock state node))
+                        :bullet_list (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+                                       (.renderList state node "    " (fn []
+                                                                        (str (or (.. node -attrs -bullet) "*") " "))))})
+
+(def schema (cond-> markdown-schema
+                    *tables?* (tables/add-schema-nodes)))
+
+(def serializer (MarkdownSerializer (merge {}
+                                           (when *tables?*
+                                             tables/table-nodes)
+                                           (when *fenced-code-blocks?*
+                                             fenced-code-nodes)) nil))
+
+(def parser (cond-> defaultMarkdownParser
+                    *tables?* (tables/add-parser-nodes schema (gobj/get pmMarkdown "MarkdownParser"))))
 
 (def Editor (v/partial base/Editor {:serialize #(.serialize serializer %)
                                     :parse     #(.parse parser %)
