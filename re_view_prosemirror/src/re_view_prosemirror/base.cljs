@@ -68,14 +68,17 @@
                                  (reset! state {:pm-view editor-view})
                                  (when-not (nil? on-mount)
                                    (on-mount this editor-view))))
+          :reset-doc      (fn [{:keys [view/state parse schema]} string-value]
+                               (let [view (:pm-view @state)]
+                                 (.updateState view
+                                               (.create pm/EditorState #js {"doc"     (parse string-value)
+                                                                            "schema"  schema
+                                                                            "plugins" (aget view "state" "plugins")}))))
           :view/did-update   (fn [{value               :value
                                    {prev-value :value} :view/prev-props
-                                   :keys               [view/state parse schema]}]
+                                   :keys               [view/state parse schema] :as this}]
                                (when (and value (not= value prev-value))
-                                 (let [view (:pm-view @state)]
-                                   (.updateState view (.create pm/EditorState #js {"doc"     (parse value)
-                                                                                   "schema"  schema
-                                                                                   "plugins" (aget view "state" "plugins")})))))
+                                 (.resetDoc this value)))
           :pm-view           #(:pm-view @(:view/state %))
           :view/will-unmount (fn [{:keys [view/state]}]
                                (pm/destroy! (:pm-view @state)))

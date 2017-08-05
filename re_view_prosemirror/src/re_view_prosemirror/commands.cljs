@@ -2,6 +2,8 @@
   (:require [re-view-prosemirror.core :as pm]
             [goog.object :as gobj]))
 
+(def commands pm/commands)
+
 (def chain pm/chain)
 
 (def undo (gobj/get pm/history "undo"))
