@@ -56,6 +56,10 @@
                                            (when *fenced-code-blocks?*
                                              fenced-code-nodes)) nil))
 
+(defn serialize-selection [selection]
+  (let [fragment (.-content (.content selection))]
+    (.serialize serializer fragment)))
+
 (def parser (cond-> defaultMarkdownParser
                     *tables?* (tables/add-parser-nodes schema (gobj/get pmMarkdown "MarkdownParser"))))
 

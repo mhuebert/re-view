@@ -85,13 +85,13 @@
       (apply f args))))
 
 (defn collect
-  "Merge a list of method maps, preserving special behavour of :should-update and wrapping methods with the same key to execute sequentially."
+  "Merge a list of method maps. Multiple lifecycle methods execute sequentially. Only the last-defined :should-update function is applied."
   [methods]
   (let [methods (apply merge-with (fn [a b] (if (vector? a) (conj a b) [a b])) methods)]
     (reduce-kv (fn [m method-k fns]
                  (cond-> m
                          (vector? fns) (assoc method-k (if (keyword-identical? method-k :view/should-update)
-                                                         (apply v-util/any-pred fns)
+                                                         (last fns)
                                                          (apply compseq fns))))) methods methods)))
 
 (defn wrap-methods
@@ -163,25 +163,25 @@
                                                  (aset this "re$view" "props" next-props)
                                                  (aset this "re$view" "prevProps" prev-props)
                                                  (aset this "re$view" "children" (aget props "children"))
-                                                 (aset this "re$view" "prevChildren" prev-children))))}
+                                                 (aset this "re$view" "prevChildren" prev-children))))
+                  :view/should-update      (fn [{:keys [view/props
+                                                        view/prev-props
+                                                        view/children
+                                                        view/prev-children]}]
+                                             (or (not= props prev-props)
+                                                 (not= children prev-children)))}
                  methods
-                 {:view/should-update (fn [{:keys [view/props
-                                                   view/prev-props
-                                                   view/children
-                                                   view/prev-children]}]
-                                        (or (not= props prev-props)
-                                            (not= children prev-children)))
-                  :view/will-unmount  (fn [{:keys [view/state] :as this}]
-                                        (aset this "unmounted" true)
-                                        (when-let [un-sub (aget this "reactiveUnsubscribe")]
-                                          (un-sub))
-                                        (some-> state (remove-watch :state-changed)))
-                  :view/did-update    (fn [this]
-                                        (let [re$view (aget this "re$view")
-                                              state (aget re$view "state")]
-                                          (doto re$view
-                                            (cond-> state (aset "prevState" @state))
-                                            (aset "prevProps" (aget re$view "props")))))}])
+                 {:view/will-unmount (fn [{:keys [view/state] :as this}]
+                                       (aset this "unmounted" true)
+                                       (when-let [un-sub (aget this "reactiveUnsubscribe")]
+                                         (un-sub))
+                                       (some-> state (remove-watch :state-changed)))
+                  :view/did-update   (fn [this]
+                                       (let [re$view (aget this "re$view")
+                                             state (aget re$view "state")]
+                                         (doto re$view
+                                           (cond-> state (aset "prevState" @state))
+                                           (aset "prevProps" (aget re$view "props")))))}])
        (reduce-kv (fn [m method-k method]
                     (assoc m method-k (wrap-methods method-k method))) {})))
 
