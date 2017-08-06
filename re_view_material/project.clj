@@ -1,4 +1,4 @@
-(defproject re-view-material "0.1.6-SNAPSHOT"
+(defproject re-view-material "0.1.6"
   :description "Material design components in re-view"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view_material"
   :license {:name "MIT License"
