@@ -131,7 +131,7 @@
                 (stack-selection! pos)
                 (dispatch (.setSelection (.-tr state) node-selection))))))))))
 
-(defn shrink-selection [state dispatch]
+(defn contract-selection [state dispatch]
   (when dispatch
     (let [sel (.-selection state)]
       (if (= (.-from sel) (.-to sel))
