@@ -132,9 +132,11 @@
     (add-watch a :state-changed (fn [_ _ old-state new-state]
                                   (when (not= old-state new-state)
                                     (aset this "re$view" "prevState" old-state)
-                                    (when-let [^js/Function will-receive (aget this "componentWillReceiveState")]
+                                    (when-let [^js/Function will-receive (gobj/get this "componentWillReceiveState")]
                                       (.call will-receive this))
-                                    (when *trigger-state-render*
+                                    (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get this "shouldComponentUpdate")]
+                                                                        (.call should-update this)
+                                                                        true))
                                       (force-update this)))))
     a))
 
@@ -167,9 +169,13 @@
                   :view/should-update      (fn [{:keys [view/props
                                                         view/prev-props
                                                         view/children
-                                                        view/prev-children]}]
+                                                        view/prev-children
+                                                        view/state
+                                                        view/prev-state]}]
                                              (or (not= props prev-props)
-                                                 (not= children prev-children)))}
+                                                 (not= children prev-children)
+                                                 (when-not (nil? state)
+                                                   (not= @state prev-state))))}
                  methods
                  {:view/will-unmount (fn [{:keys [view/state] :as this}]
                                        (aset this "unmounted" true)
