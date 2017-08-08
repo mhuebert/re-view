@@ -65,8 +65,6 @@
                    (= 0 (some-> $cursor (.-parentOffset)))))
       ((pm/set-block-type :paragraph) state dispatch))))
 
-
-
 (def backspace (pm/chain (.-deleteSelection pm/commands)
                          clear-empty-non-paragraph-nodes
                          (.-joinBackward pm/commands)
@@ -168,11 +166,6 @@
 
 (def rule-toggle-code
   (pm/InputRule. #"[^`\\]+`$"
-                 (fn [state & _]
-                   (pm/toggle-mark-tr state :code))))
-
-(def rule-toggle-italic
-  (pm/InputRule. #"[^`\\]+\* $"
                  (fn [state & _]
                    (pm/toggle-mark-tr state :code))))
 

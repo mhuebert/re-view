@@ -36,9 +36,7 @@
             (recur (rest fns)))))))
 
 #?(:cljs (defn is-react-element? [x]
-           (and x
-                (or (boolean (aget x "re$view"))
-                    (.isValidElement js/React x)))))
+           (and x (.isValidElement js/React x))))
 
 (defn flatten-seqs
   "Flatten collection, only unwrap sequences"

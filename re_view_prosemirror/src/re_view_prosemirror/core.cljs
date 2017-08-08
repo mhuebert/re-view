@@ -221,3 +221,13 @@
 ;; + or - the level
 ;; if para - only up
 ;; if heading - determine up or down
+
+
+(defn start-$pos [state]
+  (.-$head (.atStart Selection (.. state -doc))))
+
+(defn end-$pos [state]
+  (.-$head (.atEnd Selection (.. state -doc))))
+
+(defn cursor-$pos [state]
+  (.-$head (.-selection state)))
