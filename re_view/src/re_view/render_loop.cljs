@@ -24,17 +24,16 @@
                      (fn [cb]
                        (js/setTimeout cb (/ 1000 60))))))))
 
-(def to-render #{})
-(def to-run [])
+(def to-render (volatile! #{}))
+(def to-run (volatile! []))
 
 (declare request-render)
 
 (defn schedule! [f]
-  (set! to-run (conj to-run f))
+  (vswap! to-run conj f)
   (request-render))
 
-(defn force-update! [^js/React.Component this]
-  (set! to-render (disj to-render this))
+(defn force-update-caught [this]
   (when-not (true? (aget this "unmounted"))
     (try (.forceUpdate this)
          (catch js/Error e
@@ -43,22 +42,29 @@
              (do (.debug js/console "No :catch method in component: " this)
                  (.error js/console e)))))))
 
+(defn force-update! [^js/React.Component this]
+  (vswap! to-render disj this)
+  (force-update-caught this))
+
 (defn force-update [this]
   (if (true? *immediate-state-update*)
     (force-update! this)
     (do
-      (set! to-render (conj to-render this))
+      (vswap! to-render conj this)
       (request-render))))
 
 (defn flush!
   []
-  (when-not ^:boolean (empty? to-render)
-    (doseq [c to-render]
-      (force-update! c)))
+  (when-not ^:boolean (empty? @to-render)
+    (let [components @to-render]
+      (vreset! to-render #{})
+      (doseq [c components]
+        (force-update-caught c))))
 
-  (when-not ^:boolean (empty? to-run)
-    (doseq [f to-run] (f))
-    (set! to-run [])))
+  (when-not ^:boolean (empty? @to-run)
+    (let [fns @to-run]
+      (vreset! to-run [])
+      (doseq [f fns] (f)))))
 
 (defn render-loop
   [frame-ms]
@@ -66,7 +72,6 @@
   (when ^:boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
     (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
     (set! last-fps-time frame-ms))
-
   (flush!))
 
 (defn request-render []

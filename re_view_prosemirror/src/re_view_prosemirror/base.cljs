@@ -60,10 +60,11 @@
                                                                                       :attributes {:class "outline-0"}
                                                                                       :dispatchTransaction
                                                                                                   (fn [tr]
-                                                                                                    (let [^js/pm.EditorView pm-view (get @state :pm-view)]
+                                                                                                    (let [^js/pm.EditorView pm-view (get @state :pm-view)
+                                                                                                          prev-state (.-state pm-view)]
                                                                                                       (pm/transact! pm-view tr)
                                                                                                       (when-not (nil? on-dispatch)
-                                                                                                        (on-dispatch this pm-view))))}))))]
+                                                                                                        (on-dispatch this pm-view prev-state))))}))))]
                                  (set! (.-reView editor-view) this)
                                  (reset! state {:pm-view editor-view})
                                  (when-not (nil? on-mount)
