@@ -1,14 +1,14 @@
 (ns re-view-hiccup.react.html
   (:refer-clojure :exclude [string])
   (:require [goog.dom :as gdom]
-            [cljsjs.react]
-            [cljsjs.react.dom]))
+            [react]
+            [react-dom :as react-dom]))
 
 (defn- react-string
   "Returns string for React element, preserving React identifiers and comments."
   [element]
   (let [el (gdom/createDom "div")]
-    (.render js/ReactDOM element el)
+    (react-dom/render element el)
     (aget el "innerHTML")))
 
 (defn string

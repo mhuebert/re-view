@@ -22,6 +22,8 @@
 
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
+                        :npm-deps {:react "15.6.1"
+                                   :react-dom "15.6.1"}
                         :compiler     {:output-to     "resources/public/js/compiled/test.js"
                                        :output-dir    "resources/public/js/compiled/out"
                                        :asset-path    "/base/resources/public/js/compiled/out"

@@ -4,13 +4,14 @@
             [goog.object :as gobj]
             [goog.dom.classes :as classes]
             [goog.dom :as gdom]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [react]))
 
 (defn ensure-str [s]
   (when-not (contains? #{nil ""} s)
     s))
 
-(defn keypress-value [^js/React.SyntheticEvent e]
+(defn keypress-value [^react/SyntheticEvent e]
   (let [target (.-target e)
         raw-value (.-value target)
         new-input (.fromCharCode js/String (.-which e))
@@ -19,7 +20,7 @@
                    (subs raw-value (.-selectionEnd target) (.-length raw-value)))]
     value))
 
-(defn keypress-action [^js/React.SyntheticEvent e]
+(defn keypress-action [^react/SyntheticEvent e]
   (let [str-char (ensure-str (.fromCharCode js/String (.-which e)))
         non-char-keys {13 "enter"
                        8  "backspace"}
@@ -47,7 +48,7 @@
 
 (defn concat-handlers [handlers]
   (when-let [handlers (seq (keep identity handlers))]
-    (fn [^js/React.SyntheticEvent e]
+    (fn [^react/SyntheticEvent e]
       (reduce (fn [res f] (f e)) nil handlers))))
 
 (defn collect-handlers
@@ -59,7 +60,7 @@
 
 (defn handle-on-save [handler]
   (when handler
-    (fn [^js/React.SyntheticEvent e]
+    (fn [^react/SyntheticEvent e]
       (when (#{"ctrl+S" "meta+S" "enter"} (keypress-action e))
         (.preventDefault e)
         (handler)))))

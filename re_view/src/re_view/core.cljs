@@ -1,17 +1,15 @@
 (ns re-view.core
   (:refer-clojure :exclude [partial])
   (:require-macros [re-view.core])
-  (:require [re-db.core :as re-db]
-            [re-db.d :as d]
+  (:require [re-db.d :as d]
             [re-db.patterns :as patterns :include-macros true]
             [re-view.render-loop :as render-loop]
             [re-view-hiccup.core :as hiccup]
-            [clojure.string :as string]
-            [goog.dom :as gdom]
             [goog.object :as gobj]
             [re-view.util :as v-util]
             [re-view.view-spec :as vspec]
-            [cljsjs.react]))
+            react
+            react-dom))
 
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
@@ -25,7 +23,7 @@
 (defn dom-node
   "Return DOM node for component"
   [component]
-  (.findDOMNode js/ReactDOM component))
+  (react-dom/findDOMNode component))
 
 (defn mounted?
   "Returns true if component is still mounted to the DOM.
@@ -247,7 +245,7 @@
                              (fn? initial-state) (apply this (aget this "re$view" "children")))))
   this)
 
-(specify-protocols (.-prototype js/React.Component))
+(specify-protocols (.-prototype react/Component))
 
 (defn react-component
   "Extend React.Component with lifecycle methods of a view"
@@ -256,7 +254,7 @@
           (element-constructor (js-this) $props))
     (aset "prototype" (->> lifecycle-methods
                            (reduce-kv (fn [m k v]
-                                        (doto m (aset (get kmap k) v))) (new js/React.Component))))))
+                                        (doto m (aset (get kmap k) v))) (new react/Component))))))
 
 (defn factory
   "Return a function which returns a React element when called with props and children."
@@ -275,7 +273,7 @@
       (let [[props children] (cond (or (map? props)
                                        (nil? props)) [props children]
                                    (and (object? props)
-                                        (not (.isValidElement js/React props))) [(js->clj props :keywordize-keys true) children]
+                                        (not (react/isValidElement props))) [(js->clj props :keywordize-keys true) children]
                                    :else [nil (cons props children)])
             props (cond->> props defaults (merge defaults))
             key (or (get props :key)
@@ -290,12 +288,12 @@
           (vspec/validate-props display-name prop-spec props)
           (vspec/validate-children display-name children-spec children))
 
-        (.createElement js/React constructor #js {"key"      key
-                                                  "ref"      (get props :ref)
-                                                  "props"    (dissoc props :ref)
-                                                  "children" children
-                                                  "instance" instance-keys
-                                                  "class"    class-keys})))))
+        (react/createElement constructor #js {"key"      key
+                                        "ref"      (get props :ref)
+                                        "props"    (dissoc props :ref)
+                                        "children" children
+                                        "instance" instance-keys
+                                        "class"    class-keys})))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -331,9 +329,9 @@
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
   [component element]
-  (.render js/ReactDOM component (cond->> element
-                                          (string? element)
-                                          (.getElementById js/document))))
+  (react-dom/render component (cond->> element
+                                       (string? element)
+                                       (.getElementById js/document))))
 
 (defn partial
   "Partially apply props and optional class-keys to base view. Props specified at runtime will overwrite those given here.

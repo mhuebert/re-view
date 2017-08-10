@@ -1,7 +1,6 @@
 (ns re-view-hiccup.core
-  (:require [cljsjs.react]
-            [cljsjs.react.dom]
-            [clojure.string :as string]
+  (:require [clojure.string :as string]
+            react
             [re-view-hiccup.react.attrs :as react-html]))
 
 (enable-console-print!)
@@ -103,7 +102,7 @@
       prop-js)))
 
 
-(def ^:dynamic *create-element* (.-createElement js/React))
+(def ^:dynamic *create-element* react/createElement)
 
 (defn render-hiccup-node
   "Recursively create React elements from Hiccup vectors."

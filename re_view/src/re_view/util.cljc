@@ -1,5 +1,6 @@
 (ns re-view.util
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            #?(:cljs [react])))
 
 (defn camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
@@ -36,7 +37,7 @@
             (recur (rest fns)))))))
 
 #?(:cljs (defn is-react-element? [x]
-           (and x (.isValidElement js/React x))))
+           (and x (react/isValidElement x))))
 
 (defn flatten-seqs
   "Flatten collection, only unwrap sequences"
