@@ -37,24 +37,24 @@
                       (.renderContent state content)
                       (.-out state)))})
 
-(def fenced-code-nodes {:code_block  (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+(def fenced-code-nodes {:code_block  (fn [^js/pmMarkdown.MarkdownSerializerState state ^js/pm.Node node]
                                        (.write state (str "```" (.-params (.-attrs node)) "\n"))
                                        (.text state (.-textContent node) false)
                                        (.ensureNewLine state)
                                        (.write state "```")
                                        (.closeBlock state node))
-                        :bullet_list (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+                        :bullet_list (fn [^js/pmMarkdown.MarkdownSerializerState state ^js/pm.Node node]
                                        (.renderList state node "    " (fn []
                                                                         (str (or (.. node -attrs -bullet) "*") " "))))})
 
 (def schema (cond-> markdown-schema
                     *tables?* (tables/add-schema-nodes)))
 
-(def serializer (MarkdownSerializer (merge {}
-                                           (when *tables?*
-                                             tables/table-nodes)
-                                           (when *fenced-code-blocks?*
-                                             fenced-code-nodes)) nil))
+(def ^js/pmMarkdown.MarkdownSerializer serializer (MarkdownSerializer (merge {}
+                                                                             (when *tables?*
+                                                                               tables/table-nodes)
+                                                                             (when *fenced-code-blocks?*
+                                                                               fenced-code-nodes)) nil))
 
 (defn serialize-selection [selection]
   (let [fragment (.-content (.content selection))]

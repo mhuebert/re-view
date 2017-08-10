@@ -1,6 +1,9 @@
 
 # Changelog
 
+## 0.3.26
+- React 16 beta, with :global-exports
+
 ## 0.3.21
 
 - Wrap :on-change callbacks of text inputs to render synchronously.

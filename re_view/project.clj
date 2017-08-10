@@ -1,4 +1,4 @@
-(defproject re-view "0.3.25-SNAPSHOT"
+(defproject re-view "0.3.26"
   :description "Tiny React wrapper"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.671"]
                  [re-db "0.1.11"]
-                 [re-view-hiccup "0.1.8"]]
+                 [re-view-hiccup "0.1.9"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             #_[lein-figwheel "0.5.0-2"]
@@ -38,14 +38,14 @@
                                        :main          tests.runner
                                        :infer-externs true
                                        :optimizations :none}}]}
-  :profiles {:provided {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]]}
-             :dev      {:dependencies [[cljsjs/react-with-addons "15.5.0-0"]
-                                       [cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]
+  :profiles {:provided {:dependencies [[cljsjs/react-dom "16.0.0-beta.2-0"]
+                                       [cljsjs/react "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}
+             :dev      {:dependencies [[cljsjs/react-with-addons "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]
                                        [org.clojure/test.check "0.9.0"]]}
-             :test     {:dependencies [[cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]
+             :test     {:dependencies [[cljsjs/react-dom "16.0.0-beta.2-0"]
+                                       [cljsjs/react "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]
                                        [org.clojure/test.check "0.9.0"]]}})

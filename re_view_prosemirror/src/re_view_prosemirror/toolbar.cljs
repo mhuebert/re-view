@@ -18,7 +18,7 @@
                                                (.preventDefault e)
                                                (cmd pm-state dispatch))})
                            (assoc :key (name key)))
-     (update icon 1 assoc :width 18)]))
+     icon]))
 
 (defn mark-strong [state dispatch]
   (menu-item :strong state dispatch (pm/toggle-mark :strong) (pm/has-mark? state :strong) icons/FormatBold))
@@ -29,7 +29,7 @@
 
 (defn list-bullet [state dispatch]
   (let [in-bullet-list? (pm/in-list? state "bullet_list")]
-    (menu-item :bullet-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :bullet_list))
+    (menu-item :bullet-list state dispatch (cond->> (pm/wrap-in-list :bullet_list)
                                                     in-bullet-list? (pm/chain
                                                                       pm/lift
                                                                       pm/lift-list-item))
@@ -37,7 +37,7 @@
 
 (defn list-ordered [state dispatch]
   (let [in-ordered-list? (pm/in-list? state "ordered_list")]
-    (menu-item :ordered-list state dispatch (cond->> (pm/wrap-in-list (pm/get-node state :ordered_list))
+    (menu-item :ordered-list state dispatch (cond->> (pm/wrap-in-list :ordered_list)
                                                      in-ordered-list? (pm/chain
                                                                         pm/lift
                                                                         pm/lift-list-item))
@@ -68,7 +68,7 @@
           active? (or (set-p state) (set-h1 state))]
       (ui/SimpleMenuWithTrigger
         [menu-item-element (if active? {:class "pointer hover-bg-near-white "}
-                                       {:class "o-30"}) (update icons/FormatSize 1 assoc :width 18)]
+                                       {:class "o-30"}) icons/FormatSize]
         (ui/SimpleMenuItem {:key          "p"
                             :text-primary "Paragraph"
                             :disabled     (false? (set-p state))

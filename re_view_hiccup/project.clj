@@ -1,4 +1,4 @@
-(defproject re-view-hiccup "0.1.9-SNAPSHOT"
+(defproject re-view-hiccup "0.1.9"
   :description "Hiccup parser for re-view"
 
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view_hiccup"
@@ -11,12 +11,12 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.542"]]
 
-  :profiles {:test     {:dependencies [[cljsjs/react "15.5.0-0"]
-                                       [cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]]}
-             :provided {:dependencies [[cljsjs/react "15.5.0-0"]
-                                       [cljsjs/react-dom "15.5.0-0"]
-                                       [cljsjs/react-dom-server "15.5.0-0"]]}}
+  :profiles {:test     {:dependencies [[cljsjs/react "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}
+             :provided {:dependencies [[cljsjs/react "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
+                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}}
 
   :lein-release {:deploy-via :clojars}
 

@@ -1,7 +1,7 @@
 (ns re-view.core-test
-  (:require [cljsjs.react.dom]
-            [cljs.test :refer [deftest is are testing]]
-            [re-view.core :as v :refer [defview]]))
+  (:require [cljs.test :refer [deftest is are testing]]
+            [re-view.core :as v :refer [defview]]
+            react-dom))
 
 
 (def render-count (atom 0))
@@ -55,7 +55,7 @@
 
 ;; a heavily logged component
 
-(def util (.. js/ReactDOM -__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED -ReactTestUtils))
+(def util (.. react-dom -__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED -ReactTestUtils))
 (def init-props {:color "red"})
 (def init-child [:div {:style {:width         100
                                :height        100
@@ -124,7 +124,7 @@
 (deftest lifecycle-transitions
   (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
                                            (.setAttribute "id" "apple")))
-        render #(js/ReactDOM.render (apple %1 nil) el)
+        render #(react-dom/render (apple %1 nil) el)
         initial-props {:color "purple"}
         this (render initial-props)]
 

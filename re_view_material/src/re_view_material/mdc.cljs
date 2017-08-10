@@ -203,7 +203,7 @@
    :getNativeControl              #(this-as this (gobj/get this "nativeInput"))})
 
 (defadapter Dialog
-  [{:keys [view/state on-accept on-cancel] :as ^js/React.Component component}]
+  [{:keys [view/state on-accept on-cancel] :as ^react/Component component}]
   (let [root (v/dom-node component)
         accept-btn (gdom/findNode root #(classes/has % "mdc-dialog__footer__button--accept"))
         surface (gdom/findNode root #(classes/has % "mdc-dialog__surface"))

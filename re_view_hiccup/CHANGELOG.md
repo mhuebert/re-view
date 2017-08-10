@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.9
+- React 16 beta, with :global-exports
+
 ## 0.1.8
 - Fixed behaviour of `wrap-props` option to `element`. Also, pass `tag` to `wrap-props`.
 

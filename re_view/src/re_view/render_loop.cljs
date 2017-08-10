@@ -1,4 +1,5 @@
-(ns re-view.render-loop)
+(ns re-view.render-loop
+  (:require react))
 
 (set! *warn-on-infer* true)
 (def ^:dynamic *immediate-state-update* false)
@@ -42,7 +43,7 @@
              (do (.debug js/console "No :catch method in component: " this)
                  (.error js/console e)))))))
 
-(defn force-update! [^js/React.Component this]
+(defn force-update! [^react/Component this]
   (vswap! to-render disj this)
   (force-update-caught this))
 

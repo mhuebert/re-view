@@ -2,7 +2,8 @@
   (:require [clojure.spec.alpha :as s :include-macros true]
             [clojure.spec.gen.alpha :as gen]
             [clojure.string :as string]
-            [re-view-hiccup.core :as hiccup]))
+            [re-view-hiccup.core :as hiccup]
+            react))
 
 
 (defn gen-wrap
@@ -60,7 +61,7 @@
 (defn is-react-element? [x]
   (and (object? x)
        (or (boolean (aget x "re$view"))
-           (js/React.isValidElement x))))
+           (react/isValidElement x))))
 
 (s/def ::native-element (-> is-react-element?
                             (gen-set #{#js {"re$view" #js {}}})))

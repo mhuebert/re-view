@@ -5,23 +5,23 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
-                 [org.clojure/clojurescript "1.9.671"]
+                 [org.clojure/clojurescript "1.9.854"]
 
-                 [re-view "0.3.22"]
+                 [re-view "0.3.26"]
                  [re-db "0.1.11"]
-                 [re-view-routing "0.1.3"]
-                 [re-view-prosemirror "0.1.4"]
-                 [re-view-material "0.1.5"]
+                 [re-view-routing "0.1.4-SNAPSHOT"]
+                 [re-view-prosemirror "0.1.7"]
+                 [re-view-material "0.1.7"]
 
                  [org.clojure/core.match "0.3.0-alpha4"]
-                 [cljsjs/react "15.5.0-0"]
-                 [cljsjs/react-dom "15.5.0-0"]
-                 [cljsjs/react-dom-server "15.5.0-0"]
+                 [cljsjs/react "16.0.0-beta.2-0"]
+                 [cljsjs/react-dom "16.0.0-beta.2-0"]
+                 [cljsjs/react-dom-server "16.0.0-beta.2-0"]
                  [cljsjs/markdown-it "7.0.0-0"]
                  [cljsjs/highlight "9.6.0-0"]
                  ]
 
-  :plugins [[lein-figwheel "0.5.11"]
+  :plugins [[lein-figwheel "0.5.12"]
             [lein-cljsbuild "1.1.6" :exclusions [org.clojure/clojure]]]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
@@ -54,7 +54,7 @@
                                        :language-in   :ecmascript5
                                        ;:language-out  :es5
 
-                                       ;:pseudo-names  true
+                                       :pseudo-names  true
                                        :asset-path    "/js/out"
                                        :output-dir    "resources/public/js/compiled/out-prod"
                                        :output-to     "resources/public/js/compiled/app.js"

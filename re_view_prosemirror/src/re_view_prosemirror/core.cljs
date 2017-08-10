@@ -9,29 +9,31 @@
 
 (set! *warn-on-infer* true)
 
-(def pm (.-pm js/window))
+(def ^js/Object pm (.-pm js/window))
+(def ^js/Object commands (gobj/get pm "commands"))
+
 
 (def InputRule (gobj/get pm "InputRule"))
 (def TextSelection (gobj/get pm "TextSelection"))
 (def NodeSelection (gobj/get pm "NodeSelection"))
 (def Selection (gobj/get pm "Selection"))
 
-(def Schema (aget pm "Schema"))
+(def Schema (gobj/get pm "Schema"))
 
 (def history (gobj/get pm "history"))
-(def commands (gobj/get pm "commands"))
+
 
 (def ^js/pm.EditorView EditorView (gobj/get pm "EditorView"))
 (def ^js/pm.EditorState EditorState (gobj/get js/pm "EditorState"))
 
-(def chain (.-chainCommands commands))
+(def chain (gobj/get commands "chainCommands"))
 
 (defn ^js/pm.Schema ensure-schema [state-or-schema]
   (cond-> state-or-schema
-          (= (aget state-or-schema "constructor") EditorState) (aget "schema")))
+          (= (gobj/get state-or-schema "constructor") EditorState) (gobj/get "schema")))
 
 (defn ^js/pm.MarkType get-mark [state-or-schema mark-name]
-  (aget (ensure-schema state-or-schema) "marks" (name mark-name)))
+  (gobj/getValueByKeys (ensure-schema state-or-schema) "marks" (name mark-name)))
 
 (defn ^js/pm.NodeType get-node [state-or-schema node-name]
   (aget (ensure-schema state-or-schema) "nodes" (name node-name)))
@@ -42,11 +44,11 @@
 (defn toggle-mark
   [mark-name]
   (fn [state dispatch]
-    (let [the-command (.toggleMark commands (get-mark (.-schema state) mark-name))]
+    (let [the-command (.toggleMark commands (get-mark state mark-name))]
       (the-command state dispatch))))
 
-(defn cursor-node [state]
-  (let [sel (.-selection state)]
+(defn cursor-node [^pm.EditorState state]
+  (let [^pm.Selection sel (.-selection state)]
     (or (.-node sel) (.-parent (.-$from sel)))))
 
 (defn cursor-depth [state]
