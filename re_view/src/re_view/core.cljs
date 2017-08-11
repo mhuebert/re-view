@@ -65,6 +65,7 @@
   "Mapping of convenience keys to React lifecycle method keys."
   {:constructor             "constructor"
    :view/initial-state      "$getInitialState"
+   :view/did-catch          "componentDidCatch"
    :view/will-mount         "componentWillMount"
    :view/did-mount          "componentDidMount"
    :view/will-receive-props "componentWillReceiveProps"
@@ -289,11 +290,11 @@
           (vspec/validate-children display-name children-spec children))
 
         (react/createElement constructor #js {"key"      key
-                                        "ref"      (get props :ref)
-                                        "props"    (dissoc props :ref)
-                                        "children" children
-                                        "instance" instance-keys
-                                        "class"    class-keys})))))
+                                              "ref"      (get props :ref)
+                                              "props"    (dissoc props :ref)
+                                              "children" children
+                                              "instance" instance-keys
+                                              "class"    class-keys})))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.

@@ -34,6 +34,7 @@
                                           :view/will-update
                                           :view/did-update
                                           :view/will-unmount
+                                          :view/did-catch
                                           :view/render) :lifecycle-keys
                                         (:key :display-name :docstring) :react-keys
                                         (if (= "spec" (namespace k))
