@@ -100,20 +100,24 @@
       :view/will-receive-props
       (fn [props]
         (binding [*trigger-state-render* false]
-          (f (js-this) props)))
+          (this-as this
+            (f this props))))
       (:view/will-mount
         :view/will-unmount
         :view/will-receive-state
         :view/will-update)
       (fn []
         (binding [*trigger-state-render* false]
-          (apply f (js-this) (:view/children @(gobj/get (js-this) "re$view")))))
+          (this-as this
+            (apply f this (:view/children @(gobj/get this "re$view"))))))
       (:view/did-mount
         :view/did-update)
       (fn []
-        (apply f (js-this) (:view/children @(gobj/get (js-this) "re$view"))))
+        (this-as this
+          (apply f this (:view/children @(gobj/get this "re$view")))))
       (fn [& args]
-        (apply f (js-this) args)))))
+        (this-as this
+          (apply f this args))))))
 
 (defn init-state
   "Return a state atom for component. The component will update when it changes."
@@ -248,7 +252,8 @@
   "Extend React.Component with lifecycle methods of a view"
   [lifecycle-methods]
   (doto (fn ReView [$props]
-          (element-constructor (js-this) $props))
+          (this-as this
+            (element-constructor this $props)))
     (gobj/set "prototype" (->> lifecycle-methods
                                (reduce-kv (fn [m k v]
                                             (doto m (gobj/set (get kmap k) v))) (new react/Component))))))

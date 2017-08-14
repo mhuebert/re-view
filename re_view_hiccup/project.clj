@@ -18,7 +18,8 @@
                                        [cljsjs/react-dom "16.0.0-beta.2-0"]
                                        [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}}
 
-  :lein-release {:deploy-via :clojars}
+  :lein-release {:deploy-via :clojars
+                 :scm        :git}
 
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]

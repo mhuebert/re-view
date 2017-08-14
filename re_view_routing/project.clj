@@ -18,8 +18,9 @@
                                    [cljsjs/react-dom "15.5.0-0"]
                                    [cljsjs/react "15.5.0-0"]]}}
 
-  :lein-release {:deploy-via :clojars}
-  
+  :lein-release {:deploy-via :clojars
+                 :scm        :git}
+
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
                         :compiler     {:output-to     "resources/public/js/compiled/test.js"

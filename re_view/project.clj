@@ -1,4 +1,4 @@
-(defproject re-view "0.3.27"
+(defproject re-view "0.3.28-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
@@ -16,7 +16,8 @@
 
   :doo {:build "test"}
 
-  :lein-release {:deploy-via :clojars}
+  :lein-release {:deploy-via :clojars
+                 :scm        :git}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]

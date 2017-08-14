@@ -16,7 +16,8 @@
 
   :doo {:build "test"}
 
-  :lein-release {:deploy-via :clojars}
+  :lein-release {:deploy-via :clojars
+                 :scm        :git}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
