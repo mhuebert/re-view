@@ -1,10 +1,10 @@
-(defproject re-view "0.3.26"
+(defproject re-view "0.3.27"
   :description "Tiny React wrapper"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
-                 [org.clojure/clojurescript "1.9.671"]
+                 [org.clojure/clojurescript "1.9.854"]
                  [re-db "0.1.11"]
                  [re-view-hiccup "0.1.9"]]
 
@@ -41,8 +41,7 @@
   :profiles {:provided {:dependencies [[cljsjs/react-dom "16.0.0-beta.2-0"]
                                        [cljsjs/react "16.0.0-beta.2-0"]
                                        [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}
-             :dev      {:dependencies [[cljsjs/react-with-addons "16.0.0-beta.2-0"]
-                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
+             :dev      {:dependencies [[cljsjs/react-dom "16.0.0-beta.2-0"]
                                        [cljsjs/react-dom-server "16.0.0-beta.2-0"]
                                        [org.clojure/test.check "0.9.0"]]}
              :test     {:dependencies [[cljsjs/react-dom "16.0.0-beta.2-0"]

@@ -2,6 +2,7 @@
   (:require [re-view.core :as v :refer [defview]]
             [re-view-hiccup.core :as hiccup]
             [react-dom]
+            [goog.object :as gobj]
             [goog.dom :as gdom]))
 
 (defview bind-atom
@@ -34,14 +35,14 @@
   {:spec/children     [:Element]
    :view/did-mount    (fn [this content]
                         (-> (v/dom-node this)
-                            (aget "contentDocument" "body")
+                            (gobj/getValueByKeys "contentDocument" "body")
                             (gdom/appendChild (gdom/createDom "div")))
                         (.renderFrame this content))
    :view/will-unmount (fn [this]
                         (react-dom/unmountComponentAtNode (.getElement this)))
    :get-element       (fn [this]
                         (-> (v/dom-node this)
-                            (aget "contentDocument" "body")
+                            (gobj/getValueByKeys "contentDocument" "body")
                             (gdom/getFirstElementChild)))
    :render-frame      (fn [this content]
                         (v/render-to-dom (hiccup/element

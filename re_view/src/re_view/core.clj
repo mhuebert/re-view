@@ -25,20 +25,11 @@
   "Groups methods by role in a React component."
   [methods]
   (-> (reduce-kv (fn [m k v]
-                   (assoc-in m [(case k (:view/initial-state
-                                          :view/will-mount
-                                          :view/did-mount
-                                          :view/will-receive-props
-                                          :view/will-receive-state
-                                          :view/should-update
-                                          :view/will-update
-                                          :view/did-update
-                                          :view/will-unmount
-                                          :view/did-catch
-                                          :view/render) :lifecycle-keys
-                                        (:key :display-name :docstring) :react-keys
-                                        (if (= "spec" (namespace k))
-                                          :class-keys :instance-keys)) k] v)) {} methods)
+                   (assoc-in m [(case k (:key :display-name :docstring) :react-keys
+                                        (case (namespace k)
+                                          "spec" :class-keys
+                                          "view" :lifecycle-keys
+                                          :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
       ;; must use set! for the keys, otherwise they will
       ;; be modified in advanced compilation.
@@ -60,9 +51,9 @@
                (conj out (if match? (first args) nil)))))))
 
 (clojure.core/defn parse-view-args [args]
-      (let [args (parse-opt-args [symbol? string? map?] args)]
-        (cond-> args
-                (nil? (first args)) (assoc 0 (gensym)))))
+  (let [args (parse-opt-args [symbol? string? map?] args)]
+    (cond-> args
+            (nil? (first args)) (assoc 0 (gensym)))))
 
 (clojure.core/defn display-name
   "Generate a meaningful name to identify React components while debugging"

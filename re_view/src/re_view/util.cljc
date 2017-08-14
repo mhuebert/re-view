@@ -2,10 +2,11 @@
   (:require [clojure.string :as string]
             #?(:cljs [react])))
 
-(defn camelCase
+(def camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."
-  [s]
-  (string/replace (name s) #"-(.)" (fn [[_ match]] (string/upper-case match))))
+  (memoize
+    (fn [s]
+      (string/replace (name s) #"-(.)" (fn [[_ match]] (string/upper-case match))))))
 
 
 (defn update-attrs [el f & args]

@@ -54,7 +54,7 @@
                                        :language-in   :ecmascript5
                                        ;:language-out  :es5
 
-                                       :pseudo-names  true
+                                       ;:pseudo-names  true
                                        :asset-path    "/js/out"
                                        :output-dir    "resources/public/js/compiled/out-prod"
                                        :output-to     "resources/public/js/compiled/app.js"

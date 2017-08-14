@@ -1,5 +1,6 @@
 (ns re-view.render-loop
-  (:require react))
+  (:require [goog.object :as gobj]
+            react))
 
 (set! *warn-on-infer* true)
 (def ^:dynamic *immediate-state-update* false)
@@ -16,7 +17,7 @@
 (defonce _raf-polyfill
          (when (js* "typeof window !== 'undefined'")
            (if-not (aget js/window "requestAnimationFrame")
-             (aset js/window "requestAnimationFrame"
+             (gobj/set js/window "requestAnimationFrame"
                    (or
                      (aget js/window "webkitRequestAnimationFrame")
                      (aget js/window "mozRequestAnimationFrame")
@@ -79,3 +80,10 @@
   (js/requestAnimationFrame render-loop))
 
 
+(defn apply-sync!
+  "Wraps function `f` to flush the render loop before returning."
+  [f]
+  (fn [& args]
+    (let [result (apply f args)]
+      (flush!)
+      result)))
