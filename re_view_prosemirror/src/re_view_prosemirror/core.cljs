@@ -33,7 +33,9 @@
           (= (gobj/get state-or-schema "constructor") EditorState) (gobj/get "schema")))
 
 (defn ^js/pm.MarkType get-mark [state-or-schema mark-name]
-  (gobj/getValueByKeys (ensure-schema state-or-schema) "marks" (name mark-name)))
+  (if (keyword? mark-name)
+    (gobj/getValueByKeys (ensure-schema state-or-schema) "marks" (name mark-name))
+    mark-name))
 
 (defn ^js/pm.NodeType get-node [state-or-schema node-name]
   (aget (ensure-schema state-or-schema) "nodes" (name node-name)))
@@ -53,21 +55,6 @@
 
 (defn cursor-depth [state]
   (.-depth (.-$from (.-selection state))))
-
-(defn toggle-mark-tr [state mark-name]
-  (let [sel (.-selection state)
-        empty (.-empty sel)
-        $cursor (.-$cursor sel)
-        mark-type (get-mark state mark-name)
-        the-node (cursor-node state)
-        tr (.-tr state)]
-    (when (and $cursor
-               (not (or (and empty (not $cursor))
-                        (not (.-inlineContent the-node))
-                        (not (.allowsMark (.contentMatchAt the-node 0))))))
-      (if (.isInSet mark-type (or (.-storedMarks state) (.marks $cursor)))
-        (.removeStoredMark tr mark-type)
-        (.addStoredMark tr (.create mark-type nil))))))
 
 (def auto-join #(.autoJoin commands % (fn [] true)))
 
@@ -153,16 +140,64 @@
 (defn mark-name [^js/pm.Mark mark]
   (.. mark -type -name))
 
-(defn has-mark? [^js/pm.EditorState pm-state mark-name]
-  (let [^js/MarkType mark (get-mark pm-state mark-name)]
+(defn pos-mark [state $pos mark]
+  (let [^js/MarkType mark (get-mark state mark)
+        stored-marks (.-storedMarks state)
+        cursor-marks (some-> $pos (.marks))]
+    (first (filter #(= mark (.-type %))
+                   (cond-> #js []
+                           stored-marks (.concat stored-marks)
+                           cursor-marks (.concat cursor-marks)))))
+  )
+
+(defn has-mark? [^js/pm.EditorState pm-state mark]
+  (let [^js/MarkType mark (get-mark pm-state mark)]
     (if-let [cursor (.. pm-state -selection -$cursor)]
       (.isInSet mark (or (.-storedMarks pm-state) (.marks cursor)))
-      (every? true? (map (fn [^js/pm.SelectionRange range]
-                           (.rangeHasMark (.-doc pm-state)
-                                          (.. range -$from -pos)
-                                          (.. range -$to -pos)
-                                          mark))
-                         (.. pm-state -selection -ranges))))))
+      (every? true? (mapv (fn [^js/pm.SelectionRange range]
+                            (.rangeHasMark (.-doc pm-state)
+                                           (.. range -$from -pos)
+                                           (.. range -$to -pos)
+                                           mark))
+                          (.. pm-state -selection -ranges))))))
+
+(defn toggle-mark-tr
+  ([state mark-name] (toggle-mark-tr state mark-name nil))
+  ([state mark-name attrs]
+   (let [sel (.-selection state)
+         empty (.-empty sel)
+         $cursor (.-$cursor sel)
+         mark-type (get-mark state mark-name)
+         the-node (cursor-node state)
+         tr (.-tr state)]
+     (when (and $cursor
+                (not (or (and empty (not $cursor))
+                         (not (.-inlineContent the-node))
+                         (not (.allowsMark (.contentMatchAt the-node 0))))))
+       (if (.isInSet mark-type (or (.-storedMarks state) (.marks $cursor)))
+         (.removeStoredMark tr mark-type)
+         (.addStoredMark tr (.create mark-type attrs)))))))
+
+
+(defn add-link-tr
+  [state from to label href]
+  (let [tr (.-tr state)
+        link (get-mark state :link)
+        from from]
+    (-> tr
+        (.insertText label from to)
+        (.addMark from (+ from (count label)) (.create link #js {:href href}))
+        (.removeStoredMark link))))
+
+(defn add-image-tr
+  [state from to label href]
+  (let [tr (.-tr state)
+        image (get-node state :image)]
+    (-> tr
+        (.setSelection (.create TextSelection (.-doc state) from to))
+        (.replaceSelectionWith (.createAndFill image #js {:src   href
+                                                          :title label
+                                                          :alt   label})))))
 
 (defn state [^js/pm.EditorView pm-view]
   (.-state pm-view))
@@ -233,3 +268,119 @@
 
 (defn cursor-$pos [state]
   (.-$head (.-selection state)))
+
+
+
+
+;function markApplies(doc, ranges, type) {
+;  for (let i = 0; i < ranges.length; i++) {
+;    let {$from, $to} = ranges[i]
+;    // at depth zero? then can = doc.contentMatch.
+;    //
+;    let can = $from.depth == 0 ? doc.contentMatchAt(0).allowsMark(type) : false
+;    doc.nodesBetween($from.pos, $to.pos, node => {
+;      if (can) return false
+;      can = node.inlineContent && node.contentMatchAt(0).allowsMark(type)
+;    })
+;    if (can) return true
+;  }
+;  return false
+;}
+
+#_(defn mark-applies? [doc ranges type]
+    (let [node-matches #(and (.-inlineContent %)
+                             (-> % (.contentMatchAt 0) (.allowsMark type)))]
+      (every? identity (for [range ranges
+                             :let [$from (.-$from range)
+                                   root-can? (and (= 0 (.-depth $from))
+                                                  (node-matches doc))
+                                   nodes (range-nodes doc (.-pos $from) (.-pos (.-$to range)))]]
+                         (or (and root-can? (empty? nodes))
+                             (every? identity (for [node nodes]
+                                                (and (not root-can?)
+                                                     (node-matches node)))))))))
+#_(defn toggle-mark-tr
+    ([state mark-name]
+     (toggle-mark-tr state mark-name nil))
+    ([state mark-name attrs]
+     (let [sel (.-selection state)
+           ranges (.-ranges sel)
+           doc (.-doc state)
+           empty (.-empty sel)
+           $cursor (.-$cursor sel)
+           mark-type (get-mark state mark-name)
+           tr (.-tr state)
+           invalid-selection (or (and empty (not $cursor))
+                                 (not (mark-applies? doc ranges mark-type)))]
+       (when-not invalid-selection
+         (let [has-mark (has-mark? state mark-name)]
+           (if $cursor
+             (if has-mark (.removeStoredMark tr mark-type)
+                          (.addStoredMark tr (.create mark-type attrs)))
+             (reduce (fn [tr range]
+                       (if has-mark
+                         (.removeMark tr
+                                      (.. range -$from -pos)
+                                      (.. range -$to -pos)
+                                      mark-type)
+                         (.addMark tr
+                                   (.. range -$from -pos)
+                                   (.. range -$to -pos)
+                                   (.create mark-type attrs)))) tr ranges)))))))
+
+(defn toggle-ranges-mark
+  ([state ranges mark] (toggle-ranges-mark state ranges mark nil))
+  ([state ranges mark attrs]
+   (let [mark (get-mark state mark)
+         has-mark (has-mark? state mark)]
+     (reduce (fn [tr range]
+               (if has-mark
+                 (.removeMark tr
+                              (.. range -$from -pos)
+                              (.. range -$to -pos)
+                              mark)
+                 (.addMark tr
+                           (.. range -$from -pos)
+                           (.. range -$to -pos)
+                           (.create mark attrs)))) (.-tr state) ranges))))
+
+(defn mark-extend [state $pos mark]
+  (let [mark (get-mark state mark)
+        parent (.-parent $pos)
+        start-index (loop [start-index (.index $pos)]
+                      (if (or (<= start-index 0)
+                              (not (.isInSet mark (.. $pos -parent (child (dec start-index)) -marks))))
+                        start-index
+                        (recur (dec start-index))))
+        end-index (loop [end-index (.indexAfter $pos)]
+                    (if (or (>= end-index (.. $pos -parent -childCount))
+                            (not (.isInSet mark (.. $pos -parent (child end-index) -marks))))
+                      end-index
+                      (recur (inc end-index))))
+        [start-pos end-pos] (loop [start-pos (.start $pos)
+                                   end-pos start-pos
+                                   i 0]
+                              (if (>= i end-index)
+                                [start-pos end-pos]
+                                (let [size (.. parent (child i) -nodeSize)]
+                                  (if (< i start-index)
+                                    (recur (+ start-pos size) (+ end-pos size) (inc i))
+                                    (recur start-pos (+ end-pos size) (inc i))))))]
+    {:from start-pos
+     :to   end-pos}))
+
+(defn cursor-coords [pm-view]
+  (when-let [coords (some->> (.. pm-view -state -selection -$cursor)
+                             (.-pos)
+                             (.coordsAtPos pm-view))]
+    #js {:left (.-left coords)
+         :top  (-> (.-top coords)
+                   (+ (/ (- (.-bottom coords)
+                            (.-top coords))
+                         2)))}))
+
+(defn coords-selection [pm-view position]
+  (some->> (.posAtCoords pm-view position)
+           (.-pos)
+           (.resolve (.. pm-view -state -doc))
+           (.near Selection)))

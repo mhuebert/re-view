@@ -156,6 +156,11 @@
              (pm/set-block-type :paragraph)
              (pm/set-block-type :heading #js {:level target-index})) state dispatch))))))
 
+(defn clear-stored-marks [state dispatch]
+  (dispatch (reduce (fn [tr mark]
+                      (.removeStoredMark tr mark)) (.-tr state)
+                    (.. state -selection -$cursor (marks)))))
+
 ;;;;;; Input rules
 
 (def rule-blockquote-start
@@ -219,3 +224,50 @@
 
 (defn apply-command [prosemirror command]
   (command (.-state prosemirror) (.-dispatch prosemirror) prosemirror))
+
+
+(defn open-link
+  ([state dispatch] (open-link false state dispatch nil))
+  ([state dispatch view] (open-link false state dispatch view))
+  ([force? state dispatch view]
+   (when-let [$cursor (.. state -selection -$cursor)]
+     (when-let [link-mark (pm/pos-mark state $cursor :link)]
+       (let [{:keys [from to]} (pm/mark-extend state $cursor :link)
+             text (str "[" (.textBetween (.-doc state) from to) "](" (.. link-mark -attrs -href) ")")]
+         (when (or force? (= to (.-pos $cursor)))
+           (dispatch (-> (.-tr state)
+                         (.removeMark from
+                                      to
+                                      (pm/get-mark state :link))
+                         (.insertText text from to)))
+           true))))))
+
+(defn open-image [state dispatch]
+  (when-let [$cursor (.. state -selection -$cursor)]
+    (let [image-node (.-nodeBefore $cursor)
+          image-type (pm/get-node state :image)
+          to (.-pos $cursor)]
+      (when (= (some-> image-node (.-type)) image-type)
+        (let [from (- to (.-nodeSize image-node))
+              text (str "![" (.. image-node -attrs -title) "](" (.. image-node -attrs -src) ")")]
+          (when (= to (.-pos $cursor))
+            (dispatch (-> (.-tr state)
+                          (.insertText text from to)))
+            true))))))
+
+(defn end-link [state dispatch]
+  (when-let [$cursor (.. state -selection -$cursor)]
+    (let [the-mark (pm/get-mark state :link)]
+      (when (pm/has-mark? state the-mark)
+        (let [{:keys [to]} (pm/mark-extend state $cursor the-mark)]
+          (when (= to (.-pos $cursor))
+            (when (re-find #"[\.\s]" (.textBetween (.-doc state) (dec to) to))
+              (dispatch (-> (.-tr state) (.removeMark (dec to) to the-mark)
+                            (.removeStoredMark the-mark))))))))))
+
+(def rule-image-and-links (pm/InputRule.
+                  #"(\!?)\[(.*)\]\((.*)\)\s?$"
+                  (fn [state [the-match kind label target] from to]
+                    (if (= kind "!")
+                      (pm/add-image-tr state from to label target)
+                      (pm/add-link-tr state from to label target)))))

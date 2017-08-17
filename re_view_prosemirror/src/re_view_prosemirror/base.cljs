@@ -89,8 +89,5 @@
                                           (serialize doc)))}
   [this]
   [:.prosemirror-content
-   (-> (merge {:on-click #(when (= (.-target %) (.-currentTarget %))
-                                (.focus (.pmView this)))}
-              (v/pass-props this))
+   (-> (v/pass-props this)
        (assoc :dangerouslySetInnerHTML {:__html ""}))])
-

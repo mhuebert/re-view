@@ -8,3 +8,4 @@ export {wrapInList, splitListItem, liftListItem, sinkListItem} from "prosemirror
 export {InputRule, wrappingInputRule, textblockTypeInputRule, inputRules, undoInputRule, allInputRules} from "prosemirror-inputrules"
 export {Schema, Node, Mark, ResolvedPos, NodeRange, Fragment, Slice, MarkType, NodeType} from "prosemirror-model"
 export {default as model} from "prosemirror-model"
+
