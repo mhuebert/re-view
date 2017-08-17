@@ -1,4 +1,4 @@
-(defproject re-view-prosemirror "0.1.7"
+(defproject re-view-prosemirror "0.1.8"
 
   :description "Rich text editors built with ProseMirror in Re-View"
 
