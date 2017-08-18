@@ -103,6 +103,10 @@
        [& args#]
        (apply ~(wrap-body view-name body) (if (map? (first args#)) args# (cons {} args#))))))
 
+(defmacro extend-view [view & args]
+  `(let [prototype# (:prototype (~'goog.object/get ~view "re$view$base"))]
+     (clojure.core/specify! prototype# ~@args)))
+
 (comment
   (assert (= (parse-view-args '(name "a" {:b 1} [c] 1 2))
              '[name "a" {:b 1} ([c] 1 2)]))

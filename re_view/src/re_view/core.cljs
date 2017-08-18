@@ -142,26 +142,21 @@
   (when-not (contains? @(aget this "re$view") :view/state)
     (init-state this nil)))
 
-(defn specify-protocols
-  "Implement ILookup protocol to read prop keys and `view`-namespaced keys on a component."
-  [o]
-  (specify! o
-    ILookup
-    (-lookup
-      ([this k]
-       (if (#{"view" "spec"} (namespace k))
-         (do (when (keyword-identical? k :view/state) (ensure-state this))
-             (get @(gobj/get this "re$view") k))
-         (get-in @(gobj/get this "re$view") [:view/props k])))
-      ([this k not-found]
-       (if (#{"view" "spec"} (namespace k))
-         (do (when (keyword-identical? k :view/state) (ensure-state this))
-             (get @(gobj/get this "re$view") k))
-         (get-in @(gobj/get this "re$view") [:view/props k] not-found))))))
+(extend-protocol ILookup
+  react/Component
+  (-lookup
+    ([this k]
+     (if (#{"view" "spec"} (namespace k))
+       (do (when (keyword-identical? k :view/state) (ensure-state this))
+           (get @(gobj/get this "re$view") k))
+       (get-in @(gobj/get this "re$view") [:view/props k])))
+    ([this k not-found]
+     (if (#{"view" "spec"} (namespace k))
+       (do (when (keyword-identical? k :view/state) (ensure-state this))
+           (get @(gobj/get this "re$view") k))
+       (get-in @(gobj/get this "re$view") [:view/props k] not-found)))))
 
-(specify-protocols (.-prototype react/Component))
-
-(defn wrap-lifecycle-methods
+(defn lifecycle-methods
   "Augment lifecycle methods with default behaviour."
   [methods]
   (->> (collect [{:view/will-receive-props (fn [this props]
@@ -196,8 +191,9 @@
                                          (vreset! re$view
                                                   (cond-> (assoc @re$view :view/prev-props prev-props)
                                                           state (assoc :view/prev-state @state)))))}])
-       (reduce-kv (fn [m method-k method]
-                    (assoc m method-k (wrap-methods method-k method))) {})))
+       (reduce-kv (fn [obj method-k method]
+                    (doto obj
+                      (gobj/set (get kmap method-k) (wrap-methods method-k method)))) #js {})))
 
 
 
@@ -224,19 +220,6 @@
                                          :view/children nil})))
   this)
 
-(defn- mock
-  "Initialize an unmounted element, from which props and instance methods can be read."
-  [element]
-  (doto #js {}
-    (init-props (gobj/get element "props"))
-    (specify-protocols)))
-
-(defn element-get
-  "'Get' from an unmounted element"
-  [element k]
-  (or (some-> (gobj/get element "type") (gobj/get (v-util/camelCase k)))
-      (get (mock element) k)))
-
 (defn element-constructor
   "Body of constructor function for ReView component."
   [this $props]
@@ -246,17 +229,6 @@
                              (fn? initial-state) (apply this (:view/children @(gobj/get this "re$view"))))))
   this)
 
-
-
-(defn react-component
-  "Extend React.Component with lifecycle methods of a view"
-  [lifecycle-methods]
-  (doto (fn ReView [$props]
-          (this-as this
-            (element-constructor this $props)))
-    (gobj/set "prototype" (->> lifecycle-methods
-                               (reduce-kv (fn [m k v]
-                                            (doto m (gobj/set (get kmap k) v))) (new react/Component))))))
 
 (defn factory
   "Return a function which returns a React element when called with props and children."
@@ -319,12 +291,16 @@
            class-keys
            instance-keys
            react-keys] :as re-view-base}]
-  (let [class (->> (wrap-lifecycle-methods lifecycle-keys)
-                   (react-component))]
+  (let [prototype (new react/Component)
+        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+        constructor (fn ReView [$props]
+                      (this-as this
+                        (element-constructor this $props)))
+        _ (gobj/set constructor "prototype" prototype)]
     (doseq [[k v] (seq react-keys)]
-      (gobj/set class (v-util/camelCase k) v))
-    (-> (factory class class-keys instance-keys)
-        (doto (gobj/set "re$view$base" re-view-base)))))
+      (gobj/set constructor (v-util/camelCase k) v))
+    (-> (factory constructor class-keys instance-keys)
+        (doto (gobj/set "re$view$base" (assoc re-view-base :prototype prototype))))))
 
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
@@ -353,3 +329,4 @@
   (apply dissoc (get this :view/props) (get-in this [:spec/props :props/consumed])))
 
 (def is-react-element? v-util/is-react-element?)
+

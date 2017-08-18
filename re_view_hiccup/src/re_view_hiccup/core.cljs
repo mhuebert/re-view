@@ -1,6 +1,6 @@
 (ns re-view-hiccup.core
   (:require [clojure.string :as string]
-            react
+            [react :as react]
             [re-view-hiccup.react.attrs :as react-html]))
 
 (enable-console-print!)

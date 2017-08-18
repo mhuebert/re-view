@@ -107,7 +107,7 @@
    :view/will-unmount (fn [_ a] (remove-watch a :prop-editor))}
   [{:keys [component view/state container-props]} prop-atom]
   (let [{{defaults :props/defaults :as prop-specs} :spec/props
-         child-specs                               :spec/children} (v/mock (component))
+         child-specs                               :spec/children} (get (gobj/get component "re$view$base") :class-keys)
         editing? true
         section :.b.pa2.pt3.f6
         children (some->> prop-atom deref (drop 1) (seq))

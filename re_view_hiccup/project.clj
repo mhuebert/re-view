@@ -9,22 +9,15 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.542"]]
-
-  :profiles {:test     {:dependencies [[cljsjs/react "16.0.0-beta.2-0"]
-                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
-                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}
-             :provided {:dependencies [[cljsjs/react "16.0.0-beta.2-0"]
-                                       [cljsjs/react-dom "16.0.0-beta.2-0"]
-                                       [cljsjs/react-dom-server "16.0.0-beta.2-0"]]}}
+                 [org.clojure/clojurescript "1.9.908"]]
 
   :lein-release {:deploy-via :clojars
                  :scm        :git}
 
   :cljsbuild {:builds [{:id           "test"
                         :source-paths ["src" "test"]
-                        :npm-deps {:react "15.6.1"
-                                   :react-dom "15.6.1"}
+                        :npm-deps     {:react     "next"
+                                       :react-dom "next"}
                         :compiler     {:output-to     "resources/public/js/compiled/test.js"
                                        :output-dir    "resources/public/js/compiled/out"
                                        :asset-path    "/base/resources/public/js/compiled/out"
