@@ -1,7 +1,7 @@
 (ns ^:figwheel-always re-view.core
   (:refer-clojure :exclude [defn])
   (:require [clojure.string :as string]
-            [re-view.util :refer [camelCase]]))
+            [re-view.util :as util :refer [camelCase]]))
 
 (clojure.core/defn- js-obj-with-set!
   "Convert a Clojure map to javascript object using `set!`, to play well with Closure Compiler.
@@ -39,19 +39,8 @@
       ;; in the macro so there's no way to reuse specs.
       ))
 
-(clojure.core/defn parse-opt-args [preds args]
-  (loop [preds preds
-         args args
-         out []]
-    (if (empty? preds)
-      (conj out args)
-      (let [match? ((first preds) (first args))]
-        (recur (rest preds)
-               (cond-> args match? (rest))
-               (conj out (if match? (first args) nil)))))))
-
 (clojure.core/defn parse-view-args [args]
-  (let [args (parse-opt-args [symbol? string? map?] args)]
+  (let [args (util/parse-opt-args [symbol? string? map?] args)]
     (cond-> args
             (nil? (first args)) (assoc 0 (gensym)))))
 

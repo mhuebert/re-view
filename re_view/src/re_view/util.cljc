@@ -45,3 +45,14 @@
   [children]
   (filter #(not (seq? %))
           (rest (tree-seq seq? seq children))))
+
+(defn parse-opt-args [preds args]
+  (loop [preds preds
+         args args
+         out []]
+    (if (empty? preds)
+      (conj out args)
+      (let [match? ((first preds) (first args))]
+        (recur (rest preds)
+               (cond-> args match? (rest))
+               (conj out (if match? (first args) nil)))))))
