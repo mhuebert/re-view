@@ -356,25 +356,28 @@
      :db-after  db-after
      :datoms    (persistent! datoms)}))
 
+(def ^:dynamic *prevent-notify* false)
+
 (defn transact!
   ([db txs] (transact! db txs {}))
   ([db txs {:keys [notify
-                   mute]
+                   log-datoms]
             :or   {notify true}}]
-   (when mute (.warn js/console "Mute is no longer a re-db option. Use `:notify false` instead."))
-   (binding [*notify* notify]
-     (when-let [{:keys [db-after] :as tx} (cond (nil? txs) nil
-                                                (and (map? txs) (contains?* txs :datoms)) txs
-                                                (or (vector? txs)
-                                                    (list? txs)
-                                                    (seq? txs)) (transaction @db txs)
-                                                :else (throw (js/Error "Transact! was not passed a valid transaction")))]
+   (binding [*notify* (or notify log-datoms)]
+     (when-let [{:keys [db-after datoms] :as tx} (cond (nil? txs) nil
+                                                       (and (map? txs) (contains?* txs :datoms)) txs
+                                                       (or (vector? txs)
+                                                           (list? txs)
+                                                           (seq? txs)) (transaction @db txs)
+                                                       :else (throw (js/Error "Transact! was not passed a valid transaction")))]
        (reset! db db-after)
        (when-not (nil? *db-log*)
-         (reset! *db-log* (cond-> tx
-                                  (:db-before @*db-log*) (assoc :db-before @*db-log*))))
+         (reset! *db-log* (-> @*db-log*
+                              (assoc :db-after db-after)
+                              (update :datoms into datoms))))
 
-       (when *notify* (notify-listeners tx))
+       (when (and notify (not *prevent-notify*))
+         (notify-listeners tx))
        db))))
 
 (defn entity-ids

@@ -1,6 +1,8 @@
 (ns re-view.util
+  (:refer-clojure :exclude [uuid])
   (:require [clojure.string :as string]
-            #?(:cljs [react])))
+            #?@(:cljs [[react]
+                       [re-db.d :as d]])))
 
 (def camelCase
   "Return camelCased string, eg. hello-there to helloThere. Does not modify existing case."

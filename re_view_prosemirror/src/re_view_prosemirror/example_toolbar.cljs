@@ -1,4 +1,4 @@
-(ns re-view-prosemirror.toolbar
+(ns re-view-prosemirror.example-toolbar
   (:require [re-view-prosemirror.core :as pm]
             [re-view-material.core :as ui]
             [re-view-material.icons :as icons]))

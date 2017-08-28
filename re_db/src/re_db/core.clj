@@ -22,3 +22,10 @@
           ~@(for [k (drop-last ks)]
               (list 'clojure.core/get k))
           (clojure.core/get ~(last ks) ~not-found)))))
+
+(defmacro db-log [& body]
+  `(binding [~'re-db.core/*db-log* (atom {})
+             ~'re-db.core/*prevent-notify* true]
+     (let [value# (do ~@body)]
+       {:tx-report @~'re-db.core/*db-log*
+        :value     value#})))

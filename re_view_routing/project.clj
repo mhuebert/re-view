@@ -14,9 +14,7 @@
 
   :profiles {:test {:dependencies [[re-view "0.3.21"]
                                    [re-db "0.1.11"]
-                                   [org.clojure/core.match "0.3.0-alpha4"]
-                                   [cljsjs/react-dom "15.5.0-0"]
-                                   [cljsjs/react "15.5.0-0"]]}}
+                                   [org.clojure/core.match "0.3.0-alpha4"]]}}
 
   :lein-release {:deploy-via :clojars
                  :scm        :git}

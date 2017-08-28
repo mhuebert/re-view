@@ -5,7 +5,7 @@
             react
             [re-view-prosemirror.markdown :as prose]
             [re-view-prosemirror.defaults :as defaults]
-            [re-view-prosemirror.toolbar :as prose-toolbar]))
+            [re-view-prosemirror.example-toolbar :as prose-toolbar]))
 
 (set! *warn-on-infer* true)
 

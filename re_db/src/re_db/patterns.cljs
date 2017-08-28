@@ -148,6 +148,15 @@
     (-> (datom-patterns datoms many? active-keys)
         (pattern-values value-map))))
 
+(defn invalidate!
+  "Invalidate a pattern, ie. invoke callbacks that match pattern"
+  [db pattern-key pattern]
+  (doseq [f (get-in @db [:listeners pattern-key pattern])]
+    (f)))
+
+(defprotocol IPatternListen
+  (reaction [this] "the action to take when a listened pattern matches")
+  (patterns [this] "Return the patterns currently listened to"))
 
 (comment
   (assert (= (datom-patterns [["e" "a" "v" "prev-v"]]

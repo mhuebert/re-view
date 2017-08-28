@@ -5,8 +5,8 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.854"]
-                 [re-db "0.1.11"]
-                 [re-view-hiccup "0.1.9"]]
+                 [re-db "0.1.12-SNAPSHOT"]
+                 [re-view-hiccup "0.1.10-SNAPSHOT"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             #_[lein-figwheel "0.5.0-2"]
