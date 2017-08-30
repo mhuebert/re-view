@@ -3,17 +3,19 @@
     "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
     "babel-preset-es2015": "^6.24.1",
+    "buble": "^0.15.2",
+    "globals": "^10.1.0",
     "prosemirror-commands": "^0.22.0",
     "prosemirror-history": "^0.22.0",
     "prosemirror-inputrules": "^0.22.0",
-    "prosemirror-keymap": "^0.22.0",
+    "prosemirror-keymap": "^0.22.1",
     "prosemirror-markdown": "^0.22.0",
     "prosemirror-model": "^0.22.0",
     "prosemirror-schema-list": "^0.22.0",
     "prosemirror-schema-table": "^0.22.0",
     "prosemirror-state": "^0.22.0",
     "prosemirror-tables": "^0.1.0",
-    "prosemirror-view": "^0.22.0",
+    "prosemirror-view": "https://github.com/ProseMirror/prosemirror-view.git#dcbf44a3981f299cf973c1eb1c678dc6d17ed02d",
     "webpack": "^2.4.1"
   }
 }

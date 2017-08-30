@@ -69,18 +69,12 @@ var pmMarkdown =
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports) {
-
-module.exports = pm.model;
-
-/***/ }),
-/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var ref = __webpack_require__(0);
+var ref = __webpack_require__(1);
 var Schema = ref.Schema;
 
 exports.schema = new Schema({
@@ -257,6 +251,12 @@ exports.schema = new Schema({
 });
 
 /***/ }),
+/* 1 */
+/***/ (function(module, exports) {
+
+module.exports = pm.model;
+
+/***/ }),
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -265,7 +265,7 @@ exports.schema = new Schema({
 
 // Defines a parser and serializer for [CommonMark](http://commonmark.org/) text.
 
-exports.schema = __webpack_require__(1).schema;var assign;
+exports.schema = __webpack_require__(0).schema;var assign;
 assign = __webpack_require__(3), exports.defaultMarkdownParser = assign.defaultMarkdownParser, exports.MarkdownParser = assign.MarkdownParser;var assign$1;
 assign$1 = __webpack_require__(4), exports.MarkdownSerializer = assign$1.MarkdownSerializer, exports.defaultMarkdownSerializer = assign$1.defaultMarkdownSerializer, exports.MarkdownSerializerState = assign$1.MarkdownSerializerState;
 
@@ -277,9 +277,9 @@ assign$1 = __webpack_require__(4), exports.MarkdownSerializer = assign$1.Markdow
 
 
 var markdownit = __webpack_require__(6);
-var ref = __webpack_require__(1);
+var ref = __webpack_require__(0);
 var schema = ref.schema;
-var ref$1 = __webpack_require__(0);
+var ref$1 = __webpack_require__(1);
 var Mark = ref$1.Mark;
 
 function maybeMerge(a, b) {
@@ -938,10 +938,6 @@ exports.MarkdownSerializerState = MarkdownSerializerState;
 
 
 var _prosemirrorMarkdown = __webpack_require__(2);
-
-var _prosemirrorModel = __webpack_require__(0);
-
-// export {schema, MarkdownParser, defaultMarkdownSerializer} from "prosemirror-markdown"
 
 module.exports = {
     MarkdownParser: _prosemirrorMarkdown.MarkdownParser,

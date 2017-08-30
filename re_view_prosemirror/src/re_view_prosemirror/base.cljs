@@ -73,7 +73,6 @@
                                        (reset! state {:pm-view editor-view})))
           :reset-doc               (fn [{:keys [view/state parse schema]} new-value]
                                      (let [view (:pm-view @state)]
-                                       (prn :new-value new-value)
                                        (.updateState view
                                                      (.create pm/EditorState #js {"doc"     (cond-> new-value
                                                                                                     (string? new-value) (parse))

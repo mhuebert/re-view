@@ -1964,14 +1964,14 @@ var SelectionReader = function SelectionReader(view) {
   this.poller = poller(this);
 
   view.dom.addEventListener("focus", function () {
-    return this$1.poller.start();
+    return this$1.poller.start(hasFocusAndSelection(this$1.view));
   });
   view.dom.addEventListener("blur", function () {
     return this$1.poller.stop();
   });
 
   if (!view.editable) {
-    this.poller.start();
+    this.poller.start(false);
   }
 };
 
@@ -2049,7 +2049,7 @@ SelectionReader.prototype.readFromDOM = function (origin) {
     var bias = origin == "pointer" || this.view.state.selection.head < $head.pos && !inWidget ? 1 : -1;
     selection = selectionBetween(this.view, $anchor, $head, bias);
   }
-  var preserve = !inWidget && head == selection.head && $anchor.pos == selection.anchor;
+  var preserve = !inWidget && !this.view.cursorWrapper && head == selection.head && $anchor.pos == selection.anchor;
   if (preserve) {
     this.storeDOMState(selection);
   }
@@ -2086,12 +2086,12 @@ SelectionChangePoller.prototype.poll = function (origin) {
   this.originTime = Date.now();
 };
 
-SelectionChangePoller.prototype.start = function () {
+SelectionChangePoller.prototype.start = function (andRead) {
   if (!this.listening) {
     var doc = this.reader.view.dom.ownerDocument;
     doc.addEventListener("selectionchange", this.readFunc);
     this.listening = true;
-    if (hasFocusAndSelection(this.reader.view)) {
+    if (andRead) {
       this.readFunc();
     }
   }
@@ -2191,7 +2191,7 @@ function selectionToDOM(view, takeFocus) {
     }
     if (sel.visible) {
       view.dom.classList.remove("ProseMirror-hideselection");
-    } else {
+    } else if (anchor != head) {
       view.dom.classList.add("ProseMirror-hideselection");
       if ("onselectionchange" in document) {
         removeClassOnSelectionChange(view);
@@ -2283,7 +2283,17 @@ function hasFocusAndSelection(view) {
     return false;
   }
   var sel = view.root.getSelection();
-  return sel.anchorNode && view.dom.contains(sel.anchorNode.nodeType == 3 ? sel.anchorNode.parentNode : sel.anchorNode);
+  if (!sel.anchorNode) {
+    return false;
+  }
+  try {
+    // Firefox will raise 'permission denied' errors when accessing
+    // properties of `sel.anchorNode` when it's in a generated CSS
+    // element.
+    return view.dom.contains(sel.anchorNode.nodeType == 3 ? sel.anchorNode.parentNode : sel.anchorNode);
+  } catch (_) {
+    return false;
+  }
 }
 
 /***/ }),
@@ -5220,7 +5230,12 @@ NodeType.prototype.eq = function (other) {
 // way the document is drawn. They come in several variants. See the
 // static members of this class for details.
 var Decoration = function Decoration(from, to, type) {
+  // :: number
+  // The start position of the decoration.
   this.from = from;
+  // :: number
+  // The end position. Will be the same as `from` for [widget
+  // decorations](##view.Decoration^widget).
   this.to = to;
   this.type = type;
 };
@@ -8142,8 +8157,9 @@ var EditorView = function EditorView(place, props) {
   this.docView = docViewDesc(this.state.doc, computeDocDeco(this), viewDecorations(this), this.dom, this);
 
   this.lastSelectedViewDesc = null;
+  initInput(this); // Must be done before creating a SelectionReader
+
   this.selectionReader = new SelectionReader(this);
-  initInput(this);
 
   this.pluginViews = [];
   this.updatePluginViews();
@@ -8200,6 +8216,8 @@ EditorView.prototype.setProps = function (props) {
 // Update the editor's `state` prop, without touching any of the
 // other props.
 EditorView.prototype.updateState = function (state) {
+  var this$1 = this;
+
   var prev = this.state;
   this.state = state;
   if (prev.plugins != state.plugins) {
@@ -8241,11 +8259,14 @@ EditorView.prototype.updateState = function (state) {
   this.updatePluginViews(prev);
 
   if (scrollToSelection) {
-    if (state.selection instanceof NodeSelection) {
-      scrollRectIntoView(this, this.docView.domAfterPos(state.selection.from).getBoundingClientRect());
-    } else {
-      scrollRectIntoView(this, this.coordsAtPos(state.selection.head));
-    }
+    if (this.someProp("handleScrollToSelection", function (f) {
+      return f(this$1);
+    })) {} // Handled
+    else if (state.selection instanceof NodeSelection) {
+        scrollRectIntoView(this, this.docView.domAfterPos(state.selection.from).getBoundingClientRect());
+      } else {
+        scrollRectIntoView(this, this.coordsAtPos(state.selection.head));
+      }
   } else if (oldScrollPos) {
     resetScrollPos(oldScrollPos);
   }
@@ -8342,8 +8363,8 @@ prototypeAccessors.root.get = function () {
 };
 
 // :: ({left: number, top: number}) → ?{pos: number, inside: number}
-// Given a pair of coordinates, return the document position that
-// corresponds to them. May return null if the given coordinates
+// Given a pair of viewport coordinates, return the document position
+// that corresponds to them. May return null if the given coordinates
 // aren't inside of the visible editor. When an object is returned,
 // its `pos` property is the position nearest to the coordinates,
 // and its `inside` property holds the position before the inner
@@ -8361,7 +8382,7 @@ EditorView.prototype.posAtCoords = function (coords) {
 };
 
 // :: (number) → {left: number, right: number, top: number, bottom: number}
-// Returns the screen rectangle at a given document position. `left`
+// Returns the viewport rectangle at a given document position. `left`
 // and `right` will be the same number, as this returns a flat
 // cursor-ish rectangle.
 EditorView.prototype.coordsAtPos = function (pos) {
@@ -8463,23 +8484,30 @@ function nonInclusiveMark(mark) {
   return mark.type.spec.inclusive === false;
 }
 
-function cursorWrapperDOM() {
+function cursorWrapperDOM(visible) {
   var span = document.createElement("span");
   span.textContent = "\uFEFF"; // zero-width non-breaking space
+  if (!visible) {
+    span.style.position = "absolute";
+    span.style.left = "-100000px";
+  }
   return span;
 }
 
 function updateCursorWrapper(view) {
   var ref = view.state.selection;
-  var $cursor = ref.$cursor;
-  if ($cursor && (view.state.storedMarks || $cursor.parent.content.length == 0 || $cursor.parentOffset && !$cursor.textOffset && $cursor.nodeBefore.marks.some(nonInclusiveMark))) {
+  var $head = ref.$head;
+  var $anchor = ref.$anchor;
+  var visible = ref.visible;
+  var $pos = $head.pos == $anchor.pos && (!visible || $head.parent.inlineContent) ? $head : null;
+  if ($pos && (!visible || view.state.storedMarks || $pos.parent.content.length == 0 || $pos.parentOffset && !$pos.textOffset && $pos.nodeBefore.marks.some(nonInclusiveMark))) {
     // Needs a cursor wrapper
-    var marks = view.state.storedMarks || $cursor.marks();
-    var spec = { isCursorWrapper: true, marks: marks, raw: true };
-    if (!view.cursorWrapper || !Mark.sameSet(view.cursorWrapper.spec.marks, marks) || view.cursorWrapper.type.widget.textContent != "\uFEFF") {
-      view.cursorWrapper = Decoration.widget($cursor.pos, cursorWrapperDOM(), spec);
-    } else if (view.cursorWrapper.pos != $cursor.pos) {
-      view.cursorWrapper = Decoration.widget($cursor.pos, view.cursorWrapper.type.widget, spec);
+    var marks = view.state.storedMarks || $pos.marks();
+    var spec = { isCursorWrapper: true, marks: marks, raw: true, visible: visible };
+    if (!view.cursorWrapper || !Mark.sameSet(view.cursorWrapper.spec.marks, marks) || view.cursorWrapper.type.widget.textContent != "\uFEFF" || view.cursorWrapper.spec.visible != visible) {
+      view.cursorWrapper = Decoration.widget($pos.pos, cursorWrapperDOM(visible), spec);
+    } else if (view.cursorWrapper.pos != $pos.pos) {
+      view.cursorWrapper = Decoration.widget($pos.pos, view.cursorWrapper.type.widget, spec);
     }
   } else {
     view.cursorWrapper = null;
@@ -8561,6 +8589,12 @@ function getEditable(view) {
 //   Called when something is dropped on the editor. `moved` will be
 //   true if this drop moves from the current selection (which should
 //   thus be deleted).
+//
+//   handleScrollToSelection:: ?(view: EditorView) → bool
+//   Called when the view, after updating its state, tries to scroll
+//   the selection into view. A handler function may return false to
+//   indicate that it did not handle the scrolling and further
+//   handlers or the default behavior should be tried.
 //
 //   onFocus:: ?(view: EditorView, event: dom.Event)
 //   Called when the editor is focused.
@@ -12272,7 +12306,7 @@ function serializeForClipboard(view, slice) {
   var firstChild = wrap.firstChild,
       needsWrap;
   while (firstChild && firstChild.nodeType == 1 && (needsWrap = wrapMap[firstChild.nodeName.toLowerCase()])) {
-    for (var i = 0; i < needsWrap.length; i++) {
+    for (var i = needsWrap.length - 1; i >= 0; i--) {
       var wrapper = document.createElement(needsWrap[i]);
       while (wrap.firstChild) {
         wrapper.appendChild(wrap.firstChild);
@@ -12776,7 +12810,17 @@ function posAtCoords(view, coords) {
     return null;
   }
   if (node) {
-    pos = posFromCaret(view, node, offset, coords);
+    // Suspiciously specific kludge to work around caret*FromPoint
+    // never returning a position at the end of the document
+    if (node == view.dom && offset == node.childNodes.length - 1 && node.lastChild.nodeType == 1 && coords.top > node.lastChild.getBoundingClientRect().bottom) {
+      pos = view.state.doc.content.size;
+    }
+    // Ignore positions directly after a BR, since caret*FromPoint
+    // 'round up' positions that would be more accurately places
+    // before the BR node.
+    else if (offset == 0 || node.nodeType != 1 || node.childNodes[offset - 1].nodeName != "BR") {
+        pos = posFromCaret(view, node, offset, coords);
+      }
   }
   if (pos == null) {
     pos = posFromElement(view, elt, coords);
@@ -13583,7 +13627,7 @@ function doPaste(view, text, html, e) {
 
   var singleNode = sliceSingleNode(slice);
   var tr = singleNode ? view.state.tr.replaceSelectionWith(singleNode, view.shiftKey) : view.state.tr.replaceSelection(slice);
-  view.dispatch(tr.scrollIntoView());
+  view.dispatch(tr.scrollIntoView().setMeta("paste", true));
   return true;
 }
 
@@ -14916,12 +14960,16 @@ function patchAttributes(dom, prev, cur) {
     }
   }
   if (prev.style != cur.style) {
-    var text = dom.style.cssText,
-        found;
-    if (prev.style && (found = text.indexOf(prev.style)) > -1) {
-      text = text.slice(0, found) + text.slice(found + prev.style.length);
+    if (prev.style) {
+      var prop = /\s*([\w\-\xa1-\uffff]+)\s*:(?:"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|\(.*?\)|[^;])*/g,
+          m;
+      while (m = prop.exec(prev.style)) {
+        dom.style[m[1].toLowerCase()] = "";
+      }
     }
-    dom.style.cssText = text + (cur.style || "");
+    if (cur.style) {
+      dom.style.cssText += cur.style;
+    }
   }
 }
 

@@ -17,6 +17,7 @@
 (def TextSelection (gobj/get pm "TextSelection"))
 (def NodeSelection (gobj/get pm "NodeSelection"))
 (def Selection (gobj/get pm "Selection"))
+(def Slice (gobj/get pm "Slice"))
 
 (def Schema (gobj/get pm "Schema"))
 
@@ -41,6 +42,7 @@
   (aget (ensure-schema state-or-schema) "nodes" (name node-name)))
 
 (defn ^js/pm.Transaction scroll-into-view [^js/pm.Transaction tr]
+  (prn :scroll-into-view)
   (.scrollIntoView tr))
 
 (defn toggle-mark
