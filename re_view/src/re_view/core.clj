@@ -71,7 +71,9 @@
                             :display-name (display-name *ns* view-name)
                             :view/render  (wrap-body view-name body)})
                     (group-methods))]
-    `(def ~view-name ~@(some-> docstring (list)) (~'re-view.core/view* ~methods))))
+    `(let [the-class# (~'re-view.core/class* ~methods)]
+       (def ~(symbol (str view-name "Class")) the-class#)
+       (def ~view-name ~@(some-> docstring (list)) (~'re-view.core/factory the-class#)))))
 
 (defmacro view
   "Returns anonymous view, given the same args as `defview`."

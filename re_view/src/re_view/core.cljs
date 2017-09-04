@@ -233,8 +233,10 @@
 
 (defn factory
   "Return a function which returns a React element when called with props and children."
-  [constructor class-keys instance-keys]
-  (let [{{defaults :props/defaults
+  [constructor]
+  (let [{:keys [class-keys
+                instance-keys] :as re$view$base} (gobj/get constructor "re$view$base")
+        {{defaults :props/defaults
           :as      prop-spec} :spec/props
          children-spec        :spec/children
          :as                  class-keys} (-> class-keys
@@ -242,28 +244,43 @@
                                               (update :spec/children vspec/resolve-spec-vector))
         class-react-key (gobj/get constructor "key")
         display-name (gobj/get constructor "displayName")]
-    (fn [props & children]
-      (let [[props children] (if (or (map? props)
-                                     (nil? props)) [props children] [nil (cons props children)])
-            props (cond->> props defaults (merge defaults))
-            key (or (get props :key)
-                    (when class-react-key
-                      (cond (string? class-react-key) class-react-key
-                            (keyword? class-react-key) (get props class-react-key)
-                            (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
-                            :else (throw (js/Error "Invalid key supplied to component"))))
-                    display-name)]
+    (doto (fn [props & children]
+            (let [[props children] (if (or (map? props)
+                                           (nil? props)) [props children] [nil (cons props children)])
+                  props (cond->> props defaults (merge defaults))
+                  key (or (get props :key)
+                          (when class-react-key
+                            (cond (string? class-react-key) class-react-key
+                                  (keyword? class-react-key) (get props class-react-key)
+                                  (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
+                                  :else (throw (js/Error "Invalid key supplied to component"))))
+                          display-name)]
 
-        (when (true? INSTRUMENT!)
-          (vspec/validate-props display-name prop-spec props)
-          (vspec/validate-children display-name children-spec children))
+              (when (true? INSTRUMENT!)
+                (vspec/validate-props display-name prop-spec props)
+                (vspec/validate-children display-name children-spec children))
 
-        (react/createElement constructor #js {"key"      key
-                                              "ref"      (get props :ref)
-                                              "props"    (dissoc props :ref)
-                                              "children" children
-                                              "instance" instance-keys
-                                              "class"    class-keys})))))
+              (react/createElement constructor #js {"key"      key
+                                                    "ref"      (get props :ref)
+                                                    "props"    (dissoc props :ref)
+                                                    "children" children
+                                                    "instance" instance-keys
+                                                    "class"    class-keys})))
+      (gobj/set "re$view$base" re$view$base))))
+
+(defn ^:export class*
+  [{:keys [lifecycle-keys
+           react-keys] :as re-view-base}]
+  (let [prototype (new react/Component)
+        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+        constructor (fn ReView [$props]
+                      (this-as this
+                        (element-constructor this $props)))
+        _ (gobj/set constructor "prototype" prototype)]
+    (doseq [[k v] (seq react-keys)]
+      (gobj/set constructor (v-util/camelCase k) v))
+    (doto constructor
+      (gobj/set "re$view$base" (assoc re-view-base :prototype prototype)))))
 
 (defn ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -285,20 +302,11 @@
    Result of :render function is automatically passed through hiccup/element,
    unless it is already a valid React element.
    "
-  [{:keys [lifecycle-keys
-           class-keys
-           instance-keys
-           react-keys] :as re-view-base}]
-  (let [prototype (new react/Component)
-        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
-        constructor (fn ReView [$props]
-                      (this-as this
-                        (element-constructor this $props)))
-        _ (gobj/set constructor "prototype" prototype)]
-    (doseq [[k v] (seq react-keys)]
-      (gobj/set constructor (v-util/camelCase k) v))
-    (-> (factory constructor class-keys instance-keys)
-        (doto (gobj/set "re$view$base" (assoc re-view-base :prototype prototype))))))
+  [re-view-base]
+  (factory (class* re-view-base)))
+
+(defn prototype [class]
+  (:prototype (gobj/get class "re$view$base")))
 
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
