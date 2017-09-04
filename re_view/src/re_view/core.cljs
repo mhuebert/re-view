@@ -55,6 +55,8 @@
           (vswap! re$view assoc :view/re-db.patterns patterns))
         value))))
 
+
+
 (def kmap
   "Mapping of convenience keys to React lifecycle method keys."
   {:constructor             "constructor"
@@ -229,7 +231,6 @@
                              (fn? initial-state) (apply this (:view/children @(gobj/get this "re$view"))))))
   this)
 
-
 (defn factory
   "Return a function which returns a React element when called with props and children."
   [constructor class-keys instance-keys]
@@ -242,11 +243,8 @@
         class-react-key (gobj/get constructor "key")
         display-name (gobj/get constructor "displayName")]
     (fn [props & children]
-      (let [[props children] (cond (or (map? props)
-                                       (nil? props)) [props children]
-                                   (and (object? props)
-                                        (not (react/isValidElement props))) [(js->clj props :keywordize-keys true) children]
-                                   :else [nil (cons props children)])
+      (let [[props children] (if (or (map? props)
+                                     (nil? props)) [props children] [nil (cons props children)])
             props (cond->> props defaults (merge defaults))
             key (or (get props :key)
                     (when class-react-key
