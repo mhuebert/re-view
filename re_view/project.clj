@@ -1,4 +1,4 @@
-(defproject re-view "0.3.28"
+(defproject re-view "0.3.29-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
