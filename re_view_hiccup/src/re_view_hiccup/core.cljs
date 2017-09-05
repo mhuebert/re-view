@@ -37,6 +37,10 @@
         (satisfies? IHiccup form)
         (-to-element (to-hiccup form))
 
+        (list? form)
+        (reduce (fn [out el]
+                  (doto out (.push (-to-element el)))) #js [] form)
+
         :else form))
 
 (defn element
