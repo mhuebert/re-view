@@ -147,14 +147,15 @@
 (defn adjust-font-size [f state dispatch]
   (let [node (pm/cursor-node state)]
     (when-let [heading-level (condp = (.-type node)
-                               (pm/get-node state :paragraph) 7
-                               (pm/get-node state :heading) (.-level (.-attrs node))
+                               (pm/get-node state :paragraph) 4
+                               (pm/get-node state :heading) (let [level (.-level (.-attrs node))]
+                                                              (cond-> level
+                                                                      (>= level 4) (inc)))
                                :else nil)]
-      (let [target-index (min (f heading-level) 6)]
-        (when-not (> target-index 7)
-          ((if (= 7 target-index)
-             (pm/set-block-type :paragraph)
-             (pm/set-block-type :heading #js {:level target-index})) state dispatch))))))
+      (let [target-index (min (f heading-level) 7)]
+        ((cond (<= target-index 3) (pm/set-block-type :heading #js {:level target-index})
+               (= target-index 4) (pm/set-block-type :paragraph)
+               :else (pm/set-block-type :heading #js {:level (dec target-index)})) state dispatch)))))
 
 (defn clear-stored-marks [state dispatch]
   (dispatch (reduce (fn [tr mark]
