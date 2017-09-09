@@ -1,6 +1,9 @@
 (ns re-view-hiccup.hiccup-test
   (:require [cljs.test :refer [deftest is are testing]]
-            [re-view-hiccup.core :as hiccup]
+            [react]
+            [react-dom]
+            [re-view-hiccup.core :refer [element]]
+            [re-view-hiccup.hiccup :as hiccup]
             [re-view-hiccup.react.html :as html]))
 
 (enable-console-print!)
@@ -12,6 +15,8 @@
         (update 1 js->clj :keywordize-keys true))))
 
 (deftest hiccup
+
+
   (testing "Parse props"
 
     (is (= (element-args [:h1#page-header])
@@ -22,6 +27,10 @@
            (element-args [:div.red])
            (element-args [:div {:class "red"}])
            (element-args [:div {:classes ["red"]}]))
+        "Three ways to specify a class")
+
+    (is (= ["div" {:className "red"}]
+           (element-args [:div.red nil]))
         "Three ways to specify a class")
 
     (is (= (element-args [:.red {:class   "white black"
@@ -77,43 +86,44 @@
                               :id            "el"}])
         "All together")))
 
-(deftest html
-  "Client-side HTML strings from React elements"
+(comment
+  (deftest html
+    "Client-side HTML strings from React elements"
 
 
 
-  (is (= "<div class=\"red\">abc</div>"
-         (html/string (hiccup/element [:div {:class "red"} "abc"])))
-      "div with class")
+    (is (= "<div class=\"red\">abc</div>"
+           (html/string (element [:div {:class "red"} "abc"])))
+        "div with class")
 
-  (is (= "<div class=\"redx\"></div>"
-         (html/string (hiccup/element [:div {:class "red"}]
-                                      {:wrap-props #(update % :class str "x")})))
-      "using wrap-props")
+    (is (= "<div class=\"redx\"></div>"
+           (html/string (element [:div {:class "red"}]
+                                 {:wrap-props #(update % :class str "x")})))
+        "using wrap-props")
 
-  (is (= "<input class=\"X\">"
-         (html/string (hiccup/element [:input]
-                                      {:wrap-props (fn [props tag]
-                                                     (cond-> props
-                                                             (= tag "input") (assoc :class "X")))})))
-      "using tag in wrap-props")
+    (is (= "<input class=\"X\">"
+           (html/string (element [:input]
+                                 {:wrap-props (fn [props tag]
+                                                (cond-> props
+                                                        (= tag "input") (assoc :class "X")))})))
+        "using tag in wrap-props")
 
-  (is (= "<div style=\"font-size: 10px;\">abc</div>"
-         (html/string (hiccup/element [:div {:style {:font-size 10}} "abc"])))
-      "div with inline style")
+    (is (= "<div style=\"font-size: 10px;\">abc</div>"
+           (html/string (element [:div {:style {:font-size 10}} "abc"])))
+        "div with inline style")
 
-  (is (= "<amazon>abc</amazon>"
-         (html/string (hiccup/element [:amazon "abc"])))
-      "custom element")
+    (is (= "<amazon>abc</amazon>"
+           (html/string (element [:amazon "abc"])))
+        "custom element")
 
-  (is (= "<amazon:effect name=\"whispered\">abc</amazon:effect>"
-         (html/string (hiccup/element [:amazon/effect {:name "whispered"} "abc"])))
-      "custom element with namespace")
+    (is (= "<amazon:effect name=\"whispered\">abc</amazon:effect>"
+           (html/string (element [:amazon/effect {:name "whispered"} "abc"])))
+        "custom element with namespace")
 
-  (is (= "<span></span>"
-         (html/string (hiccup/element [:span {:onClick #()}])))
-      "element with event handler (handler is elided)")
+    (is (= "<span></span>"
+           (html/string (element [:span {:onClick #()}])))
+        "element with event handler (handler is elided)")
 
-  (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
-         (html/string (hiccup/element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
-      "nested custom elements with custom attributes"))
+    (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
+           (html/string (element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
+        "nested custom elements with custom attributes")))

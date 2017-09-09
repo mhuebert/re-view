@@ -4,20 +4,21 @@
             [re-view-material.icons :as icons]))
 
 
-(def menu-item-element :.dib.pa2.serif)
+(def menu-item-element :.pm-toolbar-item)
 
 (defn menu-item
   "Renders a menu item with icon"
   [key pm-state dispatch cmd active? icon]
   (let [enabled? (cmd pm-state)]
-    [menu-item-element (-> (if (false? enabled?)
-                             {:class "o-30"}
-                             {:class         (str "pointer hover-bg-near-white "
-                                                  (when active? "blue"))
-                              :on-mouse-down (fn [^js/Event e]
-                                               (.preventDefault e)
-                                               (cmd pm-state dispatch))})
-                           (assoc :key (name key)))
+    [:.inline-flex.items-center.ph1.h-100
+     (-> (if (false? enabled?)
+           {:class "pm-toolbar-icon o-30"}
+           {:class         (str "pointer hover-bg-darken-more "
+                                (when active? "blue"))
+            :on-mouse-down (fn [^js/Event e]
+                             (.preventDefault e)
+                             (cmd pm-state dispatch))})
+         (assoc :key (name key)))
      icon]))
 
 (defn mark-strong [state dispatch]
@@ -25,6 +26,9 @@
 
 (defn mark-em [state dispatch]
   (menu-item :em state dispatch (pm/toggle-mark :em) (pm/has-mark? state :em) icons/FormatItalic))
+
+(defn mark-code [state dispatch]
+  (menu-item :code state dispatch (pm/toggle-mark :code) (pm/has-mark? state :code) icons/Code))
 
 
 (defn list-bullet [state dispatch]
@@ -91,9 +95,9 @@
    wrap-quote
    (block-heading 6)])
 
-(comment
 
-  (defn toolbar-example
+
+#_(defn toolbar-example
     "Render a list of toolbar items"
     [state dispatch]
     [:div
@@ -101,4 +105,4 @@
                       mark-em
                       list-bullet
                       wrap-quote]]
-       (menu-item state dispatch))]))
+       (menu-item state dispatch))])

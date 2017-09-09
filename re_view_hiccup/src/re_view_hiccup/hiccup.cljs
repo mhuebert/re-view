@@ -73,7 +73,7 @@
   "Returns a React-conformant javascript object. An alternative to clj->js,
   allowing for key renaming without an extra loop through every prop map."
   [tag k-id k-classes props]
-  (when props
+  (when (or props k-id k-classes)
     (let [{:keys [class class-name classes] :as props} (cond-> props
                                                                (boolean *wrap-props*)
                                                                (*wrap-props* tag))
