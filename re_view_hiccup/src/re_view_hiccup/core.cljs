@@ -14,7 +14,7 @@
 (defprotocol IElement
   (to-element [this] "Returns a React element representing `this`"))
 
-(defprotocol IHiccup
+(defprotocol IEmitHiccup
   (to-hiccup [this] "Returns a hiccup form representing `this`"))
 
 (defn -to-element [form]
@@ -34,7 +34,7 @@
         (satisfies? IElement form)
         (to-element form)
 
-        (satisfies? IHiccup form)
+        (satisfies? IEmitHiccup form)
         (-to-element (to-hiccup form))
 
         (list? form)
