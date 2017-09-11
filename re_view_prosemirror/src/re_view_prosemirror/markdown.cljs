@@ -47,14 +47,11 @@
                                        (.renderList state node "    " (fn []
                                                                         (str (or (.. node -attrs -bullet) "*") " "))))})
 
-(defn patch-inline-code-mark
-  "WARNING: this is a patch that will become redundant after the upstream bug is fixed."
-  [schema]
-  (doto schema (aset "marks" "code" "__proto__" "isCode" true)))
 
 (def schema (-> markdown-schema
-                (patch-inline-code-mark)
-                (cond-> *tables?* (tables/add-schema-nodes))))
+                (cond-> *tables?* (tables/add-schema-nodes))
+                ;; WARNING: this is a brittle patch that will become redundant after the upstream bug is fixed.
+                (doto (aset "marks" "code" "isCode" true))))
 
 (def ^js/pmMarkdown.MarkdownSerializer serializer (MarkdownSerializer (merge {}
                                                                              (when *tables?*
