@@ -1,4 +1,4 @@
-(defproject re-view "0.3.29"
+(defproject re-view "0.3.30-SNAPSHOT"
   :description "Tiny React wrapper"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.854"]
                  [re-db "0.1.12"]
-                 [re-view-hiccup "0.1.11-SNAPSHOT"]]
+                 [re-view-hiccup "0.1.11"]]
 
   :plugins [[lein-cljsbuild "1.1.2"]
             #_[lein-figwheel "0.5.0-2"]
