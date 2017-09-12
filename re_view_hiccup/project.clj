@@ -1,4 +1,4 @@
-(defproject re-view-hiccup "0.1.11-SNAPSHOT"
+(defproject re-view-hiccup "0.1.11"
   :description "Hiccup parser for re-view"
 
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view_hiccup"
