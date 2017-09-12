@@ -60,7 +60,8 @@
 (def kmap
   "Mapping of convenience keys to React lifecycle method keys."
   {:constructor             "constructor"
-   :view/initial-state      "$getInitialState"
+   :view/initial-state      "$initialState"
+   :view/state              "$state"
    :view/did-catch          "componentDidCatch"
    :view/will-mount         "componentWillMount"
    :view/did-mount          "componentDidMount"
@@ -96,6 +97,7 @@
     f
     (case method-k
       (:view/initial-state
+        :view/state
         :key
         :constructor) f
       :view/render (reactive-render f)
@@ -121,40 +123,36 @@
         (this-as this
           (apply f this args))))))
 
-(defn init-state
-  "Return a state atom for component. The component will update when it changes."
-  [this initial-state]
-  (let [a (atom initial-state)]
-    (vswap! (gobj/get this "re$view")
-            assoc
-            :view/state a
-            :view/prev-state initial-state)
-    (add-watch a :state-changed (fn [_ _ old-state new-state]
-                                  (when (not= old-state new-state)
-                                    (vswap! (gobj/get this "re$view") assoc :view/prev-state old-state)
-                                    (when-let [^js/Function will-receive (gobj/get this "componentWillReceiveState")]
-                                      (.call will-receive this))
-                                    (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get this "shouldComponentUpdate")]
-                                                                        (.call should-update this)
-                                                                        true))
-                                      (force-update this)))))
-    a))
+(defn init-state!
+  "State can be any type which implements IWatchable and IDeref."
+  [this watchable-thing]
+  (vswap! (gobj/get this "re$view") assoc :view/state watchable-thing :view/prev-state @watchable-thing)
+  (add-watch watchable-thing this (fn [_ _ old-state new-state]
+                                    (when (not= old-state new-state)
+                                      (vswap! (gobj/get this "re$view") assoc :view/prev-state old-state)
+                                      (when-let [^js/Function will-receive (gobj/get this "componentWillReceiveState")]
+                                        (.call will-receive this))
+                                      (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get this "shouldComponentUpdate")]
+                                                                          (.call should-update this)
+                                                                          true))
+                                        (force-update this)))))
+  watchable-thing)
 
-(defn ensure-state [this]
+(defn ensure-state! [this]
   (when-not (contains? @(aget this "re$view") :view/state)
-    (init-state this nil)))
+    (init-state! this (atom nil))))
 
 (extend-protocol ILookup
   react/Component
   (-lookup
     ([this k]
      (if (#{"view" "spec"} (namespace k))
-       (do (when (keyword-identical? k :view/state) (ensure-state this))
+       (do (when (keyword-identical? k :view/state) (ensure-state! this))
            (get @(gobj/get this "re$view") k))
        (get-in @(gobj/get this "re$view") [:view/props k])))
     ([this k not-found]
      (if (#{"view" "spec"} (namespace k))
-       (do (when (keyword-identical? k :view/state) (ensure-state this))
+       (do (when (keyword-identical? k :view/state) (ensure-state! this))
            (get @(gobj/get this "re$view") k))
        (get-in @(gobj/get this "re$view") [:view/props k] not-found)))))
 
@@ -185,7 +183,7 @@
                                        (gobj/set this "unmounted" true)
                                        (when-let [un-sub (aget this "reactiveUnsubscribe")]
                                          (un-sub))
-                                       (some-> state (remove-watch :state-changed)))
+                                       (some-> state (remove-watch this)))
                   :view/did-update   (fn [this]
                                        (let [re$view (aget this "re$view")
                                              {prev-props :view/props
@@ -205,30 +203,32 @@
   (binding [*trigger-state-render* false]
     (apply swap! args)))
 
-(defn init-props
+(defn init-component
   "When a component is instantiated, bind element methods and populate initial props."
   [this $props]
   (if $props
-    (do (gobj/set this "re$view"
-                  (volatile! (-> (gobj/get $props "class")
-                                 (assoc :view/props (gobj/get $props "props")
-                                        :view/children (gobj/get $props "children")))))
-        (when-let [instance-keys (gobj/get $props "instance")]
+    (let [props (gobj/get $props "props")
+          children (gobj/get $props "children")]
+      (gobj/set this "re$view"
+                (volatile! (-> (gobj/get $props "class")
+                               (assoc :view/props (dissoc props :view/state)
+                                      :view/children children))))
+      (when-let [instance-keys (gobj/get $props "instance")]
           (doseq [k (gobj/getKeys instance-keys)]
             (let [f (gobj/get instance-keys k)]
               (gobj/set this k (if (fn? f) (fn [& args]
-                                             (apply f this args)) f))))))
-    (gobj/set this "re$view" (volatile! {:view/props    nil
-                                         :view/children nil})))
-  this)
-
-(defn element-constructor
-  "Body of constructor function for ReView component."
-  [this $props]
-  (init-props this $props)
-  (when-let [initial-state (gobj/get this "$getInitialState")]
-    (init-state this (cond-> initial-state
-                             (fn? initial-state) (apply this (:view/children @(gobj/get this "re$view"))))))
+                                             (apply f this args)) f)))))
+      (when-let [state (or
+                         ;; state provided as prop - this must be an atom-like thing
+                         (get props :view/state)
+                         ;; state provided as :view/initial-state - data or a fn that returns data, will be wrapped in atom
+                         (when-let [initial-state (gobj/get this "$initialState")]
+                           (atom (cond-> initial-state (fn? initial-state) (apply this children))))
+                         ;; state provided as :view/state -  atom-like thing, or fn that returns atom-like thing
+                         (when-let [watchable-state (gobj/get this "$state")]
+                           (cond-> watchable-state (fn? watchable-state) (apply this children))))]
+        (init-state! this state)))
+    (gobj/set this "re$view" (volatile! {})))
   this)
 
 (defn factory
@@ -275,7 +275,7 @@
         _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
         constructor (fn ReView [$props]
                       (this-as this
-                        (element-constructor this $props)))
+                        (init-component this $props)))
         _ (gobj/set constructor "prototype" prototype)]
     (doseq [[k v] (seq react-keys)]
       (gobj/set constructor (v-util/camelCase k) v))

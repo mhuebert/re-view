@@ -1,6 +1,10 @@
 
 # Changelog
 
+## 0.3.29
+- Allow passing `:view/state` in `defview` or as a prop. It should be either an atom-like thing, or a function that returns one.
+  This allows components to depend on arbitrary IWatchable/IDeref-implementing types.
+
 ## 0.3.26
 - React 16 beta, with :global-exports
 
