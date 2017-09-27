@@ -1,4 +1,4 @@
-(ns re-view-prosemirror.markdown
+ (ns re-view-prosemirror.markdown
   (:require [re-view.core :as v]
             [cljsjs.markdown-it]
             [pack.prosemirror-markdown]
@@ -7,7 +7,7 @@
             [re-view-prosemirror.core :as pm]
             [goog.object :as gobj]))
 
-(def *tables?* true)
+(def *tables?* false)
 (def *fenced-code-blocks?* true)
 
 (def pmMarkdown (.-pmMarkdown js/window))
@@ -22,7 +22,8 @@
 (defn patch-state
   "Patch markdown serializer state to emit tight lists."
   [st]
-  (let [render-list (.-renderList st)]
+  st
+  #_(let [render-list (.-renderList st)]
     (aset st "renderList" (fn [node delim first-delim]
                             (aset node "attrs" #js {:tight true})
                             (this-as this

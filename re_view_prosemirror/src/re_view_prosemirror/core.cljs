@@ -95,12 +95,13 @@
   ([pattern node-tag attrs join-predicate]
    (InputRule. pattern
                (fn [state match start end]
-                 (let [the-node (get-node state node-tag)
+                 (let [node-type (get-node state node-tag)
                        attrs (if (fn? attrs) (attrs match) attrs)
                        tr (.delete (.-tr state) start end)
                        $start (.resolve (.-doc tr) start)
                        range (.blockRange $start)
-                       wrapping (and range (.findWrapping pm range the-node attrs))]
+                       wrapping (and range
+                                     (.findWrapping pm range node-type attrs))]
                    (when wrapping
                      (.wrap tr range wrapping)
                      (let [before (-> tr
@@ -108,7 +109,7 @@
                                       (.resolve (dec start))
                                       (.-nodeBefore))]
                        (when (and before
-                                  (= (.-type before) the-node)
+                                  (= (.-type before) node-type)
                                   (.canJoin pm (.-doc tr) (dec start))
                                   (or (not join-predicate) (join-predicate match before)))
                          (.join tr (dec start)))
@@ -170,15 +171,16 @@
          empty (.-empty sel)
          $cursor (.-$cursor sel)
          mark-type (get-mark state mark-name)
+         the-mark (.create mark-type attrs)
          the-node (cursor-node state)
          tr (.-tr state)]
      (when (and $cursor
                 (not (or (and empty (not $cursor))
                          (not (.-inlineContent the-node))
-                         (not (.allowsMark (.contentMatchAt the-node 0))))))
+                         (not (.allowsMarks (.-type the-node) #js [the-mark])))))
        (if (.isInSet mark-type (or (.-storedMarks state) (.marks $cursor)))
          (.removeStoredMark tr mark-type)
-         (.addStoredMark tr (.create mark-type attrs)))))))
+         (.addStoredMark tr the-mark))))))
 
 
 (defn add-link-tr

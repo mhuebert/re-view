@@ -1,4 +1,4 @@
-import {schema, MarkdownSerializerState, MarkdownSerializer, MarkdownParser, defaultMarkdownParser, defaultMarkdownSerializer} from "prosemirror-markdown"
+import {schema, defaultMarkdownParser, MarkdownParser, MarkdownSerializer, defaultMarkdownSerializer, MarkdownSerializerState} from "prosemirror-markdown"
 
 module.exports = {
     MarkdownParser: MarkdownParser,

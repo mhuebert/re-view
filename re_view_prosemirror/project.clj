@@ -1,4 +1,4 @@
-(defproject re-view-prosemirror "0.1.9-SNAPSHOT"
+(defproject re-view-prosemirror "0.1.10-SNAPSHOT"
 
   :description "Rich text editors built with ProseMirror in Re-View"
 
@@ -23,7 +23,7 @@
   :lein-release {:deploy-via :clojars
                  :scm        :git}
 
-  :npm {:dependencies [[prosemirror-view "0.20.3"]
+  #_:npm #_{:dependencies [[prosemirror-view "0.20.3"]
                        [prosemirror-state "0.20.0"]
                        [prosemirror-keymap "0.20.0"]
                        [prosemirror-model "0.20.0"]

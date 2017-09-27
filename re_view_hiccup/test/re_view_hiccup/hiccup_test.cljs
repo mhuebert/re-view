@@ -127,3 +127,16 @@
     (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
            (html/string (element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
         "nested custom elements with custom attributes")))
+
+
+
+(comment
+
+  ;; use data literals?
+
+  #re/hiccup [:div]
+  #hiccup [:div]
+  cljs.tools.reader
+
+
+  )
