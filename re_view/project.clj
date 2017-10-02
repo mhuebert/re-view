@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.854"]
                  [re-db "0.1.12"]
-                 [re-view-hiccup "0.1.11"]
+                 [re-view-hiccup "0.1.12-SNAPSHOT"]
 
                  [cljsjs/react "16.0.0-0"]
                  [cljsjs/react-dom "16.0.0-0"]]
