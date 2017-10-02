@@ -10,8 +10,9 @@
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [org.clojure/clojurescript "1.9.908"]
-                 [cljsjs/react "16.0.0-beta.5-1"]
-                 [cljsjs/react-dom "16.0.0-beta.5-1"]]
+
+                 [cljsjs/react "16.0.0-0"]
+                 [cljsjs/react-dom "16.0.0-0"]]
 
   :lein-release {:deploy-via :clojars
                  :scm        :git}

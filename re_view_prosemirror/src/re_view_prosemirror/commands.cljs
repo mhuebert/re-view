@@ -164,6 +164,8 @@
 
 ;;;;;; Input rules
 
+;; TODO: mark input rules, see https://discuss.prosemirror.net/t/input-rules-for-wrapping-marks/537/10
+
 (def rule-blockquote-start
   (pm/input-rule-wrap-block
     #"^>\s"
@@ -189,7 +191,7 @@
 
 (def rule-block-code-start
   (pm/input-rule-wrap-inline
-    #"^```$"
+    #"^`$"
     :code_block
     nil))
 
