@@ -1,6 +1,5 @@
 (ns re-view.render-loop
-  (:require [goog.object :as gobj]
-            react))
+  (:require [goog.object :as gobj]))
 
 (set! *warn-on-infer* true)
 (def ^:dynamic *immediate-state-update* false)
@@ -44,7 +43,7 @@
              (do (.debug js/console "No :catch method in component: " this)
                  (.error js/console e)))))))
 
-(defn force-update! [^react/Component this]
+(defn force-update! [this]
   (vswap! to-render disj this)
   (force-update-caught this))
 
