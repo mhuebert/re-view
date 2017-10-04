@@ -43,7 +43,7 @@
              (do (.debug js/console "No :catch method in component: " this)
                  (.error js/console e)))))))
 
-(defn force-update! [this]
+(defn force-update! [^js/React.Component this]
   (vswap! to-render disj this)
   (force-update-caught this))
 

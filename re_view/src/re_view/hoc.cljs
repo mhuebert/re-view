@@ -39,7 +39,7 @@
                             (gdom/appendChild (gdom/createDom "div")))
                         (.renderFrame this content))
    :view/will-unmount (fn [this]
-                        (react-dom/unmountComponentAtNode (.getElement this)))
+                        (js/ReactDOM.unmountComponentAtNode (.getElement this)))
    :get-element       (fn [this]
                         (-> (v/dom-node this)
                             (gobj/getValueByKeys "contentDocument" "body")

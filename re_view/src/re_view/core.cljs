@@ -7,9 +7,7 @@
             [re-view-hiccup.core :as hiccup]
             [goog.object :as gobj]
             [re-view.util :as v-util]
-            [re-view.view-spec :as vspec]
-            react
-            react-dom))
+            [re-view.view-spec :as vspec]))
 
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
@@ -23,7 +21,7 @@
 (defn dom-node
   "Return DOM node for component"
   [component]
-  (react-dom/findDOMNode component))
+  (js/ReactDOM.findDOMNode component))
 
 (defn mounted?
   "Returns true if component is still mounted to the DOM.
@@ -143,7 +141,7 @@
     (init-state! this (atom nil))))
 
 (extend-protocol ILookup
-  react/Component
+  js/React.Component
   (-lookup
     ([this k]
      (if (#{"view" "spec"} (namespace k))
@@ -260,7 +258,7 @@
                 (vspec/validate-props display-name prop-spec props)
                 (vspec/validate-children display-name children-spec children))
 
-              (react/createElement constructor #js {"key"      key
+              (js/React.createElement constructor #js {"key"      key
                                                     "ref"      (get props :ref)
                                                     "props"    (dissoc props :ref)
                                                     "children" children
@@ -271,7 +269,7 @@
 (defn ^:export class*
   [{:keys [lifecycle-keys
            react-keys] :as re-view-base}]
-  (let [prototype (new react/Component)
+  (let [prototype (new js/React.Component)
         _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
         constructor (fn ReView [$props]
                       (this-as this
@@ -311,7 +309,7 @@
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
   [component element]
-  (react-dom/render component (cond->> element
+  (js/ReactDOM.render component (cond->> element
                                        (string? element)
                                        (.getElementById js/document))))
 

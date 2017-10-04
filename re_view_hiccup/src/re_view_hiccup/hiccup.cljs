@@ -1,6 +1,5 @@
 (ns re-view-hiccup.hiccup
   (:require [re-view-hiccup.react.attrs :as react-html]
-            [react :as react]
             [clojure.string :as string]))
 
 
@@ -94,4 +93,4 @@
       prop-js)))
 
 
-(def ^:dynamic *create-element* react/createElement)
+(def ^:dynamic *create-element* js/React.createElement)

@@ -124,7 +124,7 @@
 (deftest lifecycle-transitions
   (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
                                            (.setAttribute "id" "apple")))
-        render #(react-dom/render (apple %1 nil) el)
+        render #(js/ReactDOM.render (apple %1 nil) el)
         initial-props {:color "purple"}
         this (render initial-props)]
 
