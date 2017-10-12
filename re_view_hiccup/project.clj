@@ -1,4 +1,4 @@
-(defproject re-view-hiccup "0.1.13-SNAPSHOT"
+(defproject re-view-hiccup "0.1.14"
   :description "Hiccup parser for re-view"
 
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view_hiccup"
@@ -9,10 +9,7 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.908"]
-
-                 [cljsjs/react "16.0.0-0"]
-                 [cljsjs/react-dom "16.0.0-0"]]
+                 [org.clojure/clojurescript "1.9.946" :scope "provided"]]
 
   :lein-release {:deploy-via :clojars
                  :scm        :git}
