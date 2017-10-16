@@ -7,7 +7,9 @@
             [re-view-hiccup.core :as hiccup]
             [goog.object :as gobj]
             [re-view.util :as v-util]
-            [re-view.view-spec :as vspec]))
+            [re-view.view-spec :as vspec]
+            ["react-dom" :as react-dom]
+            ["react" :as react]))
 
 (def schedule! render-loop/schedule!)
 (def force-update render-loop/force-update)
@@ -21,7 +23,7 @@
 (defn dom-node
   "Return DOM node for component"
   [component]
-  (js/ReactDOM.findDOMNode component))
+  (react-dom/findDOMNode component))
 
 (defn mounted?
   "Returns true if component is still mounted to the DOM.
@@ -141,7 +143,7 @@
     (init-state! this (atom nil))))
 
 (extend-protocol ILookup
-  js/React.Component
+  react/Component
   (-lookup
     ([this k]
      (if (#{"view" "spec"} (namespace k))
@@ -258,7 +260,7 @@
                 (vspec/validate-props display-name prop-spec props)
                 (vspec/validate-children display-name children-spec children))
 
-              (js/React.createElement constructor #js {"key"      key
+              (react/createElement constructor #js {"key"      key
                                                     "ref"      (get props :ref)
                                                     "props"    (dissoc props :ref)
                                                     "children" children
@@ -269,7 +271,7 @@
 (defn ^:export class*
   [{:keys [lifecycle-keys
            react-keys] :as re-view-base}]
-  (let [prototype (new js/React.Component)
+  (let [prototype (new react/Component)
         _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
         constructor (fn ReView [$props]
                       (this-as this
@@ -309,7 +311,7 @@
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
   [component element]
-  (js/ReactDOM.render component (cond->> element
+  (react-dom/render component (cond->> element
                                        (string? element)
                                        (.getElementById js/document))))
 

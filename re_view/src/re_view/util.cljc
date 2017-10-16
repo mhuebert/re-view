@@ -1,7 +1,7 @@
 (ns re-view.util
   (:refer-clojure :exclude [uuid])
   (:require [clojure.string :as string]
-            #?@(:cljs [[react]
+            #?@(:cljs [["react" :as react]
                        [re-db.d :as d]])))
 
 (def camelCase
@@ -40,7 +40,7 @@
             (recur (rest fns)))))))
 
 #?(:cljs (defn is-react-element? [x]
-           (and x (js/React.isValidElement x))))
+           (and x (react/isValidElement x))))
 
 (defn flatten-seqs
   "Flatten collection, only unwrap sequences"

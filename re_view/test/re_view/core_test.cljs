@@ -1,7 +1,7 @@
 (ns re-view.core-test
   (:require [cljs.test :refer [deftest is are testing]]
             [re-view.core :as v :refer [defview]]
-            react-dom))
+            ["react-dom" :as react-dom]))
 
 
 (def render-count (atom 0))
@@ -9,7 +9,7 @@
 (def lifecycle-log (atom {}))
 
 #_(defn log-args
-    [& args]
+    [& args] 
     (reset! lifecycle-log args))
 
 (defn log-args [method this]
@@ -124,7 +124,7 @@
 (deftest lifecycle-transitions
   (let [el (js/document.body.appendChild (doto (js/document.createElement "div")
                                            (.setAttribute "id" "apple")))
-        render #(js/ReactDOM.render (apple %1 nil) el)
+        render #(react-dom/render (apple %1 nil) el)
         initial-props {:color "purple"}
         this (render initial-props)]
 
