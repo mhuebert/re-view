@@ -1,7 +1,7 @@
 (ns re-db.core-test
   (:require [cljs.test :refer-macros [deftest is testing]]
             [re-db.core :as d :include-macros true])
-  (:require-macros [tests.helpers :refer [throws]]))
+  (:require-macros [re-db.test-helpers :refer [throws]]))
 
 (deftest basic
   (let [db (d/create {})

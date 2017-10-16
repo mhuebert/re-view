@@ -2,7 +2,7 @@
   (:require [cljs.test :refer-macros [deftest is testing]]
             [re-db.d :as d]
             [re-db.patterns :as patterns :include-macros true])
-  (:require-macros [tests.helpers :refer [throws]]))
+  (:require-macros [re-db.test-helpers :refer [throws]]))
 
 (def eval-count (atom 0))
 

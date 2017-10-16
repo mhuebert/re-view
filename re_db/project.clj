@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.293"]
+                 [org.clojure/clojurescript "1.9.946"  :scope "provided"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]]
 
 
@@ -33,6 +33,6 @@
                         :source-paths ["src" "test"]
                         :compiler     {:output-to      "resources/public/js/test.js"
                                        :output-dir     "resources/public/js/test"
-                                       :main           tests.runner
+                                       :main           re-db.runner
                                        :optimizations  :none
                                        :source-map-dir "resources/public/js/"}}]})

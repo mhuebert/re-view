@@ -1,4 +1,4 @@
-(ns tests.helpers)
+(ns re-db.test-helpers)
 
 (defmacro throws [& body]
   (let [message (when (string? (last body)) (last body))
