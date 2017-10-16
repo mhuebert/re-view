@@ -1,6 +1,10 @@
-{:foreign-libs [{:file     "js/pm.pack.js"
-                 :provides ["pack.prosemirror"]}
-                {:file     "js/pmMarkdown.pack.js"
-                 :requires ["pack.prosemirror" "cljsjs.markdown-it"]
-                 :provides ["pack.prosemirror-markdown"]}]
- :npm-deps {:prosemirror-markdown "^0.22.0"}}
+{:npm-deps {"prosemirror-commands"    "^0.24.0",
+            "prosemirror-history"     "^0.24.0",
+            "prosemirror-inputrules"  "^0.24.0",
+            "prosemirror-keymap"      "^0.24.0",
+            "prosemirror-markdown"    "^0.24.0",
+            "prosemirror-model"       "^0.24.0",
+            "prosemirror-schema-list" "^0.24.0",
+            "prosemirror-state"       "^0.24.0",
+            "prosemirror-view"        "^0.24.0",
+            "prosemirror-transform"   "^0.24.0",}}

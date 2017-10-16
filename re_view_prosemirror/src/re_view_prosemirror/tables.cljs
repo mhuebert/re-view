@@ -23,14 +23,13 @@
                                 (.append (clj->js table-nodes)))
                      :marks (gobj/getValueByKeys schema "spec" "marks")})))
 
-
 (def table-nodes
-  {:table             (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+  {:table             (fn [state node]
                         (.renderContent state node)
                         (.write state "\n"))
-   :table_body        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+   :table_body        (fn [state node]
                         (.renderContent state node))
-   :table_header      (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+   :table_header      (fn [state node]
                         (.renderContent state node)
                         (let [columns (aget node "firstChild" "content" "childCount")]
                           ;; only take as many columns as are in the first row
@@ -38,19 +37,19 @@
                                   (str "|" (string/join
                                              (take columns (repeat "---|")))
                                        "\n"))))
-   :table_header_cell (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+   :table_header_cell (fn [state node]
                         (.write state "| ")
                         (.renderInline state node)
                         (.write state " "))
-   :table_row         (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+   :table_row         (fn [state node]
                         (.renderContent state node)
                         (.write state "|\n"))
-   :table_cell        (fn [^js/pmMarkdown.MarkdownSerializerState state node]
+   :table_cell        (fn [state node]
                         (.write state "| ")
                         (.renderInline state node)
                         (.write state " "))})
 
-(defn ^js/pmMarkdown.MarkdownParser add-parser-nodes [parser schema MarkdownParser]
+(defn add-parser-nodes [parser schema MarkdownParser]
   (let [token->node {:table {:block "table"}
                      :thead {:block "table_header"}
                      :tbody {:block "table_body"}

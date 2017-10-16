@@ -1,14 +1,16 @@
 (ns re-view-prosemirror.commands
   (:require [re-view-prosemirror.core :as pm]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            ["prosemirror-history" :as history]
+            ["prosemirror-commands" :as commands]))
 
 (def commands pm/commands)
 
-(def chain pm/chain)
+(def chain commands/chainCommands)
 
-(def undo (gobj/get pm/history "undo"))
+(def undo history/undo)
 
-(def redo (gobj/get pm/history "redo"))
+(def redo history/redo)
 
 (def inline-bold (pm/toggle-mark :strong))
 
@@ -25,22 +27,22 @@
 (defn block-heading [i]
   (pm/set-block-type :heading #js {"level" i}))
 
-(def outdent (pm/chain
+(def outdent (chain
                pm/lift-list-item
                pm/lift))
 
 (def indent (chain pm/sink-list-item block-list-bullet))
 
 (def hard-break
-  (pm/chain
-    (.-exitCode pm/commands)
+  (chain
+    commands/exitCode
     (fn [^js/pm.EditorState state dispatch]
       (dispatch (->> (.create (pm/get-node state :hard_break))
                      (.replaceSelectionWith (.-tr state))
                      (pm/scroll-into-view)))
       true)))
 
-(def newline-in-code (.-newlineInCode pm/commands))
+(def newline-in-code commands/newlineInCode)
 
 (defn empty-node? [node]
   (= 0 (.-size (.-content node))))
@@ -49,15 +51,15 @@
   (let [pos (.. state -selection -$anchor -pos)]
     (dispatch (.deleteRange (.-tr state) (max 0 (dec pos)) (inc pos)))))
 
-(def enter (pm/chain pm/split-list-item
-                     (.-createParagraphNear pm/commands)
-                     (.-liftEmptyBlock pm/commands)
-                     (.-splitBlock pm/commands)))
+(def enter (chain pm/split-list-item
+                  commands/createParagraphNear
+                  commands/liftEmptyBlock
+                  commands/splitBlock))
 
 (defn clear-empty-non-paragraph-nodes
   "If the cursor is in an empty node which is a heading or code-block, convert the node to a paragraph."
   [state dispatch]
-  (let [node (pm/cursor-node state)
+  (let [node    (pm/cursor-node state)
         $cursor (.-$anchor (.-selection state))]
     (when (and (#{(pm/get-node state :heading)
                   (pm/get-node state :code_block)} (.-type node))
@@ -65,19 +67,19 @@
                    (= 0 (some-> $cursor (.-parentOffset)))))
       ((pm/set-block-type :paragraph) state dispatch))))
 
-(def backspace (pm/chain (.-deleteSelection pm/commands)
-                         clear-empty-non-paragraph-nodes
-                         (.-joinBackward pm/commands)
-                         (.-undoInputRule pm/pm)))
+(def backspace (chain commands/deleteSelection
+                      clear-empty-non-paragraph-nodes
+                      commands/joinBackward
+                      pm/undoInputRule))
 
 
-(def join-up (.-joinUp pm/commands))
+(def join-up commands/joinUp)
 
-(def join-down (.-joinDown pm/commands))
+(def join-down commands/joinDown)
 
-(def select-parent-node (.-selectParentNode pm/commands))
+(def select-parent-node commands/selectParentNode)
 
-(def select-all (.-selectAll pm/commands))
+(def select-all commands/selectAll)
 
 (def selection-stack (atom '()))
 
@@ -114,15 +116,15 @@
       (clear-selections!))
     (loop [sel original-selection]
       (let [$from (.-$from sel)
-            to (.-to sel)
-            same (.sharedDepth $from to)]
+            to    (.-to sel)
+            same  (.sharedDepth $from to)]
         (if (= same 0)
           (do
             (stack-selection! 0)
             (select-all state dispatch))
-          (let [pos (.before $from same)
-                $pos (.resolve (.-doc state) pos)
-                the-node (.-nodeAfter $pos)
+          (let [pos            (.before $from same)
+                $pos           (.resolve (.-doc state) pos)
+                the-node       (.-nodeAfter $pos)
                 node-selection (pm/NodeSelection. $pos)]
             (if (and (= 1 (.-childCount the-node))
                      had-selected-node?)
@@ -219,8 +221,8 @@
 #_(defn size-change
     [mode]
     (fn [state dispatch]
-      (let [set-p (pm/set-block-type :paragraph)
-            set-h1 (pm/set-block-type :heading #js {"level" 1})
+      (let [set-p   (pm/set-block-type :paragraph)
+            set-h1  (pm/set-block-type :heading #js {"level" 1})
             active? (or (set-p state) (set-h1 state))]
         )))
 
@@ -249,7 +251,7 @@
   (when-let [$cursor (.. state -selection -$cursor)]
     (let [image-node (.-nodeBefore $cursor)
           image-type (pm/get-node state :image)
-          to (.-pos $cursor)]
+          to         (.-pos $cursor)]
       (when (= (some-> image-node (.-type)) image-type)
         (let [from (- to (.-nodeSize image-node))
               text (str "![" (.. image-node -attrs -title) "](" (.. image-node -attrs -src) ")")]
@@ -269,8 +271,8 @@
                             (.removeStoredMark the-mark))))))))))
 
 (def rule-image-and-links (pm/InputRule.
-                  #"(\!?)\[(.*)\]\((.*)\)\s?$"
-                  (fn [state [the-match kind label target] from to]
-                    (if (= kind "!")
-                      (pm/add-image-tr state from to label target)
-                      (pm/add-link-tr state from to label target)))))
+                            #"(\!?)\[(.*)\]\((.*)\)\s?$"
+                            (fn [state [the-match kind label target] from to]
+                              (if (= kind "!")
+                                (pm/add-image-tr state from to label target)
+                                (pm/add-link-tr state from to label target)))))

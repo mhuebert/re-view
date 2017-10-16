@@ -2,7 +2,7 @@
   (:require [re-view.core :as v :refer [defview view]]
             [re-view.example.helpers :as h]
             [re-view.hoc :as hoc]
-            react
+            ["react" :as react]
             [re-view-prosemirror.markdown :as prose]
             [re-view-prosemirror.defaults :as defaults]
             [re-view-prosemirror.example-toolbar :as prose-toolbar]))

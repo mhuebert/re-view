@@ -1,75 +1,115 @@
 (ns re-view-prosemirror.core
-  (:require [pack.prosemirror]
-
-            [goog.object :as gobj]
-            [clojure.string :as string]))
+  (:require [goog.object :as gobj]
+            [clojure.string :as string]
+            ["prosemirror-view" :as prosemirror-view]
+            ["prosemirror-state" :as prosemirror-state]
+            ["prosemirror-keymap" :as keymap]
+            ["prosemirror-transform" :as prosemirror-transform]
+            ["prosemirror-schema-list" :as prosemirror-schema-list]
+            ["prosemirror-inputrules" :as prosemirror-inputrules]
+            ["prosemirror-model" :as model]
+            ["prosemirror-commands" :as commands]
+            ["prosemirror-history" :as history]))
 
 ;; javacript interop with the Prosemirror bundle
 ;; (type hints for externs inference)
 
 (set! *warn-on-infer* true)
 
-(def ^js/Object pm (.-pm js/window))
-(def ^js/Object commands (gobj/get pm "commands"))
+(def keymap keymap)
+(def commands commands)
+(def model model)
+(def history history)
+
+(def EditorView prosemirror-view/EditorView)
+(def Decoration prosemirror-view/Decoration)
+(def DecorationSet prosemirror-view/DecorationSet)
+
+(def EditorState prosemirror-state/EditorState)
+(def Selection prosemirror-state/Selection)
+(def SelectionRange prosemirror-state/SelectionRange)
+(def TextSelection prosemirror-state/TextSelection)
+(def NodeSelection prosemirror-state/NodeSelection)
+(def AllSelection prosemirror-state/AllSelection)
+(def Transaction prosemirror-state/Transaction)
+(def Plugin prosemirror-state/Plugin)
+(def PluginKey prosemirror-state/PluginKey)
 
 
-(def InputRule (gobj/get pm "InputRule"))
-(def TextSelection (gobj/get pm "TextSelection"))
-(def NodeSelection (gobj/get pm "NodeSelection"))
-(def Selection (gobj/get pm "Selection"))
-(def Slice (gobj/get pm "Slice"))
 
-(def Schema (gobj/get pm "Schema"))
+(def findWrapping prosemirror-transform/findWrapping)
+(def liftTarget prosemirror-transform/liftTarget)
+(def canSplit prosemirror-transform/canSplit)
+(def canJoin prosemirror-transform/canJoin)
+(def ReplaceAroundStep prosemirror-transform/ReplaceAroundStep)
+(def ReplaceStep prosemirror-transform/ReplaceStep)
 
-(def history (gobj/get pm "history"))
+(def wrapInList prosemirror-schema-list/wrapInList)
+(def splitListItem prosemirror-schema-list/splitListItem)
+(def liftListItem prosemirror-schema-list/liftListItem)
+(def sinkListItem prosemirror-schema-list/sinkListItem)
+
+(def InputRule prosemirror-inputrules/InputRule)
+(def wrappingInputRule prosemirror-inputrules/wrappingInputRule)
+(def textblockTypeInputRule prosemirror-inputrules/textblockTypeInputRule)
+(def inputRules prosemirror-inputrules/inputRules)
+(def undoInputRule prosemirror-inputrules/undoInputRule)
+(def allInputRules prosemirror-inputrules/allInputRules)
+
+(def Schema model/Schema)
+(def Node model/Node)
+(def Mark model/Mark)
+(def ResolvedPos model/ResolvedPos)
+(def NodeRange model/NodeRange)
+(def Fragment model/Fragment)
+(def Slice model/Slice)
+(def MarkType model/MarkType)
+(def NodeType model/NodeType)
 
 
-(def ^js/pm.EditorView EditorView (gobj/get pm "EditorView"))
-(def ^js/pm.EditorState EditorState (gobj/get js/pm "EditorState"))
+(def chain commands/chainCommands)
 
-(def chain (gobj/get commands "chainCommands"))
-
-(defn ^js/pm.Schema ensure-schema [state-or-schema]
+(defn ensure-schema [state-or-schema]
   (cond-> state-or-schema
           (= (gobj/get state-or-schema "constructor") EditorState) (gobj/get "schema")))
 
-(defn ^js/pm.MarkType get-mark [state-or-schema mark-name]
+(defn get-mark [state-or-schema mark-name]
   (if (keyword? mark-name)
     (gobj/getValueByKeys (ensure-schema state-or-schema) "marks" (name mark-name))
     mark-name))
 
-(defn ^js/pm.NodeType get-node [state-or-schema node-name]
+(defn get-node [state-or-schema node-name]
   (aget (ensure-schema state-or-schema) "nodes" (name node-name)))
 
-(defn ^js/pm.Transaction scroll-into-view [^js/pm.Transaction tr]
+(defn scroll-into-view [tr]
   (prn :scroll-into-view)
   (.scrollIntoView tr))
 
 (defn toggle-mark
   [mark-name]
   (fn [state dispatch]
-    (let [the-command (.toggleMark commands (get-mark state mark-name))]
+    (let [the-command (commands/toggleMark  (get-mark state mark-name))]
       (the-command state dispatch))))
 
-(defn cursor-node [^pm.EditorState state]
-  (let [^pm.Selection sel (.-selection state)]
+(defn cursor-node [state]
+  (let [sel (.-selection state)]
     (or (.-node sel) (.-parent (.-$from sel)))))
 
 (defn cursor-depth [state]
   (.-depth (.-$from (.-selection state))))
 
-(def auto-join #(.autoJoin commands % (fn [] true)))
+(def auto-join #(commands/autoJoin % (fn [] true)))
 
 (def wrap-in-list (comp auto-join (fn [list-tag]
                                     (fn [state dispatch]
-                                      (let [the-command (.wrapInList pm (get-node state list-tag))]
+                                      (let [the-command (wrapInList (get-node state list-tag))]
                                         (the-command state dispatch))))))
 (defn set-block-type
   ([block-tag]
    (set-block-type block-tag nil))
   ([block-tag attrs]
    (fn [state dispatch]
-     (let [the-command (.setBlockType commands (get-node state block-tag) attrs)]
+     (let [the-command (commands/setBlockType (get-node state block-tag) attrs)]
        (the-command state dispatch)))))
 
 
@@ -78,10 +118,10 @@
   [pattern node-tag attrs]
   (InputRule. pattern
               (fn [state match start end]
-                (let [$start (.. state -doc (resolve start))
+                (let [$start     (.. state -doc (resolve start))
                       start-node (.node $start -1)
-                      attrs (if (fn? attrs) (attrs match) attrs)
-                      the-node (get-node state node-tag)]
+                      attrs      (if (fn? attrs) (attrs match) attrs)
+                      the-node   (get-node state node-tag)]
                   (if-not (-> start-node
                               (.canReplaceWith (.index $start -1) (.indexAfter $start -1) the-node attrs))
                     nil
@@ -96,12 +136,12 @@
    (InputRule. pattern
                (fn [state match start end]
                  (let [node-type (get-node state node-tag)
-                       attrs (if (fn? attrs) (attrs match) attrs)
-                       tr (.delete (.-tr state) start end)
-                       $start (.resolve (.-doc tr) start)
-                       range (.blockRange $start)
-                       wrapping (and range
-                                     (.findWrapping pm range node-type attrs))]
+                       attrs     (if (fn? attrs) (attrs match) attrs)
+                       tr        (.delete (.-tr state) start end)
+                       $start    (.resolve (.-doc tr) start)
+                       range     (.blockRange $start)
+                       wrapping  (and range
+                                      (findWrapping range node-type attrs))]
                    (when wrapping
                      (.wrap tr range wrapping)
                      (let [before (-> tr
@@ -110,54 +150,51 @@
                                       (.-nodeBefore))]
                        (when (and before
                                   (= (.-type before) node-type)
-                                  (.canJoin pm (.-doc tr) (dec start))
+                                  (canJoin (.-doc tr) (dec start))
                                   (or (not join-predicate) (join-predicate match before)))
                          (.join tr (dec start)))
                        tr)))))))
 
 
-(def lift (.-lift commands))
+(def lift commands/lift)
 
 (defn lift-list-item [state dispatch]
-  (let [the-command (.liftListItem pm (get-node state :list_item))]
+  (let [the-command (liftListItem (get-node state :list_item))]
     (the-command state dispatch)))
 
 (defn sink-list-item [state dispatch]
-  (let [the-command (.sinkListItem pm (get-node state :list_item))]
+  (let [the-command (sinkListItem (get-node state :list_item))]
     (the-command state dispatch)))
 
-(def keymap (.-keymap pm))
-(def keymap-base (.-baseKeymap commands))
 
-
-(defn range-nodes [^js/pm.Node node start end]
+(defn range-nodes [node start end]
   (let [out #js []]
     (.nodesBetween node start end #(.push out %))
     (vec out)))
 
-(defn selection-nodes [^js/pm.Node doc ^js/pm.Selection selection]
+(defn selection-nodes [doc selection]
   (->> (.-ranges selection)
-       (reduce (fn [nodes ^js/pm.NodeRange range]
+       (reduce (fn [nodes range]
                  (into nodes (range-nodes doc (.. range -$from -pos) (.. range -$to -pos)))) [])))
 
-(defn mark-name [^js/pm.Mark mark]
+(defn mark-name [mark]
   (.. mark -type -name))
 
 (defn pos-mark [state $pos mark]
   (let [^js/MarkType mark (get-mark state mark)
-        stored-marks (.-storedMarks state)
-        cursor-marks (some-> $pos (.marks))]
+        stored-marks      (.-storedMarks state)
+        cursor-marks      (some-> $pos (.marks))]
     (first (filter #(= mark (.-type %))
                    (cond-> #js []
                            stored-marks (.concat stored-marks)
                            cursor-marks (.concat cursor-marks)))))
   )
 
-(defn has-mark? [^js/pm.EditorState pm-state mark]
+(defn has-mark? [pm-state mark]
   (let [^js/MarkType mark (get-mark pm-state mark)]
     (if-let [cursor (.. pm-state -selection -$cursor)]
       (.isInSet mark (or (.-storedMarks pm-state) (.marks cursor)))
-      (every? true? (mapv (fn [^js/pm.SelectionRange range]
+      (every? true? (mapv (fn [range]
                             (.rangeHasMark (.-doc pm-state)
                                            (.. range -$from -pos)
                                            (.. range -$to -pos)
@@ -167,13 +204,13 @@
 (defn toggle-mark-tr
   ([state mark-name] (toggle-mark-tr state mark-name nil))
   ([state mark-name attrs]
-   (let [sel (.-selection state)
-         empty (.-empty sel)
-         $cursor (.-$cursor sel)
+   (let [sel       (.-selection state)
+         empty     (.-empty sel)
+         $cursor   (.-$cursor sel)
          mark-type (get-mark state mark-name)
-         the-mark (.create mark-type attrs)
-         the-node (cursor-node state)
-         tr (.-tr state)]
+         the-mark  (.create mark-type attrs)
+         the-node  (cursor-node state)
+         tr        (.-tr state)]
      (when (and $cursor
                 (not (or (and empty (not $cursor))
                          (not (.-inlineContent the-node))
@@ -185,7 +222,7 @@
 
 (defn add-link-tr
   [state from to label href]
-  (let [tr (.-tr state)
+  (let [tr   (.-tr state)
         link (get-mark state :link)
         from from]
     (-> tr
@@ -195,7 +232,7 @@
 
 (defn add-image-tr
   [state from to label href]
-  (let [tr (.-tr state)
+  (let [tr    (.-tr state)
         image (get-node state :image)]
     (-> tr
         (.setSelection (.create TextSelection (.-doc state) from to))
@@ -203,46 +240,46 @@
                                                           :title label
                                                           :alt   label})))))
 
-(defn state [^js/pm.EditorView pm-view]
+(defn state [pm-view]
   (.-state pm-view))
 
-(defn transact! [^js/pm.EditorView pm-view tr]
+(defn transact! [pm-view tr]
   (.updateState pm-view (.apply (.-state pm-view) tr)))
 
-(defn destroy! [^js/pm.EditorView pm-view]
+(defn destroy! [pm-view]
   (.destroy pm-view))
 
-(defn is-list? [^js/pm.Node node]
+(defn is-list? [node]
   (string/ends-with? (aget node "type" "name") "list"))
 
-(defn first-ancestor [^js/pm.ResolvedPos pos pred]
-  (loop [^js/pm.Node node (.node pos)
-         depth (some-> pos .-depth)]
+(defn first-ancestor [pos pred]
+  (loop [node (.node pos)
+         depth            (some-> pos .-depth)]
     (cond (not node) nil
           (pred node) node
           :else (recur (.node pos (dec depth))
                        (dec depth)))))
 
-(defn descends-from? [^js/pm.ResolvedPos $from kind attrs]
-  (first-ancestor $from (fn [^js/pm.Node node]
+(defn descends-from? [$from kind attrs]
+  (first-ancestor $from (fn [node]
                           (.hasMarkup node kind attrs))))
 
-(defn has-markup? [^js/pm.EditorState state node-type-name attrs]
-  (let [^js/pm.Selection selection (.-selection state)
-        ^js/pm.NodeType kind (get-node state node-type-name)]
-    (if-let [^js/pm.Node node (.-node selection)]
+(defn has-markup? [state node-type-name attrs]
+  (let [selection (.-selection state)
+        kind       (get-node state node-type-name)]
+    (if-let [node (.-node selection)]
       (.hasMarkup node kind attrs)
-      (let [$from ^js/pm.ResolvedPos (.-$from selection)]
+      (let [$from (.-$from selection)]
         (and (<= (.-to selection) (.end $from))
              (.hasMarkup (.-parent $from) kind attrs))))))
 
 (defn wrap-in [state type-name]
-  (.wrapIn commands (get-node state type-name)))
+  (commands/wrapIn (get-node state type-name)))
 
-(defn ^js/pm.NodeType node-type [^js/pm.Node node]
+(defn node-type [node]
   (aget node "type"))
 
-(defn in-list? [^js/pm.EditorState state ^js/pm.NodeType list-type-name]
+(defn in-list? [state list-type-name]
   (= list-type-name (some-> (first-ancestor (.. state -selection -$from) is-list?)
                             (aget "type" "name"))))
 
@@ -257,7 +294,7 @@
 
 (def split-list-item
   (fn [state dispatch]
-    ((.splitListItem pm (get-node state :list_item)) state dispatch)))
+    ((splitListItem (get-node state :list_item)) state dispatch)))
 
 ;; + or - the level
 ;; if para - only up
@@ -295,10 +332,10 @@
     (let [node-matches #(and (.-inlineContent %)
                              (-> % (.contentMatchAt 0) (.allowsMark type)))]
       (every? identity (for [range ranges
-                             :let [$from (.-$from range)
+                             :let [$from     (.-$from range)
                                    root-can? (and (= 0 (.-depth $from))
                                                   (node-matches doc))
-                                   nodes (range-nodes doc (.-pos $from) (.-pos (.-$to range)))]]
+                                   nodes     (range-nodes doc (.-pos $from) (.-pos (.-$to range)))]]
                          (or (and root-can? (empty? nodes))
                              (every? identity (for [node nodes]
                                                 (and (not root-can?)
@@ -307,13 +344,13 @@
     ([state mark-name]
      (toggle-mark-tr state mark-name nil))
     ([state mark-name attrs]
-     (let [sel (.-selection state)
-           ranges (.-ranges sel)
-           doc (.-doc state)
-           empty (.-empty sel)
-           $cursor (.-$cursor sel)
-           mark-type (get-mark state mark-name)
-           tr (.-tr state)
+     (let [sel               (.-selection state)
+           ranges            (.-ranges sel)
+           doc               (.-doc state)
+           empty             (.-empty sel)
+           $cursor           (.-$cursor sel)
+           mark-type         (get-mark state mark-name)
+           tr                (.-tr state)
            invalid-selection (or (and empty (not $cursor))
                                  (not (mark-applies? doc ranges mark-type)))]
        (when-not invalid-selection
@@ -335,7 +372,7 @@
 (defn toggle-ranges-mark
   ([state ranges mark] (toggle-ranges-mark state ranges mark nil))
   ([state ranges mark attrs]
-   (let [mark (get-mark state mark)
+   (let [mark     (get-mark state mark)
          has-mark (has-mark? state mark)]
      (reduce (fn [tr range]
                (if has-mark
@@ -349,21 +386,21 @@
                            (.create mark attrs)))) (.-tr state) ranges))))
 
 (defn mark-extend [state $pos mark]
-  (let [mark (get-mark state mark)
-        parent (.-parent $pos)
+  (let [mark        (get-mark state mark)
+        parent      (.-parent $pos)
         start-index (loop [start-index (.index $pos)]
                       (if (or (<= start-index 0)
                               (not (.isInSet mark (.. $pos -parent (child (dec start-index)) -marks))))
                         start-index
                         (recur (dec start-index))))
-        end-index (loop [end-index (.indexAfter $pos)]
-                    (if (or (>= end-index (.. $pos -parent -childCount))
-                            (not (.isInSet mark (.. $pos -parent (child end-index) -marks))))
-                      end-index
-                      (recur (inc end-index))))
+        end-index   (loop [end-index (.indexAfter $pos)]
+                      (if (or (>= end-index (.. $pos -parent -childCount))
+                              (not (.isInSet mark (.. $pos -parent (child end-index) -marks))))
+                        end-index
+                        (recur (inc end-index))))
         [start-pos end-pos] (loop [start-pos (.start $pos)
-                                   end-pos start-pos
-                                   i 0]
+                                   end-pos   start-pos
+                                   i         0]
                               (if (>= i end-index)
                                 [start-pos end-pos]
                                 (let [size (.. parent (child i) -nodeSize)]

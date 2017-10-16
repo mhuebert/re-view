@@ -1,6 +1,6 @@
 (ns re-view-prosemirror.defaults
-  (:require [re-view-prosemirror.core :as pm]
-            [re-view-prosemirror.commands :as commands]))
+  (:require [re-view-prosemirror.commands :as commands]
+            [re-view-prosemirror.core :as pm]))
 
 (def keymap
   {"Mod-z"        commands/undo
@@ -39,5 +39,5 @@
                         commands/rule-block-code-start
                         commands/rule-block-heading-start
                         commands/rule-paragraph-start]
-                       (.-allInputRules pm/pm)))
+                       pm/allInputRules))
 
