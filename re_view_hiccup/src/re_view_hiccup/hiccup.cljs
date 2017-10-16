@@ -1,6 +1,7 @@
 (ns re-view-hiccup.hiccup
   (:require [re-view-hiccup.react.attrs :as react-html]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            ["react" :as react]))
 
 
 (defn parse-key
@@ -93,4 +94,4 @@
       prop-js)))
 
 
-(def ^:dynamic *create-element* js/React.createElement)
+(def ^:dynamic *create-element* react/createElement)

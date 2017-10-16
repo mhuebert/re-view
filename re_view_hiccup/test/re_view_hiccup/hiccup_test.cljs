@@ -1,7 +1,7 @@
 (ns re-view-hiccup.hiccup-test
   (:require [cljs.test :refer [deftest is are testing]]
-            [react]
-            [react-dom]
+            ["react" :as react]
+            ["react-dom" :as react-dom]
             [re-view-hiccup.core :refer [element]]
             [re-view-hiccup.hiccup :as hiccup]
             [re-view-hiccup.react.html :as html]))
@@ -127,16 +127,3 @@
     (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
            (html/string (element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
         "nested custom elements with custom attributes")))
-
-
-
-(comment
-
-  ;; use data literals?
-
-  #re/hiccup [:div]
-  #hiccup [:div]
-  cljs.tools.reader
-
-
-  )

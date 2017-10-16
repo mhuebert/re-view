@@ -3,7 +3,7 @@
             [clojure.spec.gen.alpha :as gen]
             [clojure.string :as string]
             [re-view-hiccup.core :as hiccup]
-            react))
+            ["react" :as react]))
 
 
 (defn gen-wrap
