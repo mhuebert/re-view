@@ -1,6 +1,9 @@
 
 # Changelog
 
+## 0.4.0
+- `re-view-hiccup` and `re-view-routing` are now included with `re-view`
+
 ## 0.3.29
 - Allow passing `:view/state` in `defview` or as a prop. It should be either an atom-like thing, or a function that returns one.
   This allows components to depend on arbitrary IWatchable/IDeref-implementing types.
@@ -22,7 +25,7 @@
 **breaking changes**
 
 - namespaced keys in methods map: :life/<lifecycle-method>
-- revert namespaces to re-view-hiccup, re-view-material, re-view-prosemirror, re-view-routing
+- revert namespaces to re-view.hiccup, re-view.material, re-view-prosemirror, re-view-routing
 - rename `render-to-element` to `render-to-dom`
 
 additions:
@@ -66,7 +69,7 @@ additions:
 - Do not include `ref` attribute in `props`
 - `re-view-example` namespace with helpers for preparing component examples
 - Move `re-view.routing` to a separate project (`re-view-routing.core`)
-- Move `re-view.hiccup` to a separate project (`re-view-hiccup.core`). Hiccup conversion now supports dashes-to-camelCase conversion, `:class` instead of className, and :for instead of htmlFor. You may also pass classes as a collection (vector, set, etc.) under the `:classes` key.
+- Move `re-view.hiccup` to a separate project (`re-view.hiccup.core`). Hiccup conversion now supports dashes-to-camelCase conversion, `:class` instead of className, and :for instead of htmlFor. You may also pass classes as a collection (vector, set, etc.) under the `:classes` key.
 - `core/render-to-element` accepts an ID string or HTML element, replacing `core/render-to-id` and the mistakenly named `core/render-to-node`.
 - New readme
 

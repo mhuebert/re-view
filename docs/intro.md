@@ -25,15 +25,11 @@ By default, `lein figwheel` will compile your project, open a browser window to 
 
 ## Basic usage
 
-Add the following dependencies to your project.clj or boot file:
+Add the following dependencies to your `project.clj` or `shadow-cljs.edn` file:
 
 ```clj
-[re-view "0.3.20"]
-[cljsjs/react "15.5.0-0"]
-[cljsjs/react-dom "15.5.0-0"]
+[re-view "0.4.0"]
 ```
-
-> Re-View requires, but does not include, `cljsjs/react` and `cljsjs/react-dom`. This is so you can use whatever version of React you want.
 
 Require the core namespace like so:
 
@@ -83,8 +79,8 @@ You can `get` props by key directly on the component, eg. `(:name this)`.
 (defview greeting [this]
   [:div "Hello, " (:name this)])
   
-(greeting {:name "Herbert"})
-;; => <div>Hello, Herbert</div>
+(greeting {:name "Friend"})
+;; => <div>Hello, Friend</div>
 ```
 
 (You can get the props map itself via the `:view/props` key, eg. `(:view/props this)`)

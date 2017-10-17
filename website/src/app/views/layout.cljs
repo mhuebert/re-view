@@ -1,7 +1,7 @@
 (ns app.views.layout
   (:require [re-view.core :as v :refer [defview]]
             [re-db.d :as d]
-            [re-view-material.util :as util]
+            [re-view.material.util :as util]
             [clojure.string :as string]))
 
 (defn page-meta []

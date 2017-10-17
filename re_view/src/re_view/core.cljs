@@ -4,7 +4,7 @@
   (:require [re-db.d :as d]
             [re-db.patterns :as patterns :include-macros true]
             [re-view.render-loop :as render-loop]
-            [re-view-hiccup.core :as hiccup]
+            [re-view.hiccup.core :as hiccup]
             [goog.object :as gobj]
             [re-view.util :as v-util]
             [re-view.view-spec :as vspec]

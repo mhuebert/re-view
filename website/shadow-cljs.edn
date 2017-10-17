@@ -1,0 +1,20 @@
+{
+ :lein   true
+ #_:dependencies #_[[org.clojure/core.match "0.3.0-alpha5"]]
+ #_:source-paths #_["src"
+                    "../re_db/src"
+                    "../prosemirror/src"
+                    "../re_view/src"
+                    "../material/src"
+                    "../material/example"
+                    "../prosemirror/example"
+                    "../re_view/example"]
+ :builds {:browser {:target           :browser
+                    :modules          {:base {:entries [app.core]}}
+                    :output-dir       "resources/public/js"
+                    :asset-path       "/js"
+                    :compiler-options {:language-in :es5}
+                    :devtools         {:http-root    "resources/public"
+                                       :http-handler shadow.http.push-state/handle
+                                       :http-port    8706
+                                       :after-load   app.core/render}}}}

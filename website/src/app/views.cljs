@@ -6,8 +6,8 @@
             [app.util :as util]
             [clojure.string :as string]
             [re-db.d :as d]
-            [re-view-material.icons :as icons]
-            [re-view-material.core :as ui]))
+            [re-view.material.icons :as icons]
+            [re-view.material.core :as ui]))
 
 (defview edit-button [this]
   (ui/Button (-> (v/pass-props this)
@@ -63,7 +63,7 @@
   (or (some-> @state (f))
       [:span]))
 
-(defn clickable-version [group & [artifact]]
+(defn clickable-version [group artifact]
   (WithClojarsVersion (str group "/" (or artifact group))
                       (fn [version]
                         (click-copy {:outer-class "mr2"

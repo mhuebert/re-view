@@ -1,0 +1,5 @@
+{:lein true
+ :builds {:browser {:target     :browser
+                    :modules    {:base {:entries [re-view-prosemirror.example]}}
+                    :output-dir "resources/public/js"
+                    :asset-path "/js"}}}

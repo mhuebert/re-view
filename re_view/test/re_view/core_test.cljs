@@ -9,7 +9,7 @@
 (def lifecycle-log (atom {}))
 
 #_(defn log-args
-    [& args] 
+    [& args]
     (reset! lifecycle-log args))
 
 (defn log-args [method this]

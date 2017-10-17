@@ -1,8 +1,8 @@
 (ns app.views.code
   (:require [re-view.core :as v :refer [defview]]
             [app.views :as views]
-            [re-view-material.core :as ui]
-            [re-view-material.icons :as icons]
+            [re-view.material.core :as ui]
+            [re-view.material.icons :as icons]
             [app.util :as util]
             [goog.string.path :as path]))
 
@@ -17,12 +17,12 @@
 
 
 (defview repository-row
-  {:key (fn [_ repo] repo)}
-  [_ repo]
+  {:key (fn [_ owner repo] (str owner repo))}
+  [_ owner repo]
   [:.f6.flex.items-center
    [:a.mr2 {:href (str "https://www.github.com/braintripping/re-view/tree/master/" (munge repo))} "source"]
    [:a.mr2 {:href (str "/code/" repo "/CHANGELOG.md")} "changelog"]
-   (views/clickable-version repo)])
+   (views/clickable-version owner repo)])
 
 (defn repository-page [repo]
   (views/page nil [:.pv3 (repository-row repo)]))
@@ -32,33 +32,21 @@
   (views/page nil
               [:div.pb3
 
-               [:.f4.o-50.mt4 "Core Libraries"]
-
-               [:p "The basic tools for building an app."]
+               [:.f4.o-50.mt4 "Core"]
 
                [:.f5.b.mt3 "Re-View"]
-               (repository-row "re-view")
+               (repository-row "re-view" "re-view")
 
-               [:.f5.b.mt3 "Routing"]
-               (repository-row "re-view-routing")
-
-               [:.f4.o-50.mt4 "Component Libraries"]
-
-               [:p "Drop-in components for intuitive, attractive user interfaces."]
+               [:.f4.o-50.mt4 "Components"]
 
                [:.f5.b.mt3 "Material Design Components"]
-               (repository-row "re-view-material")
+               (repository-row "re-view" "material")
 
                [:.f5.b.mt3 "Rich Text Components"]
-               (repository-row "re-view-prosemirror")
+               (repository-row "re-view" "prosemirror")
 
                [:.f4.o-50.mt4 "Dependencies"]
 
-               [:p "Foundational tools used by Re-View"]
-
                [:.f5.b.mt3 "Re-DB"]
-               (repository-row "re-db")
-
-               [:.f5.b.mt3 "Hiccup"]
-               (repository-row "re-view-hiccup")]))
+               (repository-row "re-db" "re-db")]))
 

@@ -1,11 +1,14 @@
 (ns app.views.markdown
-  (:require [cljsjs.markdown-it]
-            [re-view.core :as v :refer [defview]]
+  (:require [re-view.core :as v :refer [defview]]
             [goog.object :as gobj]
-            [cljsjs.highlight]
-            [cljsjs.highlight.langs.clojure]
-            [cljsjs.highlight.langs.xml]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            ["highlight.js/lib/highlight" :as hljs]
+            ["highlight.js/lib/languages/clojure" :as highlight-clj]
+            ["highlight.js/lib/languages/xml" :as highlight-xml]
+            ["markdown-it" :as markdownit]))
+
+(.registerLanguage hljs "clojure" highlight-clj)
+(.registerLanguage hljs "xml" highlight-xml)
 
 (defn content-anchor [s]
   (str "__" (-> s
@@ -26,9 +29,9 @@
                    "<a id=" anchor " class='heading-anchor' href=\"#" anchor "\"></a>"))))))
 
 
-(def MD (let [MarkdownIt ((gobj/get js/window "markdownit") "default"
+(def MD (let [MarkdownIt (markdownit "default"
                            #js {"highlight" (fn [s lang]
-                                              (try (-> (.highlight js/hljs "clojure" s)
+                                              (try (-> (.highlight hljs "clojure" s)
                                                        (.-value))
                                                    (catch js/Error e "")))})]
           (doto MarkdownIt

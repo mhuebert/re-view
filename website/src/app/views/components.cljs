@@ -1,24 +1,20 @@
 (ns app.views.components
   (:require [re-view.core :as v :refer-macros [defview view]]
-            [goog.dom :as gdom]
             [goog.dom.classes :as classes]
-            [goog.object :as gobj]
-            [re-view-routing.core :as routing]
-            [re-view-material.example :as material-example]
-            [re-view-prosemirror.example :as prosemirror-example]
+            [re-view.routing :as routing]
+            [re-view.material.example :as material-example]
+            [re-view.prosemirror.example :as prosemirror-example]
             [re-view.example.helpers :as h :include-macros true]
-            [re-view-material.icons :as icons]
+            [re-view.material.icons :as icons]
             [re-view.hoc :as hoc]
             [clojure.string :as string]
-            [re-view-material.core :as ui]
-            [clojure.set :as set]
+            [re-view.material.core :as ui]
             [re-db.d :as d]
-            [re-view-routing.core :as routing]
-            [re-view-material.util :as util]
+            [re-view.routing :as routing]
+            [re-view.material.util :as util]
 
-            cljsjs.react.dom.server
             [app.views.markdown :refer [md]]
-            [re-view-hiccup.react.html :as html]))
+            [re-view.hiccup.react.html :as html]))
 
 (d/transact! (->> (concat material-example/examples-data
                           prosemirror-example/examples-data)

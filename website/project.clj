@@ -4,36 +4,24 @@
 
   :min-lein-version "2.7.1"
 
-  :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
-                 [org.clojure/clojurescript "1.9.854"]
+  :dependencies [[thheller/shadow-cljs "2.0.20"]
+                 [org.clojure/clojure "1.9.0-alpha17"]
+                 [org.clojure/clojurescript "1.9.946" :scope "provided"]
 
-                 [re-view "0.3.26"]
-                 [re-db "0.1.11"]
-                 [re-view-routing "0.1.4-SNAPSHOT"]
-                 [re-view-prosemirror "0.1.7"]
-                 [re-view-material "0.1.7"]
+                 [re-view "0.4.0-SNAPSHOT"]
+                 [re-db "0.1.13"]
+                 [re-view/prosemirror "0.2.0-SNAPSHOT"]
+                 [re-view/material "0.2.0-SNAPSHOT"]
 
-                 [org.clojure/core.match "0.3.0-alpha4"]
-                 [cljsjs/react "16.0.0-beta.2-0"]
-                 [cljsjs/react-dom "16.0.0-beta.2-0"]
-                 [cljsjs/react-dom-server "16.0.0-beta.2-0"]
-                 [cljsjs/markdown-it "7.0.0-0"]
-                 [cljsjs/highlight "9.6.0-0"]
-                 ]
+                 [org.clojure/core.match "0.3.0-alpha5"]]
 
   :plugins [[lein-figwheel "0.5.12"]
             [lein-cljsbuild "1.1.6" :exclusions [org.clojure/clojure]]]
 
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
                                     "target"]
-
-
-  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]
-                                  [figwheel-pushstate-server "0.1.2"]]}}
+  :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
   :source-paths ["src"]
-
-  :figwheel {:ring-handler figwheel-server.core/handler
-             :server-port 5301}
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]

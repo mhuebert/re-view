@@ -1,11 +1,9 @@
 (ns app.core
-  (:require [cljsjs.react]
-            [cljsjs.react.dom]
-            [clojure.core.match :refer-macros [match]]
+  (:require [cljs.core.match :refer-macros [match]]
 
             [re-view.core :as v :refer-macros [defview]]
-            [re-view-routing.core :as r]
-            [re-view-material.core :as ui]
+            [re-view.routing :as r]
+            [re-view.material.core :as ui]
             [re-db.d :as d]
 
             [app.views :as views]
@@ -19,8 +17,8 @@
 
             [clojure.string :as string]
 
-            [re-view-material.icons :as icons]
-            [re-view-material.util :as util]
+            [re-view.material.icons :as icons]
+            [re-view.material.util :as util]
 
             [goog.events :as events]
             [goog.functions :as gf]))
@@ -103,9 +101,12 @@
 
            :else [:div "not found"])))
 
+(defn render []
+  (v/render-to-dom (root) "app"))
+
 (defn init []
   (r/listen
     (fn [route] (d/transact! [(assoc route :db/id :router/location)])))
-  (v/render-to-dom (root) "app"))
+  (render))
 
 (defonce _ (init))

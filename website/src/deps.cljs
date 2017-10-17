@@ -1,0 +1,1 @@
+{:npm-deps {"highlight.js" "^9.12.0"}}

@@ -1,13 +1,14 @@
 (ns re-view.example.helpers
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-material.core :as ui]
-            [re-view-material.util :as util]
-            [re-view-material.icons :as icons]
+            [re-view.material.core :as ui]
+            [re-view.material.util :as util]
+            [re-view.material.icons :as icons]
             [re-view.view-spec :as s]
             [re-view.hoc :as hoc]
             [goog.dom :as gdom]
+            [goog.object :as gobj]
             [clojure.string :as string]
-            [re-view-hiccup.core :as hiccup])
+            [re-view.hiccup.core :as hiccup])
   (:require-macros [re-view.example.helpers]))
 
 (defn key-field

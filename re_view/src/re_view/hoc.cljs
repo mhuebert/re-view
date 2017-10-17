@@ -1,7 +1,7 @@
 (ns re-view.hoc
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-hiccup.core :as hiccup]
-            [react-dom]
+            [re-view.hiccup.core :as hiccup]
+            ["react-dom" :as react-dom]
             [goog.object :as gobj]
             [goog.dom :as gdom]))
 
@@ -39,7 +39,7 @@
                             (gdom/appendChild (gdom/createDom "div")))
                         (.renderFrame this content))
    :view/will-unmount (fn [this]
-                        (js/ReactDOM.unmountComponentAtNode (.getElement this)))
+                        (react-dom/unmountComponentAtNode (.getElement this)))
    :get-element       (fn [this]
                         (-> (v/dom-node this)
                             (gobj/getValueByKeys "contentDocument" "body")

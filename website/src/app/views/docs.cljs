@@ -1,20 +1,20 @@
 (ns app.views.docs
   (:require [re-view.core :as v :refer [defview]]
-            [re-view-material.core :as ui]
+            [re-view.material.core :as ui]
             [app.views.markdown :refer [md]]
             [goog.dom :as gdom]
             [goog.dom.classes :as classes]
             [goog.string.path :as path]
             [clojure.string :as string]
             [goog.events :as events]
-            [re-view-routing.core :as routing]
+            [re-view.routing :as routing]
             [re-db.d :as d]
-            [re-view-material.icons :as icons]
+            [re-view.material.icons :as icons]
             [app.util :as util]
             [app.views :as views]))
 
 (def download-root "https://braintripping.github.io/re-view")
-(def doc-edit-root "https://github.com/braintripping/re-view/docs/edit/master")
+(def doc-edit-root "https://github.com/braintripping/re-view/edit/master/docs")
 
 (defn hyphens->readable [s]
   (if (= s "re-view")
