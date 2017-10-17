@@ -7,7 +7,8 @@
   :dependencies [[thheller/shadow-cljs "2.0.20"]
                  [org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
-                 [org.clojure/core.match "0.3.0-alpha5"]]
+                 [org.clojure/core.match "0.3.0-alpha5"]
+                 [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]]
 
   :plugins [[lein-figwheel "0.5.12"]
             [lein-cljsbuild "1.1.6" :exclusions [org.clojure/clojure]]]
