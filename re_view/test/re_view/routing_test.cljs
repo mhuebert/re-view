@@ -1,6 +1,5 @@
 (ns re-view.routing-test
-  (:require [cljsjs.react.dom]
-            [goog.dom :as gdom]
+  (:require [goog.dom :as gdom]
             [cljs.test :refer [deftest is are testing]]
             [re-db.d :as d]
             [re-view.routing :as routing]
@@ -22,60 +21,57 @@
 (defonce _
          ;; set up listener for route changes
          (routing/listen (fn [{:keys [segments] :as location}]
-                                       ;; log segments
-                                       (swap! segments-log conj segments)
-                                       ;; write location to re-db
-                                       ;; (triggers render of views that reference this data)
-                                       (d/transact! [(assoc location :db/id :router/location)]))))
+                           ;; log segments
+                           (swap! segments-log conj segments)
+                           ;; write location to re-db
+                           ;; (triggers render of views that reference this data)
+                           (d/transact! [(assoc location :db/id :router/location)]))))
 
 (defview index
-         [{:keys [view/props]}]
-         ;; side effect: log view name & props
-         (swap! view-log conj [:index props])
-         [:div])
+  [this]
+  (swap! view-log conj :index)
+  [:div])
 
-(defview not-found [{:keys [view/props]}]
-         (swap! view-log conj [:not-found props])
-         [:div])
+(defview not-found [this]
+  (swap! view-log conj :not-found)
+  [:div])
 
-(defview page [{:keys [view/props]}]
-         (swap! view-log conj [:page props])
-         [:div])
+(defview page [{:keys [page-id]}]
+  (swap! view-log conj [:page page-id])
+  [:div])
 
 (defview root [_]
-         ;; using core.match to pattern-match on location segments.
-         (match (d/get :router/location :segments)
-                [] (index)
-                ["page" page-id] (page {:page-id page-id})
-                :else (not-found)))
+  ;; using core.match to pattern-match on location segments.
+  (match (d/get :router/location :segments)
+         [] (index)
+         ["page" page-id] (page {:page-id page-id})
+         :else (not-found)))
 
 
 (deftest routing-test
   (testing "Basic routing"
-    (let [render #(view/render-to-dom % test-element)]
+    (let [render #(v/render-to-dom % test-element)]
 
       ;; set initial route to root
       (routing/nav! "/")
-      (view/flush!)
-
       ;; first render
       (render (root))
 
       ;; route changes should trigger re-render
       (routing/nav! "/non-existing-route")
-      (view/flush!)
+      (v/flush!)
       (routing/nav! "/page/1")
-      (view/flush!)
+      (v/flush!)
       (routing/nav! "/page/2")
-      (view/flush!)
+      (v/flush!)
 
-      (is (= @segments-log [[]
-                            ["non-existing-route"]
-                            ["page" "1"]
-                            ["page" "2"]]))
+      (is (= (drop 1 @segments-log) '([]
+                                       ["non-existing-route"]
+                                       ["page" "1"]
+                                       ["page" "2"])))
 
-      (is (= @view-log [[:index nil]
-                        [:not-found nil]
-                        [:page {:page-id "1"}]
-                        [:page {:page-id "2"}]])
+      (is (= @view-log [:index
+                        :not-found
+                        [:page "1"]
+                        [:page "2"]])
           "Views render on route change"))))
