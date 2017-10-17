@@ -7,12 +7,6 @@
   :dependencies [[thheller/shadow-cljs "2.0.20"]
                  [org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
-
-                 [re-view "0.4.0-SNAPSHOT"]
-                 [re-db "0.1.13"]
-                 [re-view/prosemirror "0.2.0-SNAPSHOT"]
-                 [re-view/material "0.2.0-SNAPSHOT"]
-
                  [org.clojure/core.match "0.3.0-alpha5"]]
 
   :plugins [[lein-figwheel "0.5.12"]
@@ -21,7 +15,14 @@
   :clean-targets ^{:protect false} ["resources/public/js/compiled"
                                     "target"]
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}}
-  :source-paths ["src"]
+  :source-paths ["src"
+                 "../re_db/src"
+                 "../prosemirror/src"
+                 "../re_view/src"
+                 "../material/src"
+                 "../material/example"
+                 "../prosemirror/example"
+                 "../re_view/example"]
 
   :cljsbuild {:builds [{:id           "dev"
                         :source-paths ["src"]
