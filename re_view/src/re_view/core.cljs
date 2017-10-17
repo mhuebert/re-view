@@ -28,10 +28,10 @@
 (defn mounted?
   "Returns true if component is still mounted to the DOM.
   This is necessary to avoid updating unmounted components."
-  [this]
-  (not (true? (gobj/get this "unmounted"))))
+  [component]
+  (not (true? (gobj/get component "unmounted"))))
 
-(defn wrap-props
+(defn- wrap-props
   "Wraps :on-change handlers of text inputs to apply changes synchronously."
   [props tag]
   (cond-> props
@@ -43,7 +43,7 @@
   [f]
   (fn []
     (this-as this
-      (let [re$view (gobj/get this "re$view")
+      (let [re$view       (gobj/get this "re$view")
             {:keys [patterns value]} (patterns/capture-patterns (apply f this (:view/children @re$view)))
 
             prev-patterns (:view/re-db.patterns @re$view)]
@@ -57,8 +57,8 @@
 
 
 
-(def kmap
-  "Mapping of convenience keys to React lifecycle method keys."
+(def ^:private kmap
+  "Mapping of methods-map keys to React lifecycle keys."
   {:constructor             "constructor"
    :view/initial-state      "$initialState"
    :view/state              "$state"
@@ -80,7 +80,7 @@
     (doseq [f fns]
       (apply f args))))
 
-(defn collect
+(defn- collect
   "Merge a list of method maps. Multiple lifecycle methods execute sequentially. Only the last-defined :should-update function is applied."
   [methods]
   (let [methods (apply merge-with (fn [a b] (if (vector? a) (conj a b) [a b])) methods)]
@@ -90,7 +90,7 @@
                                                          (last fns)
                                                          (apply compseq fns))))) methods methods)))
 
-(defn wrap-methods
+(defn- wrap-methods
   "Wrap a component's methods, binding arguments and specifying lifecycle update behaviour."
   [method-k f]
   (if-not (fn? f)
@@ -123,26 +123,31 @@
         (this-as this
           (apply f this args))))))
 
-(defn init-state!
-  "State can be any type which implements IWatchable and IDeref."
-  [this watchable-thing]
-  (vswap! (gobj/get this "re$view") assoc :view/state watchable-thing :view/prev-state @watchable-thing)
-  (add-watch watchable-thing this (fn [_ _ old-state new-state]
-                                    (when (not= old-state new-state)
-                                      (vswap! (gobj/get this "re$view") assoc :view/prev-state old-state)
-                                      (when-let [^js/Function will-receive (gobj/get this "componentWillReceiveState")]
-                                        (.call will-receive this))
-                                      (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get this "shouldComponentUpdate")]
-                                                                          (.call should-update this)
-                                                                          true))
-                                        (force-update this)))))
-  watchable-thing)
+(defn- init-state!
+  "Bind a component to update whenever `state` changes.
+  `state` can be any type which implements IWatchable and IDeref."
+  [component state]
+  (vswap! (gobj/get component "re$view") assoc :view/state state :view/prev-state @state)
+  (add-watch state component (fn [_ _ old-state new-state]
+                               (when (not= old-state new-state)
+                                 (vswap! (gobj/get component "re$view") assoc :view/prev-state old-state)
+                                 (when-let [^js/Function will-receive (gobj/get component "componentWillReceiveState")]
+                                   (.call will-receive component))
+                                 (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get component "shouldComponentUpdate")]
+                                                                     (.call should-update component)
+                                                                     true))
+                                   (force-update component)))))
+  state)
 
-(defn ensure-state! [this]
-  (when-not (contains? @(aget this "re$view") :view/state)
-    (init-state! this (atom nil))))
+(defn- ensure-state!
+  "Lazily create and bind a state atom for `component`"
+  [component]
+  (when-not (contains? @(aget component "re$view") :view/state)
+    (init-state! component (atom nil))))
 
 (extend-protocol ILookup
+  ;; for convenience, we allow reading keys from a component's props by looking them up
+  ;; directly on the component. this enables destructuring in lifecycle/render method arglist.
   react/Component
   (-lookup
     ([this k]
@@ -156,10 +161,11 @@
            (get @(gobj/get this "re$view") k))
        (get-in @(gobj/get this "re$view") [:view/props k] not-found)))))
 
-(defn lifecycle-methods
+(defn- lifecycle-methods
   "Augment lifecycle methods with default behaviour."
   [methods]
   (->> (collect [{:view/will-receive-props (fn [this props]
+                                             ;; when a component receives new props, update internal state.
                                              (let [{prev-props :view/props prev-children :view/children :as this} this]
                                                (let [next-props (aget props "props")]
                                                  (vswap! (gobj/get this "re$view")
@@ -174,17 +180,21 @@
                                                         view/prev-children
                                                         view/state
                                                         view/prev-state]}]
+                                             ;; default should-update behaviour compares props, children, and state.
                                              (or (not= props prev-props)
                                                  (not= children prev-children)
                                                  (when-not (nil? state)
                                                    (not= @state prev-state))))}
                  methods
                  {:view/will-unmount (fn [{:keys [view/state] :as this}]
+                                       ;; manually track unmount state, react doesn't do this anymore,
+                                       ;; otherwise our async render loop can't tell if a component is still on the page.
                                        (gobj/set this "unmounted" true)
                                        (when-let [un-sub (aget this "reactiveUnsubscribe")]
                                          (un-sub))
                                        (some-> state (remove-watch this)))
                   :view/did-update   (fn [this]
+                                       ;; after update, update prev-props and prev-state
                                        (let [re$view (aget this "re$view")
                                              {prev-props :view/props
                                               state      :view/state} @re$view]
@@ -203,35 +213,49 @@
   (binding [*trigger-state-render* false]
     (apply swap! args)))
 
-(defn init-component
-  "When a component is instantiated, bind element methods and populate initial props."
-  [this $props]
+(defn- init-component
+  "Bind element methods and populate initial props for `component`."
+  [component $props]
   (if $props
-    (let [props (gobj/get $props "props")
+    (let [props    (gobj/get $props "props")
           children (gobj/get $props "children")]
-      (gobj/set this "re$view"
+      (gobj/set component "re$view"
                 (volatile! (-> (gobj/get $props "class")
                                (assoc :view/props (dissoc props :view/state)
                                       :view/children children))))
       (when-let [instance-keys (gobj/get $props "instance")]
-          (doseq [k (gobj/getKeys instance-keys)]
-            (let [f (gobj/get instance-keys k)]
-              (gobj/set this k (if (fn? f) (fn [& args]
-                                             (apply f this args)) f)))))
+        (doseq [k (gobj/getKeys instance-keys)]
+          (let [f (gobj/get instance-keys k)]
+            (gobj/set component k (if (fn? f) (fn [& args]
+                                                (apply f component args)) f)))))
       (when-let [state (or
-                         ;; state provided as prop - this must be an atom-like thing
-                         (get props :view/state)
-                         ;; state provided as :view/initial-state - data or a fn that returns data, will be wrapped in atom
-                         (when-let [initial-state (gobj/get this "$initialState")]
-                           (atom (cond-> initial-state (fn? initial-state) (apply this children))))
-                         ;; state provided as :view/state -  atom-like thing, or fn that returns atom-like thing
-                         (when-let [watchable-state (gobj/get this "$state")]
-                           (cond-> watchable-state (fn? watchable-state) (apply this children))))]
-        (init-state! this state)))
-    (gobj/set this "re$view" (volatile! {})))
-  this)
+                         ;;;;;;;;;;;;;;;
+                         ;;
+                         ;; state can be provided in 1 of 3 ways, depends on whether you want to provide state
+                         ;; at time of component definition or element instantiation.
+                         ;;
+                         ;; 1. pass state as :view/state prop, when element is created:
+                         ;;    in this case it must be an atom-like thing that implements IWatchable/IDeref
 
-(defn factory
+                         (get props :view/state)
+
+                         ;; 2. in the component's methods map, :view/initial-state can either be a static value or
+                         ;;    a function, which will be called w/ the component to return initial state.
+                         ;;    the initial value is wrapped in an atom.
+
+                         (when-let [initial-state (gobj/get component "$initialState")]
+                           (atom (cond-> initial-state (fn? initial-state) (apply component children))))
+
+                         ;; 3. in the component's methods map, can specify :view/state directly. Must be
+                         ;;    an atom-like thing.
+
+                         (when-let [watchable-state (gobj/get component "$state")]
+                           (cond-> watchable-state (fn? watchable-state) (apply component children))))]
+        (init-state! component state)))
+    (gobj/set component "re$view" (volatile! {})))
+  component)
+
+(defn- factory
   "Return a function which returns a React element when called with props and children."
   [constructor]
   (let [{:keys [class-keys
@@ -243,18 +267,18 @@
                                               (update :spec/props vspec/normalize-props-map)
                                               (update :spec/children vspec/resolve-spec-vector))
         class-react-key (gobj/get constructor "key")
-        display-name (gobj/get constructor "displayName")]
+        display-name    (gobj/get constructor "displayName")]
     (doto (fn [props & children]
             (let [[props children] (if (or (map? props)
                                            (nil? props)) [props children] [nil (cons props children)])
                   props (cond->> props defaults (merge defaults))
-                  key (or (get props :key)
-                          (when class-react-key
-                            (cond (string? class-react-key) class-react-key
-                                  (keyword? class-react-key) (get props class-react-key)
-                                  (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
-                                  :else (throw (js/Error "Invalid key supplied to component"))))
-                          display-name)]
+                  key   (or (get props :key)
+                            (when class-react-key
+                              (cond (string? class-react-key) class-react-key
+                                    (keyword? class-react-key) (get props class-react-key)
+                                    (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
+                                    :else (throw (js/Error "Invalid key supplied to component"))))
+                            display-name)]
 
               (when (true? INSTRUMENT!)
                 (vspec/validate-props display-name prop-spec props)
@@ -268,21 +292,21 @@
                                                     "class"    class-keys})))
       (gobj/set "re$view$base" re$view$base))))
 
-(defn ^:export class*
+(defn- ^:export class*
   [{:keys [lifecycle-keys
            react-keys] :as re-view-base}]
-  (let [prototype (new react/Component)
-        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+  (let [prototype   (new react/Component)
+        _           (gobj/extend prototype (lifecycle-methods lifecycle-keys))
         constructor (fn ReView [$props]
                       (this-as this
                         (init-component this $props)))
-        _ (gobj/set constructor "prototype" prototype)]
+        _           (gobj/set constructor "prototype" prototype)]
     (doseq [[k v] (seq react-keys)]
       (gobj/set constructor (v-util/camelCase k) v))
     (doto constructor
       (gobj/set "re$view$base" (assoc re-view-base :prototype prototype)))))
 
-(defn ^:export view*
+(defn- ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
    Expects a single map of functions, or any number of key-function pairs,
 
