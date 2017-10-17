@@ -9,7 +9,7 @@ resources/public/js/out*
 checkouts
 .idea
 *.js.map
-resources/public/js/out*
+resources/public/js
 resources/public/js/app.js
 *app.min.js
 Design
