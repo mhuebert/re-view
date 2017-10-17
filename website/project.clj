@@ -1,4 +1,4 @@
-(defproject re-view/website "0.1.0-SNAPSHOT"
+(defproject re-view/website "0.1.0"
 
   :jvm-opts ^:replace ["-Xmx1g" "-server"]
 

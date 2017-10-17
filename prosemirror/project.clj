@@ -13,8 +13,7 @@
                  [org.clojure/clojure "1.9.0-alpha17"]
                  [org.clojure/clojurescript "1.9.946" :scope "provided"]
                  [re-view "0.3.34"]
-                 [re-view/material "0.1.8-SNAPSHOT"]
-                 ]
+                 [re-view/material "0.1.8-SNAPSHOT"]]
 
   :cljsbuild {:builds []}
 

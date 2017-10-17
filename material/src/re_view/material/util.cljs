@@ -11,20 +11,20 @@
   (when-not (contains? #{nil ""} s)
     s))
 
-(defn keypress-value [^react/SyntheticEvent e]
-  (let [target (.-target e)
+(defn keypress-value [^js e]
+  (let [target    (.-target e)
         raw-value (.-value target)
         new-input (.fromCharCode js/String (.-which e))
-        value (str (subs raw-value 0 (.-selectionStart target))
-                   new-input
-                   (subs raw-value (.-selectionEnd target) (.-length raw-value)))]
+        value     (str (subs raw-value 0 (.-selectionStart target))
+                       new-input
+                       (subs raw-value (.-selectionEnd target) (.-length raw-value)))]
     value))
 
-(defn keypress-action [^react/SyntheticEvent e]
-  (let [str-char (ensure-str (.fromCharCode js/String (.-which e)))
+(defn keypress-action [^js e]
+  (let [str-char      (ensure-str (.fromCharCode js/String (.-which e)))
         non-char-keys {13 "enter"
                        8  "backspace"}
-        code (.-which e)]
+        code          (.-which e)]
     (string/join "+"
                  (cond-> []
                          (.-altKey e) (conj "alt")
@@ -48,7 +48,7 @@
 
 (defn concat-handlers [handlers]
   (when-let [handlers (seq (keep identity handlers))]
-    (fn [^react/SyntheticEvent e]
+    (fn [^js e]
       (reduce (fn [res f] (f e)) nil handlers))))
 
 (defn collect-handlers
@@ -60,7 +60,7 @@
 
 (defn handle-on-save [handler]
   (when handler
-    (fn [^react/SyntheticEvent e]
+    (fn [^js e]
       (when (#{"ctrl+S" "meta+S" "enter"} (keypress-action e))
         (.preventDefault e)
         (handler)))))
@@ -92,8 +92,8 @@
 (defview sync-element!
   "Manage classes and styles for an uncontrolled DOM element (eg. `body` or `html`).
   :getElement should return the DOM element, :class and :style behave as normal."
-  {:view/did-mount  (fn [{:keys [view/state get-element] :as this}]
-                      (let [^js/Element element (get-element this)]
+  {:view/did-mount  (fn [{:keys [view/state get-element] :as ^js this}]
+                      (let [^js element (get-element this)]
                         (swap! state assoc
                                :element element
                                :style-obj (.-style element)))
@@ -104,10 +104,10 @@
                            prev-class :class} :view/prev-props
                           :keys               [view/state]}]
                       (let [{:keys [element style-obj]} @state
-                            class (some-> (string/split class #"\s+") (set))
-                            prev-class (some-> (string/split prev-class #"\s+") (set))
+                            class          (some-> (string/split class #"\s+") (set))
+                            prev-class     (some-> (string/split prev-class #"\s+") (set))
                             styles-removed (set/difference (set (keys prev-style)) (set (keys style)))
-                            class-removed (set/difference prev-class class)]
+                            class-removed  (set/difference prev-class class)]
                         (doseq [attr styles-removed]
                           (.setProperty style-obj attr nil))
                         (doseq [[attr val] style]

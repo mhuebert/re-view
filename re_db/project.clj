@@ -7,7 +7,6 @@
                  [org.clojure/clojurescript "1.9.946"  :scope "provided"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]]
 
-
   :plugins [[lein-cljsbuild "1.1.6"]
             [lein-figwheel "0.5.11"]
             [lein-doo "0.1.6"]]
