@@ -42,13 +42,11 @@
 (defn key->react-attr
   "CamelCase react keys, except for aria- and data- attributes"
   [k]
-  (if (keyword-identical? k :for)
-    "htmlFor"
-    (let [k-str (name k)]
-      (cond-> k-str
-              (or (contains? react-html/attrs k)
-                  (string/starts-with? k-str "on-"))
-              (camelCase)))))
+  (let [k-str (name k)]
+    (cond-> k-str
+            (or (contains? react-html/attrs k)
+                (string/starts-with? k-str "on-"))
+            (camelCase))))
 
 (defn map->js
   "Return javascript object with camelCase keys. Not recursive."
