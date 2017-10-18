@@ -55,8 +55,6 @@
           (vswap! re$view assoc :view/re-db.patterns patterns))
         value))))
 
-
-
 (def ^:private kmap
   "Mapping of methods-map keys to React lifecycle keys."
   {:constructor             "constructor"
@@ -90,16 +88,16 @@
                                                          (last fns)
                                                          (apply compseq fns))))) methods methods)))
 
-(defn finish-lifecycle
-  "After a component has updated, or after :should-update has returned false, set prev-props and prev-state to the current props and state,
-  prepared for the next lifecycle."
-  [component]
-  (let [re$view (aget component "re$view")
+(defn finish-lifecycle [this]
+  "after update, update prev-props and prev-state"
+  (let [re$view (aget this "re$view")
         {prev-props :view/props
          state      :view/state
          children   :view/children} @re$view]
     (vreset! re$view
-             (cond-> (assoc @re$view :view/prev-props prev-props :view/prev-children children)
+             (cond-> (assoc @re$view
+                       :view/prev-props prev-props
+                       :view/prev-children children)
                      state (assoc :view/prev-state @state)))))
 
 (defn- wrap-methods
@@ -131,12 +129,6 @@
       (fn []
         (this-as this
           (apply f this (:view/children @(gobj/get this "re$view")))))
-      :view/should-update
-      (fn [& args]
-        (this-as this
-          (let [result (apply f this args)]
-            (when-not result (finish-lifecycle this))
-            result)))
       (fn [& args]
         (this-as this
           (apply f this args))))))
@@ -184,10 +176,14 @@
   [methods]
   (->> (collect [{:view/will-receive-props (fn [this props]
                                              ;; when a component receives new props, update internal state.
-                                             (let [next-props (aget props "props")]
-                                               (vswap! (gobj/get this "re$view") assoc
-                                                       :view/props next-props
-                                                       :view/children (aget props "children"))))
+                                             (let [{prev-props :view/props prev-children :view/children :as this} this]
+                                               (let [next-props (aget props "props")]
+                                                 (vswap! (gobj/get this "re$view")
+                                                         assoc
+                                                         :view/props next-props
+                                                         :view/prev-props prev-props
+                                                         :view/children (aget props "children")
+                                                         :view/prev-children prev-children))))
                   :view/should-update      (fn [{:keys [view/props
                                                         view/prev-props
                                                         view/children
@@ -207,14 +203,10 @@
                                        (when-let [un-sub (aget this "reactiveUnsubscribe")]
                                          (un-sub))
                                        (some-> state (remove-watch this)))
-                  :view/did-update   (fn [this]
-                                       ;; after update, update prev-props and prev-state
-                                       (finish-lifecycle this))}])
+                  :view/did-update   finish-lifecycle}])
        (reduce-kv (fn [obj method-k method]
                     (doto obj
                       (gobj/set (get kmap method-k) (wrap-methods method-k method)))) #js {})))
-
-
 
 (defn swap-silently!
   "Swap a component's state atom without forcing an update (render)"
