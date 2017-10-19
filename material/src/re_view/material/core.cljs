@@ -303,7 +303,7 @@
                                          (util/ensure-str (:placeholder props))))]
           [:label {:class    (cond-> (string/join " " label-classes)
                                      floatingLabel (str " mdc-textfield__label--float-above"))
-                   :html-for field-id}
+                   :for field-id}
            label]))
       #_(when in-progress (ProgressIndeterminate {:class "absolute w-100"}))]
 
@@ -503,7 +503,7 @@
        (-> label
            (cond->> (string? label) (conj [:label]))
            (update-attrs #(-> %
-                              (assoc :html-for (or id name))
+                              (assoc :for (or id name))
                               (update :classes conj label-class)))))]))
 
 #_(defview FormField
@@ -515,7 +515,7 @@
      {:class (when align-end "mdc-form-field--align-end")
       :dir   (when rtl "rtl")}
      field
-     (update-attrs label assoc :html-for (v/element-get field :id))])
+     (update-attrs label assoc :for (v/element-get field :id))])
 
 #_(defn CheckboxField [{:keys [id rtl label align-end] :as props}]
     (FormField (select-keys props [:rtl :align-end])
@@ -525,7 +525,7 @@
        {:class (when align-end "mdc-form-field--align-end")
         :dir   (when rtl "rtl")}
        (Checkbox (dissoc props :label :rtl :align-end))
-       (when label [:label {:html-for id} label])])
+       (when label [:label {:for id} label])])
 (def PermanentDrawerToolbarSpacer [:.mdc-permanent-drawer__toolbar-spacer])
 (defview PermanentDrawer
   "Permanent navigation drawers are always visible and pinned to the left edge, at the same elevation as the content or background. They cannot be closed. The recommended default for desktop. [More](https://material.io/guidelines/patterns/navigation-drawer.html#navigation-drawer-behavior)"
@@ -786,7 +786,7 @@
 ;                  view/props]}]
 ;         [:label {:class (str "mdl-radio mdl-js-radio mdl-js-ripple-effect pl4 "
 ;                              class)
-;                  :html-for   id}
+;                  :for   id}
 ;          [:input (merge {:type       "radio"
 ;                          :class (str "mdl-radio__button absolute left-0 "
 ;                                      input-class)}

@@ -13,8 +13,7 @@
             [re-view.routing :as routing]
             [re-view.material.util :as util]
 
-            [app.views.markdown :refer [md]]
-            [re-view.hiccup.react.html :as html]))
+            [app.views.markdown :refer [md]]))
 
 (d/transact! (->> (concat material-example/examples-data
                           prosemirror-example/examples-data)

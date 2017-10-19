@@ -33,7 +33,7 @@
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-replace": "^1.1.1",
     "sass-loader": "^6.0.3",
-    "shadow-cljs": "^2.0.20",
+    "shadow-cljs": "^2.0.26",
     "style-loader": "^0.17.0",
     "tachyons": "^4.7.1",
     "webpack": "^2.4.1"
