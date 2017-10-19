@@ -15,6 +15,8 @@
                     ["src/{{sanitized}}/core.cljs" (render "core.cljs" data)]
                     ["src/{{sanitized}}/examples.cljs" (render "examples.cljs" data)]
                     ["project.clj" (render "project.clj" data)]
+                    ["shadow-cljs.edn" (render "shadow-cljs.edn" data)]
+                    ["package.json" (render "package.json" data)]
                     ["resources/public/index.html" (render "index.html" data)]
                     [".gitignore" (render ".gitignore" data)]
                     ["README.md" (render "README.md" data)])))

@@ -8,12 +8,12 @@
             :min-lein-version "2.7.1"
 
             :dependencies [[org.clojure/clojure "1.9.0-alpha17"]
-                           [org.clojure/clojurescript "1.9.671"]
+                           [org.clojure/clojurescript "1.9.946"]
 
-                           [re-view "0.3.21"]]
+                           [re-view "0.4.4"]]
 
-            :plugins [[lein-cljsbuild "1.1.6"]
-                      [lein-figwheel "0.5.11"]]
+            :plugins [[lein-cljsbuild "1.1.7"]
+                      [lein-figwheel "0.5.14"]]
 
             :source-paths ["src"]
 
@@ -30,20 +30,22 @@
                                   :figwheel     {:open-urls ["http://localhost:{{port}}/"]}
 
                                   :compiler     {:main           "{{name}}.core"
+                                                 :install-deps   true
                                                  :parallel-build true
                                                  :infer-externs  true
                                                  :source-map     true
                                                  :asset-path     "/js/compiled/out-dev"
-                                                 :output-to      "resources/public/js/compiled/{{name}}.js"
+                                                 :output-to      "resources/public/js/compiled/base.js"
                                                  :output-dir     "resources/public/js/compiled/out-dev"
                                                  :optimizations  :none}}
 
                                  {:id           "prod"
                                   :source-paths ["src"]
                                   :compiler     {:main           "{{name}}.core"
+                                                 :install-deps   true
                                                  :infer-externs  true
                                                  :parallel-build true
-                                                 :output-to      "resources/public/js/compiled/{{name}}.js"
+                                                 :output-to      "resources/public/js/compiled/base.js"
                                                  :output-dir     "resources/public/js/compiled/out-prod"
                                                  :optimizations  :advanced}}]}
 

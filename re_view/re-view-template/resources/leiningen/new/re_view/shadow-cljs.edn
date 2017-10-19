@@ -1,0 +1,10 @@
+{:dependencies [[re-view "0.4.4"]]
+ :source-paths ["src"]
+ :builds       {:browser {:target           :browser
+                          :modules          {:base {:entries [{{name}}.core]}}
+                          :output-dir       "resources/public/js/compiled"
+                          :asset-path       "/js"
+                          :devtools         {:http-root    "resources/public"
+                                             :http-handler shadow.http.push-state/handle
+                                             :http-port    8700
+                                             :after-load   {{name}}.core/render}}}}

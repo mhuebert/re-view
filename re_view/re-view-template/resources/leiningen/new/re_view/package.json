@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "deps": "yarn install; yarn run shadow-cljs npm-deps;",
+    "watch": "yarn run shadow-cljs watch browser;",
+    "release": "yarn run shadow-cljs release browser;"
+  },
+  "dependencies": {
+    "shadow-cljs": "^2.0.27"
+  }
+}

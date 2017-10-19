@@ -38,4 +38,5 @@
           spacer
           (examples/todo-list)])
 
-(v/render-to-dom (layout) "{{name}}")
+(defn ^:export render []
+  (v/render-to-dom (layout) "{{name}}"))

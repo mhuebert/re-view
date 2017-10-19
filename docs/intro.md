@@ -28,7 +28,7 @@ By default, `lein figwheel` will compile your project, open a browser window to 
 Add the following dependencies to your `project.clj` or `shadow-cljs.edn` file:
 
 ```clj
-[re-view "0.4.0"]
+[re-view "0.4.4"]
 ```
 
 Require the core namespace like so:
