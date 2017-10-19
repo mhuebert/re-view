@@ -9,3 +9,4 @@ doo*.html
 */checkouts
 docs/marginalia
 re_view/resources
+package-lock.json
