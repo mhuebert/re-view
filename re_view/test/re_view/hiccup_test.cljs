@@ -3,8 +3,7 @@
             ["react" :as react]
             ["react-dom" :as react-dom]
             [re-view.hiccup.core :refer [element]]
-            [re-view.hiccup.hiccup :as hiccup]
-            [re-view.hiccup.react.html :as html]))
+            [re-view.hiccup.hiccup :as hiccup]))
 
 (enable-console-print!)
 
@@ -85,45 +84,3 @@
                                               :fontSize   12}
                               :id            "el"}])
         "All together")))
-
-(comment
-  (deftest html
-    "Client-side HTML strings from React elements"
-
-
-
-    (is (= "<div class=\"red\">abc</div>"
-           (html/string (element [:div {:class "red"} "abc"])))
-        "div with class")
-
-    (is (= "<div class=\"redx\"></div>"
-           (html/string (element [:div {:class "red"}]
-                                 {:wrap-props #(update % :class str "x")})))
-        "using wrap-props")
-
-    (is (= "<input class=\"X\">"
-           (html/string (element [:input]
-                                 {:wrap-props (fn [props tag]
-                                                (cond-> props
-                                                        (= tag "input") (assoc :class "X")))})))
-        "using tag in wrap-props")
-
-    (is (= "<div style=\"font-size: 10px;\">abc</div>"
-           (html/string (element [:div {:style {:font-size 10}} "abc"])))
-        "div with inline style")
-
-    (is (= "<amazon>abc</amazon>"
-           (html/string (element [:amazon "abc"])))
-        "custom element")
-
-    (is (= "<amazon:effect name=\"whispered\">abc</amazon:effect>"
-           (html/string (element [:amazon/effect {:name "whispered"} "abc"])))
-        "custom element with namespace")
-
-    (is (= "<span></span>"
-           (html/string (element [:span {:onClick #()}])))
-        "element with event handler (handler is elided)")
-
-    (is (= "<speak><say-as interpret-as=\"cardinal\">abc</say-as></speak>"
-           (html/string (element [:speak [:say-as {:interpret-as "cardinal"} "abc"]])))
-        "nested custom elements with custom attributes")))

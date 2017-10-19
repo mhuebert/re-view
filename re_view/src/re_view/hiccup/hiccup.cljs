@@ -1,8 +1,6 @@
 (ns re-view.hiccup.hiccup
-  (:require [re-view.hiccup.react.attrs :as react-html]
-            [clojure.string :as string]
+  (:require [clojure.string :as string]
             ["react" :as react]))
-
 
 (defn parse-key
   "Parses a hiccup key like :div#id.class1.class2 to return the tag name, id, and classes.
@@ -36,17 +34,20 @@
                 (instance? PersistentHashMap first-child))) [(form 1) (if (> len 2) (subvec form 2 len) [])]
           :else [{} (subvec form 1 len)])))
 
-(defn camelCase [s]
+(defn ^string camelCase [s]
   (string/replace s #"-([a-z])" (fn [[_ s]] (string/upper-case s))))
+
+(defn ^boolean camelCase?
+  "CamelCase by default, only exceptions are data- and aria- attributes."
+  [attr-name]
+  (not (re-find #"^(?:data\-|aria\-)" attr-name)))
 
 (defn key->react-attr
   "CamelCase react keys, except for aria- and data- attributes"
   [k]
   (let [k-str (name k)]
     (cond-> k-str
-            (or (contains? react-html/attrs k)
-                (string/starts-with? k-str "on-"))
-            (camelCase))))
+            (camelCase? k-str) (camelCase))))
 
 (defn map->js
   "Return javascript object with camelCase keys. Not recursive."
