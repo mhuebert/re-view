@@ -1,4 +1,4 @@
-(defproject re-view "0.4.3-SNAPSHOT"
+(defproject re-view "0.4.3"
   :description "ClojureScript React Library"
   :url "https://www.github.com/braintripping/re-view/tree/master/re_view"
   :license {:name "Eclipse Public License"
