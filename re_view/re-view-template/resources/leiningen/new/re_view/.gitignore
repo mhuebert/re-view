@@ -1,4 +1,5 @@
-resources/public/js/compiled/out*
+resources/public/js/compiled
 target
 .idea
 *.iml
+node_modules

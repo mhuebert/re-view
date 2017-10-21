@@ -6,6 +6,6 @@
     "server": "shadow-cljs server;"
   },
   "dependencies": {
-    "shadow-cljs": "^2.0.29"
+    "shadow-cljs": "^2.0.33"
   }
 }
