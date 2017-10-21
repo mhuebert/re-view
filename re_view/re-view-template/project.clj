@@ -1,4 +1,4 @@
-(defproject re-view/lein-template "0.2.2"
+(defproject re-view/lein-template "0.2.3"
   :description "Template for creating re-view apps."
   :url "https://www.github.com/re-view/re-view"
   :license {:name "Eclipse Public License"
