@@ -2,7 +2,7 @@
 
 [alpha]
 
-Simple syntax for re-frame.
+A light, beginner-friendly syntax built for `re-frame`.
 
 ----
 
@@ -38,7 +38,10 @@ Note: we've aliased the namespace as `db`.
 Read from the db using `get`, `get-in` and `identity` functions:
 
 ```clj
+;; value of the entire db
 (db/get :a)        => (get @app-db :a)
+
+;; swap! the entire db
 (db/get-in [:a :b) => (get-in @app-db [:a :b])
 ```
 
@@ -58,7 +61,7 @@ Write using `assoc!`, `update!`, `assoc-in!`, `update-in!`:
 (db/update-in! [:a :b] inc)
 ```
 
-These functions map to re-frame **event handlers** which mutate the current state of the world (the db).
+These functions map to re-frame **event handlers** which mutate the current state of the world (the db). They end in `!` as a reminder that you're mutating the world.
 
 Also available are some operations for the whole db (rather than at a particular
 key or path). We'll use these less often, as it's easier to understand, inspect, and debug your app when operations are scoped to specific paths.
@@ -76,10 +79,10 @@ key or path). We'll use these less often, as it's easier to understand, inspect,
 Here is a counter widget which uses `get-in` and `update-in` to read and write a counter, given an id.
 
 ```clj
-(defn count-button
-  "Given a counter id and its current value, render it as an interactive widget."
+(defn counter
+  "Render an interactive counter for `id`"
   [id]
-  NOTICE: `db/update-in!`
+                   ;; NOTICE: `db/update-in!` to write
   [:div {:on-click #(db/update-in! [::counters id] inc)
          :style    {:padding    20
                     :margin     "10px 0"
@@ -87,14 +90,14 @@ Here is a counter widget which uses `get-in` and `update-in` to read and write a
                     :cursor     "pointer"}}
    (str "Counter " (name id) ": ")
 
-   NOTICE: `db/get-in`
+   ;; NOTICE: `db/get-in` to read
    (db/get-in [::counters id])])
 ```
 
-1. We put counters in a namespaced path in the db (`::counters`). Using a namespaced keyword as a path segment in the `db` means I can search my app for the namespaced `::counters` keyword, and find every instance where a counter is read or mutated. This makes up for some of the explicitness that is lost by moving away from typical, named re-frame events.
+1. We put counters in a namespaced path in the db (`::counters`). This means I can search across my app for the namespaced `::counters` keyword, and find every instance where a counter is read or mutated. This makes up for some of the explicitness that is lost by moving away from typical, named re-frame events.
 2. We didn't have to "register" anything to get a simple example like this to work. There is no inventing of names for transactions as simple as incrementing an integer at a path.
 
-So, legibility of the reactivity system is built in to the design of your data structure, instead of added via explicitly named events/actions. (but we can still add those, when desired.)
+Using these tools, legibility of the reactivity system is built in to the design of your data structure, instead of added via explicitly named events/actions. (but we can still add those, when desired.)
 
 
 ### Named updates
@@ -108,7 +111,7 @@ So, legibility of the reactivity system is built in to the design of your data s
                            "C" 2}})
 ```
 
-Use with ordinary `re-frame.core/dispatch` (it's copied into the db namespace):
+Use with `re-frame.core/dispatch` (it's copied into the db namespace):
 
 ```clj
 (db/dispatch [:initialize])
@@ -129,10 +132,7 @@ Use `defquery` to create named queries that read data using `db/get` and `db/get
 The function returns a plain value, but uses a reactive subscription behind the scenes
 to trigger reactivity, so a component that uses the query will update when its data changes.
 
-
-### Finish the example
-
-Here's the rest of the code we use to render our example to the page:
+Usage:
 
 ```clj
 (defn root-view
@@ -140,17 +140,11 @@ Here's the rest of the code we use to render our example to the page:
   []
   [:div
    "Click to count!"
+                   ;; NOTICE: using our query
    (doall (for [id (counter-list)]
-            ^{:key id} [count-button id]))])
-
-(defn ^:export render []
-  (reagent/render [root-view]
-                  (js/document.getElementById "shadow-re-frame")))
-
-(defn ^:export init []
-  (db/dispatch-sync [:initialize])
-  (render))
+            ^{:key id} [counter id]))])
 ```
 
+### Wrapping up
 
-
+I hope you've found this helpful or interesting. Feedback is welcome! 
