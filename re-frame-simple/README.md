@@ -4,9 +4,6 @@
 
 A light, beginner-friendly syntax built for `re-frame`.
 
-> Example project: https://github.com/mhuebert/shadow-re-frame
-This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected.
-
 ----
 
 Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with.
@@ -145,6 +142,16 @@ Usage:
    (doall (for [id (counter-list)]
             ^{:key id} [counter id]))])
 ```
+
+
+----
+
+## Example project
+
+- **Source:** https://github.com/mhuebert/shadow-re-frame
+- **Live Demo:** https://mhuebert.github.io/shadow-re-frame/ (be sure to press `Control-H` to see trace panel)
+
+This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected and provide visibility into the workings of your app.
 
 ### Wrapping up
 
