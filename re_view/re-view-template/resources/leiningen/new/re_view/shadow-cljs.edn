@@ -1,4 +1,4 @@
-{:dependencies [[re-view "0.4.6"]]
+{:dependencies [[re-view "{{re-view-version}}"]]
  :source-paths ["src"]
  :builds       {:browser {:target           :browser
                           :modules          {:base {:entries [{{name}}.core]}}

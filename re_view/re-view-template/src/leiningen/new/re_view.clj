@@ -7,10 +7,11 @@
 (defn re-view
       "Create a fresh re-view project with basic example page"
       [name]
-      (let [data {:name        name
-                  :munged-name (munge name)
-                  :port        5300
-                  :sanitized   (name-to-path name)}]
+      (let [data {:name            name
+                  :munged-name     (munge name)
+                  :re-view-version "0.4.6"
+                  :port            5300
+                  :sanitized       (name-to-path name)}]
            (main/info "Generating fresh 'lein new' re-view project.")
            (->files data
                     ["src/{{sanitized}}/core.cljs" (render "core.cljs" data)]
