@@ -19,7 +19,7 @@ Three main ideas:
 (Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
 
-### Example project
+## Example project
 
 Everything you'll see below can also be viewed as a real project:
 
@@ -31,7 +31,7 @@ Everything you'll see below can also be viewed as a real project:
 This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected and provide visibility into the workings of your app.
 
 
-### The Basics
+## Get Started
 
 Add the dependency (`boot` or `project.clj`):
 
