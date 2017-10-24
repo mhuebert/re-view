@@ -9,8 +9,7 @@
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"  :scope "provided"]
-                 [re-frame "0.10.2"]
-                 [re-view "0.4.6"]]
+                 [re-frame "0.10.2"]]
 
   :source-paths ["src"]
 

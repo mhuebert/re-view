@@ -6,11 +6,9 @@ A light, beginner-friendly syntax built for `re-frame`.
 
 ----
 
-### Introduction
+Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with.
 
-Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is not complicated and shouldn't be hard to get started with.
-
-`re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It should make getting started and prototyping easier, without preventing you from moving down the ladder and using lower-level constructs where appropriate.
+`re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from moving down the ladder and using lower-level constructs where appropriate.
 
 Three main ideas:
 
@@ -33,7 +31,7 @@ Require the namespace:
   (:require [re-view.re-frame-simple :as db]))
 ```
 
-Note: we've aliased the namespace as `db`.
+**Note** we've aliased `re-view.re-frame-simple` as `db`.
 
 Read from the db using `get`, `get-in` and `identity` functions:
 
