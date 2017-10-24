@@ -18,6 +18,19 @@ Three main ideas:
 
 (Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
+
+### Example project
+
+Everything you'll see below can also be viewed as a real project:
+
+**Live Demo:** https://mhuebert.github.io/shadow-re-frame/ (be sure to press `Control-H` to see trace panel)
+
+**Source:** https://github.com/mhuebert/shadow-re-frame
+
+
+This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected and provide visibility into the workings of your app.
+
+
 ### The Basics
 
 Add the dependency (`boot` or `project.clj`):
@@ -145,13 +158,6 @@ Usage:
 
 
 ----
-
-## Example project
-
-- **Source:** https://github.com/mhuebert/shadow-re-frame
-- **Live Demo:** https://mhuebert.github.io/shadow-re-frame/ (be sure to press `Control-H` to see trace panel)
-
-This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected and provide visibility into the workings of your app.
 
 ### Wrapping up
 
