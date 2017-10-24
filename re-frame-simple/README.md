@@ -42,7 +42,7 @@ Read from the db using `get`, `get-in` and `identity` functions:
 (db/get :a)        => (get @app-db :a)
 
 ;; swap! the entire db
-(db/get-in [:a :b) => (get-in @app-db [:a :b])
+(db/get-in [:a :b]) => (get-in @app-db [:a :b])
 ```
 
 Well, that was simple. What's so special?
@@ -147,4 +147,4 @@ Usage:
 
 ### Wrapping up
 
-I hope you've found this helpful or interesting. Feedback is welcome! 
+I hope you've found this helpful or interesting. Feedback is welcome!
