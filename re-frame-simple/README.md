@@ -2,19 +2,23 @@
 
 [alpha]
 
-Graduated-complexity syntax for re-frame. Simple should be easy, complex should be possible.
+Simple syntax for re-frame.
 
 ----
 
-### What is this? Why does it exist?
+### Introduction
 
-Here are three main ideas behind `re-frame-simple`:
+Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is not complicated and shouldn't be hard to get started with.
+
+`re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It should make getting started and prototyping easier, without preventing you from moving down the ladder and using lower-level constructs where appropriate.
+
+Three main ideas:
 
 1. treat the `db` as a thing we perform ordinary Clojure operations on
 2. reactivity should 'just work'
-3. opt-in to more advanced state management (eg. named queries and updates, coeffects) where necessary, ad-hoc.
+3. more advanced state management is **opt-in** (eg. named queries and updates, coeffects)
 
-Syntax is based on [re-view](https://www.re-view.io) and its associated re-db library.
+(Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
 ### The Basics
 
