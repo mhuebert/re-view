@@ -1,4 +1,4 @@
-(defproject re-view/re-frame-simple "0.1.1"
+(defproject re-view/re-frame-simple "0.1.2-SNAPSHOT"
 
   :description "re-view syntax for re-frame"
 
