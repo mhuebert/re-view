@@ -20,7 +20,7 @@ Syntax is based on [re-view](https://www.re-view.io) and its associated re-db li
 
 Add the dependency (`boot` or `project.clj`):
 
-`[re-view "0.4.7]`
+`[re-view/re-frame-simple "0.1.0]`
 
 Require the namespace:
 
