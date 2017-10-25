@@ -6,10 +6,13 @@ This is what you see at https://re-view.io.
 
 ### Development
 
-First, install deps:
+
+First, clone locally and install deps:
 
 ```
-npm install
+git clone https://github.com/braintripping/re-view.git;
+cd re-view/website;
+npm install;
 ```
 
 
