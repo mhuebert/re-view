@@ -4,7 +4,7 @@
 
 A light, beginner-friendly syntax built for `re-frame`.
 
-**TL;DR**
+#### TL;DR
 
 To read data:
 
@@ -28,6 +28,8 @@ These functions
 
 ----
 
+### Introduction
+
 Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
 
 Our approach:
@@ -38,14 +40,14 @@ Our approach:
 
 (Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
-## Example project
+### Example project
 
 I have set up an example project which includes **re-frame-trace** so that you can see what's going on behind the scenes when you use `re-frame-simple`.
 
 - Check out the [live demo](https://mhuebert.github.io/shadow-re-frame/)
 - Read the [source code](https://github.com/mhuebert/shadow-re-frame)
 
-## Get Started
+### Get Started
 
 Add the dependency (`boot` or `project.clj`):
 
