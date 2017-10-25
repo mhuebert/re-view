@@ -35,7 +35,7 @@ This project includes **re-frame-trace** so you can see how the events dispatche
 
 Add the dependency (`boot` or `project.clj`):
 
-`[re-view/re-frame-simple "0.1.0"]`
+`[re-view/re-frame-simple "0.1.1"]`
 
 Require the namespace:
 
