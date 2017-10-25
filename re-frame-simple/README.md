@@ -4,6 +4,28 @@
 
 A light, beginner-friendly syntax built for `re-frame`.
 
+**TL;DR**
+
+To read data:
+
+```
+(db/get-in [:a :b])
+```
+
+To write data:
+
+```
+(db/assoc-in! [:a :b] 1)
+
+(db/update! :counter inc)
+```
+
+These functions 
+
+1. map to a coherent set of re-frame operations, 
+2. provide reactivity that 'just works' (no need for manual subscriptions), and
+3. don't get in your way if you want to go into more advanced stuff.
+
 ----
 
 Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
