@@ -8,9 +8,7 @@ a, a:visited {
   color: var(--mdc-theme-primary, darkblue);
 }
 
-
 @import '../../node_modules/prosemirror-view/style/prosemirror';
-@import '../../node_modules/@material/animation/mdc-animation';
 @import '../../node_modules/@material/button/mdc-button';
 @import '../../node_modules/@material/checkbox/mdc-checkbox';
 @import '../../node_modules/@material/drawer/mdc-drawer';

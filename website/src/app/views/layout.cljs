@@ -7,10 +7,10 @@
 (defn page-meta []
   (list
     ;; sets properties on document
-    (util/sync-element!
-      {:class       (if (d/get :ui/globals :theme/dark?)
-                      "mdc-theme--dark bg-mid-gray"
-                      "bg-near-white")
+    (util/sync-element-css!
+      {:classes     (if (d/get :ui/globals :theme/dark?)
+                      ["mdc-theme--dark" "bg-mid-gray"]
+                      ["bg-near-white"])
        :style       {:min-height "100%"}
        :get-element #(when (exists? js/document)
                        (.-documentElement js/document))})

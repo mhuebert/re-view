@@ -188,8 +188,8 @@
                    (contains? props :value)
                    (merge
                      {:value        (or @state "")
-                      :on-key-press (fn [e]
-                                      (when (and mask (= (mask (util/keypress-value e)) @state))
+                      :on-key-press (fn [^js e]
+                                      (when (and mask (= (mask (.-key e)) @state))
                                         (.preventDefault e))
                                       (when on-key-press (on-key-press e)))
                       :on-change    (fn [e]

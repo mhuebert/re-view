@@ -11,28 +11,6 @@
   (when-not (contains? #{nil ""} s)
     s))
 
-(defn keypress-value [^js e]
-  (let [target    (.-target e)
-        raw-value (.-value target)
-        new-input (.fromCharCode js/String (.-which e))
-        value     (str (subs raw-value 0 (.-selectionStart target))
-                       new-input
-                       (subs raw-value (.-selectionEnd target) (.-length raw-value)))]
-    value))
-
-(defn keypress-action [^js e]
-  (let [str-char      (ensure-str (.fromCharCode js/String (.-which e)))
-        non-char-keys {13 "enter"
-                       8  "backspace"}
-        code          (.-which e)]
-    (string/join "+"
-                 (cond-> []
-                         (.-altKey e) (conj "alt")
-                         (.-ctrlKey e) (conj "ctrl")
-                         (.-metaKey e) (conj "meta")
-                         (.-shiftKey e) (conj "shift")
-                         true (conj (get non-char-keys code str-char))))))
-
 (defn add-styles
   ([target styles]
    (add-styles target styles {}))
@@ -43,8 +21,6 @@
                         (into (keys styles))
                         (into (keys prev-styles)))]
          (.setProperty style attr (get styles attr)))))))
-
-
 
 (defn concat-handlers [handlers]
   (when-let [handlers (seq (keep identity handlers))]
@@ -61,7 +37,9 @@
 (defn handle-on-save [handler]
   (when handler
     (fn [^js e]
-      (when (#{"ctrl+S" "meta+S" "enter"} (keypress-action e))
+      (when (or (and (= "s" (.toLowerCase (.-key e)))
+                     (or (.-ctrlKey e) (.-metaKey e)))
+                (= 13 (.-which e)))
         (.preventDefault e)
         (handler)))))
 
@@ -82,39 +60,38 @@
 (defn closest [^js/Element root p]
   (if (p root) root (gdom/getAncestor root p)))
 
-(defn log-ret [note x]
-  (println note x)
-  x)
-
 (defn force-layout [^js/HTMLElement el]
   (.-offsetWidth el))
 
-(defview sync-element!
-  "Manage classes and styles for an uncontrolled DOM element (eg. `body` or `html`).
-  :getElement should return the DOM element, :class and :style behave as normal."
-  {:view/did-mount  (fn [{:keys [view/state get-element] :as ^js this}]
+(defview sync-element-css!
+  "Applies & syncs :style map and :classes vector to the element returned from :get-element fn."
+  {:spec/props      {:style       :Map
+                     :classes     :Vector
+                     :get-element :Function}
+   :view/did-mount  (fn [{:keys [view/state get-element] :as ^js this}]
                       (let [^js element (get-element this)]
                         (swap! state assoc
                                :element element
                                :style-obj (.-style element)))
                       (.componentDidUpdate this))
-   :view/did-update (fn [{{style :style
-                           class :class}      :view/props
-                          {prev-style :style
-                           prev-class :class} :view/prev-props
-                          :keys               [view/state]}]
+   :view/did-update (fn [{{style   :style
+                           classes :classes}      :view/props
+                          {prev-style   :style
+                           prev-classes :classes} :view/prev-props
+                          :keys                   [view/state]}]
                       (let [{:keys [element style-obj]} @state
-                            class          (some-> (string/split class #"\s+") (set))
-                            prev-class     (some-> (string/split prev-class #"\s+") (set))
+                            classes (set classes)
+                            prev-classes (set prev-classes)
                             styles-removed (set/difference (set (keys prev-style)) (set (keys style)))
-                            class-removed  (set/difference prev-class class)]
+                            classes-removed (set/difference prev-classes classes)]
                         (doseq [attr styles-removed]
                           (.setProperty style-obj attr nil))
                         (doseq [[attr val] style]
                           (.setProperty style-obj attr val))
-                        (doseq [class class-removed]
+                        (doseq [class classes-removed]
                           (classes/remove element class))
-                        (doseq [class class]
+                        ;; always add classes, in case some were removed?
+                        (doseq [class classes]
                           (classes/add element class))))}
   [_]
 

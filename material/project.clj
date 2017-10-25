@@ -11,14 +11,12 @@
 
 
   :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                 [org.clojure/clojurescript "1.9.946" :scope "provided"]]
-
-  :profiles {:provided {:dependencies [[re-view "0.3.18"]]}
-             :dev      {:dependencies [[org.clojure/test.check "0.9.0"]]}}
+                 [org.clojure/clojurescript "1.9.946" :scope "provided"]
+                 [re-view "0.4.6"]]
 
   :cljsbuild {:builds []}
 
   :lein-release {:deploy-via :clojars
                  :scm        :git}
 
-  :source-paths ["src" "example"])
+  :source-paths ["src"])

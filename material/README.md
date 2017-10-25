@@ -6,4 +6,4 @@ Components for [Re-View](https://www.github.com/braintripping/re-view) built on 
 
 ALPHA
 
-Dev: `webpack -p`
+Dev: `webpack -w -p`

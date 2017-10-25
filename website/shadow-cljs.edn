@@ -10,10 +10,10 @@
                 "../re_view/example"]
  :builds       {:browser {:target           :browser
                           :modules          {:base {:entries [app.core]}}
-                          :output-dir       "resources/public/js"
+                          :output-dir       "public/js"
                           :asset-path       "/js"
                           :compiler-options {:language-in :es5}
-                          :devtools         {:http-root    "resources/public"
+                          :devtools         {:http-root    "public"
                                              :http-handler shadow.http.push-state/handle
                                              :http-port    8706
                                              :after-load   app.core/render}}}}

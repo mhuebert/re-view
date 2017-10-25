@@ -8,7 +8,7 @@ const extractSass = new ExtractTextPlugin({
 module.exports = {
     entry: "./src/styles/app.scss",
     output: {
-        path: path.join(__dirname, "./resources/public/"),
+        path: path.join(__dirname, "./public/"),
         filename: "app.css"
     },
     module: {
@@ -24,7 +24,7 @@ module.exports = {
                         }, {
                             loader: "sass-loader",
                             options: {
-                                includePaths: ["./node_modules"]
+                                includePaths: ["node_modules"]
                             }
                         }]
                 })
