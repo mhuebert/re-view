@@ -6,11 +6,9 @@ A light, beginner-friendly syntax built for `re-frame`.
 
 ----
 
-Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with.
+Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
 
-`re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from moving down the ladder and using lower-level constructs where appropriate.
-
-Three main ideas:
+Our approach:
 
 1. treat the `db` as a thing we perform ordinary Clojure operations on
 2. reactivity should 'just work'
@@ -18,18 +16,12 @@ Three main ideas:
 
 (Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
-
 ## Example project
 
-Everything you'll see below can also be viewed as a real project:
+I have set up an example project which includes **re-frame-trace** so that you can see what's going on behind the scenes when you use `re-frame-simple`.
 
-**Live Demo:** https://mhuebert.github.io/shadow-re-frame/ (be sure to press `Control-H` to see trace panel)
-
-**Source:** https://github.com/mhuebert/shadow-re-frame
-
-
-This project includes **re-frame-trace** so you can see how the events dispatched by re-frame-simple can be inspected and provide visibility into the workings of your app.
-
+- Check out the [live demo](https://mhuebert.github.io/shadow-re-frame/)
+- Read the [source code](https://github.com/mhuebert/shadow-re-frame)
 
 ## Get Started
 
