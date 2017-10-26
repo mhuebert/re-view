@@ -59,3 +59,7 @@ The goal of this library is _only_ to faithfully implement Google's official web
 Any _additional_ components which are desired but are not part of the mdc system should be published into a different library/namespace.
 
 (Current exceptions to this include `re-view.material.persisted.core`, which wraps the Text widget with help for making a component manage local/persisted state, and `re-view.material.ext`, which has a helper for use with components that need to be 'opened'. These should be considered temporary.)
+
+### Development environment
+
+The recommended way to work on this library is via the `website` project, which includes usages of all the components. Instructions for getting that set up are in the website [readme](https://github.com/braintripping/re-view/blob/master/website/README.md).
