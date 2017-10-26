@@ -37,7 +37,7 @@ Using a tool like re-frame-trace, we can still see a meaningful log of operation
 
 ----
 
-### Introduction
+### Motivation and Approach
 
 Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
 
