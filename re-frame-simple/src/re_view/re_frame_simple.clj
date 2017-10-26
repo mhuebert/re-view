@@ -21,11 +21,12 @@
         arg-syms argslist]
     `(def ~name
        (do
-         (re-frame.core/reg-sub
+         (re-frame.core/reg-sub-raw
            ~subscription-key
            (fn [~'_ ~(into '[_] arg-syms)]
-             (binding [~'re-view.re-frame-simple/*in-query?* true]
-               ~@body)))
+             (~'reagent.ratom/reaction
+               (binding [~'re-view.re-frame-simple/*in-query?* true]
+                 ~@body))))
          (fn [& args#]
            @(re-frame.core/subscribe
               (into [~subscription-key] args#)))))))
