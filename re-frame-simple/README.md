@@ -33,7 +33,7 @@ Using a tool like re-frame-trace, we can still see a meaningful log of operation
 
 ![](https://i.imgur.com/vAuRHwo.png)
 
-(screenshot taken from the [example project](mhuebert.github.io/shadow-re-frame/))
+(screenshot taken from the [example project](https://mhuebert.github.io/shadow-re-frame/))
 
 ----
 
