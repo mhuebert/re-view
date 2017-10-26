@@ -9,22 +9,31 @@ A light, beginner-friendly syntax built for `re-frame`.
 To read data:
 
 ```
+(db/get :a)
 (db/get-in [:a :b])
 ```
 
 To write data:
 
 ```
-(db/assoc-in! [:a :b] 1)
+(db/assoc! :a 1)
+(db/assoc-in! [:b :c] 1)
 
 (db/update! :counter inc)
+(db/update-in! [:counters :a] inc)
 ```
 
 These functions 
 
-1. map to a coherent set of re-frame operations, 
+1. map to a coherent set of re-frame operations based on Clojure core functions, 
 2. provide reactivity that 'just works' (no need for manual subscriptions), and
 3. don't get in your way if you want to go into more advanced stuff.
+
+Using a tool like re-frame-trace, we can still see a meaningful log of operations performed:
+
+![](https://i.imgur.com/vAuRHwo.png)
+
+(screenshot taken from the [example project](mhuebert.github.io/shadow-re-frame/))
 
 ----
 
@@ -34,7 +43,7 @@ Learning `re-frame` involves wrapping one's head around many new words and conce
 
 Our approach:
 
-1. treat the `db` as a thing we perform ordinary Clojure operations on
+1. read and write using ordinary Clojure operations
 2. reactivity should 'just work'
 3. more advanced state management is **opt-in** (eg. named queries and updates, coeffects)
 
