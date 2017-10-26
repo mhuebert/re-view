@@ -27,7 +27,7 @@ I have set up an example project which includes **re-frame-trace** so that you c
 
 Add the dependency (`boot` or `project.clj`):
 
-`[re-view/re-frame-simple "0.1.1"]`
+`[re-view/re-frame-simple "0.1.2"]`
 
 Require the namespace:
 
