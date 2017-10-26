@@ -22,12 +22,10 @@ Thankfully, ClojureScript added support for requiring deps directly from npm, so
 
 So, next steps:
 
-1. Put each component in its own namespace. This will satisfy Google's [requirement](https://material.io/components/web/docs/framework-integration/#examples) for libraries that they promote to `"Serve components in an à-la-carte delivery model"`.
+1. Put each component in its own namespace. This will satisfy Google's [requirement](https://material.io/components/web/docs/framework-integration/#examples) for libraries that they promote to `"Serve components in an à-la-carte delivery model"`. (Currently, each component has one part in `material.core` and another part (its foundation/adapter) in `material.mdc`.)
 
-Currently, each component has one part in `material.core` and another part (its foundation/adapter) in `material.mdc`. What we should do:
-
-- [ ] Put component-specific code in a namespace like `material.components.component-name`
-- [ ] Keep only reusable utility code in `material.mdc`
+    - [ ] Put component-specific code in a namespace like `material.components.component-name`
+    - [ ] Keep only reusable utility code in `material.mdc`
 
 
 2. Figure out a way for users to sanely include the CSS just for the components they use, in their app.
@@ -36,13 +34,15 @@ Currently, each component has one part in `material.core` and another part (its 
 
 **Docstrings and View Specs**
 
-The component previews in the [component library](https://re-view.io/components) are fully auto-generated, based on re-view's support for docstrings and [view specs](https://re-view.io/docs/re-view/view-specs):
+By using re-view's support for docstrings and [view specs](https://re-view.io/docs/re-view/view-specs), we are able to _autogenerate_ the [component library](https://re-view.io/components):
 
 ![Example](https://i.imgur.com/BLd9RdP.png)
 
-(_Note:_ [view specs](https://re-view.io/docs/re-view/view-specs) are not implemented with Clojure Spec, although they share similarities. They are a light-weight construct designed to provide view-specific functionality at runtime with little overhead.)
+_Note:_ [view specs](https://re-view.io/docs/re-view/view-specs) are not implemented with Clojure Spec, although they share similarities. They are a light-weight construct designed to provide view-specific functionality at runtime with little overhead.
 
-Components should include docstrings using the following format:
+View specs have the additional benefit of allowing users of this library to have their usage of components (props, children) validated during development.
+
+Docstrings should use the following format:
 
 ```
 (defview Text
