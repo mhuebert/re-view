@@ -4,7 +4,7 @@
 
 A light, beginner-friendly syntax built for `re-frame`.
 
-#### TL;DR
+#### Quick intro
 
 To read data:
 
@@ -23,7 +23,7 @@ To write data:
 (db/update-in! [:counters :a] inc)
 ```
 
-These functions 
+These functions:
 
 1. map to a coherent set of re-frame operations based on Clojure core functions, 
 2. provide reactivity that 'just works' (no need for manual subscriptions), and
