@@ -1,0 +1,13 @@
+{:dependencies [[re-db "0.1.13"]]
+ :source-paths ["src" "test"]
+ #_:builds       #_{:browser {:target           :browser
+                          :modules          {:base {:entries [re-view.core
+                                                              re-view.hiccup.core
+                                                              re-view.routing]}}
+                          :output-dir       "public/js"
+                          :asset-path       "/js"
+                          :compiler-options {:language-in :es5}
+                          :devtools         {:http-root    "public"
+                                             :http-handler shadow.http.push-state/handle
+                                             :http-port    8706
+                                             :after-load   app.core/render}}}}

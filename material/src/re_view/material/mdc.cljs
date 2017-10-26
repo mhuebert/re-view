@@ -1,6 +1,6 @@
 (ns re-view.material.mdc
-  (:require [re-view.material.foundations :refer [foundations]]
-            [re-view.core :as v]
+  (:require [re-view.core :as v]
+            [re-view.view-spec :as s]
             [goog.dom :as gdom]
             [goog.dom.classes :as classes]
             [goog.dom.dataset :as dataset]
@@ -9,26 +9,65 @@
             [re-view.material.util :as util]
             ["@material/dialog/util" :refer [createFocusTrapInstance]]
             ["@material/animation" :refer [getCorrectEventName]]
-            ["@material/ripple/util" :refer [supportsCssVariables, getMatchesProperty]]
             ["@material/drawer/util" :as mdc-util]
-            ["react" :as react])
+
+
+    ;; temporary - will move to own namespaces
+            ["@material/base" :as base]
+            ["@material/dialog" :as dialog]
+            ["@material/drawer" :as drawer]
+            ["@material/form-field" :as form-field]
+            ["@material/grid-list" :as grid-list]
+            ["@material/icon-toggle" :as icon-toggle]
+            ["@material/menu" :as menu]
+            ["@material/radio" :as radio]
+            ["@material/select" :as select]
+            ["@material/snackbar" :as snackbar]
+            ["@material/textfield" :as textfield]
+            ["@material/toolbar" :as toolbar]
+
+            ["react" :as react]
+            [clojure.string :as string])
   (:require-macros [re-view.material.mdc :refer [defadapter]]))
+
+(s/defspecs {::color         {:spec #{:primary :accent}
+                              :doc  "Specifies color variable from theme."}
+             ::raised        {:spec :Boolean
+                              :doc  "Raised buttons gain elevation, and color is applied to background instead of text."}
+             ::ripple        {:spec    :Boolean
+                              :doc     "Enables ripple effect on click/tap"
+                              :default true}
+             ::compact       {:spec :Boolean
+                              :doc  "Reduces horizontal padding"}
+             ::auto-focus    {:spec :Boolean
+                              :doc  "If true, focuses element on mount"}
+
+
+             ::id            :String
+             ::dirty         {:spec :Boolean
+                              :doc  "If true, field should display validation errors"}
+             ::dense         {:spec :Boolean
+                              :doc  "Reduces text size and vertical padding"}
+             ::disabled      {:spec         :Boolean
+                              :doc          "Disables input element or button"
+                              :pass-through true}
+             ::label         {:spec :Element
+                              :doc  "Label for input element or button"}
+             ::on-change     :Function
+             ::rtl           {:spec :Boolean
+                              :doc  "Show content in right to left."}
+             ::value         {:spec :String
+                              :doc  "Providing a value causes an input component to be 'controlled'"}
+             ::default-value {:spec :String
+                              :doc  "For an uncontrolled component, sets the initial value"}})
 
 (set! *warn-on-infer* true)
 (def browser? (exists? js/window))
 (def Document (when browser? js/document))
 (def ^js/HTMLElement Body (when Document (.-body Document)))
 (def Window (when browser? js/window))
-(def MatchesProperty (when browser? (getMatchesProperty (.-prototype js/HTMLElement))))
 (def conj-set (fnil conj #{}))
 (def disj-set (fnil disj #{}))
-
-(defn foundation-class
-  "Look up foundation class by name on MDC global var."
-  [name]
-  (get foundations (str "MDC" name)))
-
-(def throttle (memoize gfn/throttle))
 
 (defn init
   "Instantiate mdc foundations for a re-view component
@@ -79,10 +118,10 @@
            :unlisten (.removeEventListener target event-type handler)))))))
 
 (defn adapter [component mdc-key]
-  (aget component (str "mdc" (name mdc-key)) "adapter_"))
+  (gobj/getValueByKeys component (str "mdc" (name mdc-key)) "adapter_"))
 
 (defn element [adapter k]
-  (aget adapter (name k)))
+  (gobj/get adapter (name k)))
 
 (defn styles-key [element-key]
   (keyword "mdc" (str (some-> element-key (name) (str "-")) "styles")))
@@ -155,7 +194,7 @@
      :component   this}))
 
 (defn make-foundation
-  "Extends adapter with base adapter methods, and wraps with Foundation class"
+  "Extends adapter with base adapter methods, and wraps with Foundation class."
   [name foundation-class methods]
   (fn [this]
     (foundation-class. (->> (merge (bind-adapter this)
@@ -164,7 +203,9 @@
                                    {:name name})
                             (clj->js)))))
 
-(defadapter Textfield []
+(defadapter Textfield
+  textfield/MDCTextfieldFoundation
+  []
   {:addClassToLabel               (class-handler :add "label")
    :removeClassFromLabel          (class-handler :remove "label")
    :addClassToHelptext            (class-handler :add "help")
@@ -183,17 +224,8 @@
    :getNativeInput                #(this-as this (gobj/get this "nativeInput"))})
 
 
-(defadapter Checkbox [component]
-  {:root                          (util/find-node (v/dom-node component) #(classes/has "mdc-checkbox"))
-   :registerAnimationEndHandler   (interaction-handler :listen "root" (getCorrectEventName Window "animationend"))
-   :deregisterAnimationEndHandler (interaction-handler :unlisten "root" (getCorrectEventName Window "animationend"))
-   :registerChangeHandler         (interaction-handler :listen "nativeInput" "change")
-   :deregisterChangeHandler       (interaction-handler :unlisten "nativeInput" "change")
-   :forceLayout                   #(this-as this (gobj/get (gobj/get this "nativeInput") "offsetWidth"))
-   :isAttachedToDOM               #(this-as this (boolean (gobj/get this "root")))
-   :getNativeControl              #(this-as this (gobj/get this "nativeInput"))})
-
 (defadapter Dialog
+  dialog/MDCDialogFoundation
   [{:keys [view/state on-accept on-cancel] :as ^react/Component component}]
   (let [root (v/dom-node component)
         accept-btn (gdom/findNode root #(classes/has % "mdc-dialog__footer__button--accept"))
@@ -218,10 +250,8 @@
      }))
 
 
-(defadapter PersistentDrawer [])
-
-
 (defadapter TemporaryDrawer
+  drawer/MDCTemporaryDrawerFoundation
   [{:keys [view/state] :as ^react/Component component}]
   (let [root (v/dom-node component)
         ^js/Element drawer (util/find-node root (fn [el] (classes/has el "mdc-temporary-drawer__drawer")))
@@ -240,8 +270,8 @@
                                                           (when n (str "translateX(" n "px)"))))
              :updateCssVariable                  (fn [value]
                                                    (when (mdc-util/supportsCssCustomProperties)
-                                                     (swap! state assoc-in [:mdc/root-styles (gobj/getValueByKeys (foundation-class "TemporaryDrawer") "strings" "OPACITY_VAR_NAME")] value)))
-             :getFocusableElements               #(.querySelectorAll drawer (gobj/getValueByKeys (foundation-class "TemporaryDrawer") "strings" "FOCUSABLE_ELEMENTS"))
+                                                     (swap! state assoc-in [:mdc/root-styles (gobj/getValueByKeys drawer/MDCTemporaryDrawerFoundation "strings" "OPACITY_VAR_NAME")] value)))
+             :getFocusableElements               #(.querySelectorAll drawer (gobj/getValueByKeys drawer/MDCTemporaryDrawerFoundation "strings" "FOCUSABLE_ELEMENTS"))
              :saveElementTabState                mdc-util/saveElementTabState
              :restoreElementTabState             mdc-util/restoreElementTabState
              :makeElementUntabbable              #(.setAttribute ^js/Element % "tabindex" -1)
@@ -250,18 +280,16 @@
             (.-notifyClose component) (assoc :notifyClose (.-notifyClose component)))))
 
 (defadapter FormField
+  form-field/MDCFormFieldFoundation
   [component]
   {:root                  (util/find-tag (v/dom-node component) #"LABEL")
 
    :activateInputRipple   #(this-as this (let [ripple (-> (gobj/get this "component")
-                                                                             (gobj/get "mdcRipple"))]
+                                                          (gobj/get "mdcRipple"))]
                                            (.activate ripple)))
    :deactivateInputRipple #(this-as this (let [ripple (-> (gobj/get this "component")
-                                                                             (gobj/get "mdcRipple"))]
+                                                          (gobj/get "mdcRipple"))]
                                            (.deactivate ripple)))})
-
-(defadapter GridList [])
-(defadapter IconToggle [])
 
 (defn index-of
   "Index of x in js-coll, where js-coll is an array-like object that does not implement .indexOf (eg. HTMLCollection)"
@@ -273,6 +301,7 @@
             :else (recur (inc i))))))
 
 (defadapter SimpleMenu
+  menu/MDCSimpleMenuFoundation
   [{:keys [view/state] :as component}]
   (let [^js/HTMLElement root (v/dom-node component)
         get-container #(util/find-node root (fn [el] (classes/has el "mdc-simple-menu__items")))
@@ -329,36 +358,13 @@
      :registerBodyClickHandler         #(.addEventListener Body "click" %)
      :deregisterBodyClickHandler       #(.removeEventListener Body "click" %)}))
 
-(defadapter Radio [])
-
-(defadapter Ripple
-  [component]
-  (let [^js/Element target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
-                                                                       (classes/has % "mdc-ripple-target")))]
-    {:root                         target
-     :rippleTarget                 target
-     :updateCssVariable            (style-handler :Ripple "rippleTarget")
-     :registerInteractionHandler   (interaction-handler :listen "rippleTarget")
-     :deregisterInteractionHandler (interaction-handler :unlisten "rippleTarget")
-     :browserSupportsCssVars       #(supportsCssVariables Window)
-     :isUnbounded                  #(dataset/has target "mdcRippleIsUnbounded")
-     :isSurfaceActive              #(let [^js/Function f (gobj/get target MatchesProperty)]
-                                      (.call f target ":active"))
-     :registerResizeHandler        #(.addEventListener Window "resize" %)
-     :deregisterResizeHandler      #(.removeEventListener Window "resize" %)
-     :getWindowPageOffset          #(do #js {"x" (gobj/get Window "pageXOffset")
-                                             "y" (gobj/get Window "pageYOffset")})
-     :computeBoundingRect          #(.getBoundingClientRect target)}))
-
-(defadapter Select [])
-
-(defadapter Snackbar [])
-
 (defn log-ret [msg x]
   (.log js/console msg x)
   x)
 
-(defadapter Toolbar [{:keys [with-content] :as component}]
+(defadapter Toolbar
+  toolbar/MDCToolbarFoundation
+  [{:keys [with-content] :as component}]
   (let [^js/HTMLElement toolbar-element (cond-> (v/dom-node component)
                                                 with-content (gdom/getFirstElementChild))
         ^js/HTMLElement first-row-element (-> toolbar-element
@@ -382,8 +388,8 @@
              :notifyChange                   (fn [ratio])
              :setStyle                       (style-handler :Toolbar)
              :setStyleForTitleElement        (fn [attr val]
-                                                 (this-as this
-                                                          (util/add-styles (gobj/get this "titleElement") {attr val})))
+                                               (this-as this
+                                                 (util/add-styles (gobj/get this "titleElement") {attr val})))
              :setStyleForFlexibleRowElement  (style-handler :Toolbar :firstRowElement)}
             with-content (merge {:fixedAdjustElement            (gdom/getNextElementSibling toolbar-element)
                                  :setStyleForFixedAdjustElement (style-handler :Toolbar :fixedAdjustElement)

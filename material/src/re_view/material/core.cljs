@@ -1,116 +1,23 @@
 (ns re-view.material.core
   (:refer-clojure :exclude [List])
   (:require
-    [goog.net.XhrIo :as xhr]
-    [goog.events :as events]
-    [goog.dom :as gdom]
-    [goog.style :as gstyle]
     [goog.object :as gobj]
     [re-view.core :as v :refer [defview]]
-    [re-view.material.icons :as icons]
     [re-view.material.util :as util]
     [clojure.string :as string]
     [re-view.routing :as routing]
-    [re-view.view-spec :refer [defspecs]]
     [re-view.core :as v]
     [re-view.util :refer [update-attrs]]
     [re-view.material.mdc :as mdc]
-    [re-view.material.ext :as ext])
+    [re-view.material.ext :as ext]
+
+    [re-view.material.components.button :as button]
+    [re-view.material.components.checkbox :as checkbox]
+    [re-view.material.components.ripple :as ripple])
   (:import [goog Promise]))
 
-
-
-(defspecs {::color         {:spec #{:primary :accent}
-                            :doc  "Specifies color variable from theme."}
-           ::raised        {:spec :Boolean
-                            :doc  "Raised buttons gain elevation, and color is applied to background instead of text."}
-           ::ripple        {:spec    :Boolean
-                            :doc     "Enables ripple effect on click/tap"
-                            :default true}
-           ::compact       {:spec :Boolean
-                            :doc  "Reduces horizontal padding"}
-           ::auto-focus    {:spec :Boolean
-                            :doc  "If true, focuses element on mount"}
-
-
-           ::id            :String
-           ::dirty         {:spec :Boolean
-                            :doc  "If true, field should display validation errors"}
-           ::dense         {:spec :Boolean
-                            :doc  "Reduces text size and vertical padding"}
-           ::disabled      {:spec         :Boolean
-                            :doc          "Disables input element or button"
-                            :pass-through true}
-           ::label         {:spec :Element
-                            :doc  "Label for input element or button"}
-           ::on-change     :Function
-           ::rtl           {:spec :Boolean
-                            :doc  "Show content in right to left."}
-           ::value         {:spec :String
-                            :doc  "Providing a value causes an input component to be 'controlled'"}
-           ::default-value {:spec :String
-                            :doc  "For an uncontrolled component, sets the initial value"}})
-
-(defview Ripple
-  "Applies ripple effect to a single child view."
-  {:spec/children      [:Hiccup]
-   :key                (fn [_ element]
-                         (or (get-in element [1 :key])
-                             (get-in element [1 :id])))
-   :view/did-mount     #(mdc/init % mdc/Ripple)
-   :view/should-update #(do true)
-   :view/did-update    (mdc/mdc-style-update :Ripple "rippleTarget")
-   :view/will-unmount  #(mdc/destroy % mdc/Ripple)}
-  [{:keys [view/state]} hiccup-element]
-  (update-attrs hiccup-element update :classes into (:mdc/Ripple-classes @state)))
-
-(defview Button
-  "Communicates the action that will occur when the user touches it. [More](https://material.io/guidelines/components/buttons.html)"
-  {:key        :label
-   :spec/props {:props/keys [::color ::compact ::dense ::disabled ::label ::raised ::ripple]
-                :icon       :SVG
-                :icon-end   :SVG}}
-  [{:keys [href
-           on-click
-           label
-           icon
-           icon-end
-           disabled
-           dense
-           raised
-           compact
-           ripple
-           color
-           classes]
-    :as   this}]
-  (when (some #{:secondary :type} (set (keys (:props this))))
-    (throw "Depracated :secondary, :type"))
-  (let [only-icon? (and icon (contains? #{nil ""} label))]
-    ((if ripple Ripple identity)
-      [(if (and (not disabled)
-                href) :a :button)
-       (-> (v/pass-props this)
-           (cond-> disabled (dissoc :href :on-click)
-                   only-icon? (update :style assoc :min-width "auto"))
-           (update :style merge (when (or icon icon-end)
-                                  {:display     "inline-flex"
-                                   :align-items "center"}))
-           (update :classes into (-> ["mdc-button"
-                                      (when ripple "mdc-ripple-target")
-                                      (when dense "mdc-button--dense")
-                                      (when raised "mdc-button--raised")
-                                      (when compact "mdc-button--compact")
-                                      (when color (str "mdc-button--" (name color)))])))
-       (when icon
-         (cond-> (icons/style icon {:flex-shrink 0})
-                 (not only-icon?) (icons/style {:margin-right "0.5rem"})
-                 dense (icons/size 20)))
-       [:span {:style {:flex-shrink 0}}
-        (when-let [label (util/ensure-str label)]
-          label)]
-       (when icon-end
-         (cond-> (icons/style icon-end {:margin-left "0.5rem"})
-                 dense (icons/size 20)))])))
+(def Ripple ripple/Ripple)
+(def Button button/Button)
 
 (defview Dialog
   {:spec/props         {:label-accept   :String
@@ -214,7 +121,7 @@
 (defview Text
   "Allow users to input, edit, and select text. [More](https://material.io/guidelines/components/text-fields.html)"
   {:key                :name
-   :spec/props         {:props/keys           [::label ::dense ::auto-focus ::dirty]
+   :spec/props         {:props/keys           [::mdc/label ::mdc/dense ::mdc/auto-focus ::mdc/dirty]
                         :floating-label       {:spec    :Boolean
                                                :default true}
                         :help-text-persistent :Boolean
@@ -234,9 +141,9 @@
                         :container-props      :Map
                         :field-props          :Map
 
-                        :value                {:spec         ::value
+                        :value                {:spec         ::mdc/value
                                                :pass-through true}
-                        :default-value        {:spec         ::default-value
+                        :default-value        {:spec         ::mdc/default-value
                                                :pass-through true}}
    :view/initial-state {:dirty                 false
                         :mdc/Textfield-classes #{"mdc-textfield--upgraded"}
@@ -301,9 +208,9 @@
                                          (util/ensure-str value)
                                          (util/ensure-str default-value)
                                          (util/ensure-str (:placeholder props))))]
-          [:label {:class    (cond-> (string/join " " label-classes)
-                                     floatingLabel (str " mdc-textfield__label--float-above"))
-                   :for field-id}
+          [:label {:class (cond-> (string/join " " label-classes)
+                                  floatingLabel (str " mdc-textfield__label--float-above"))
+                   :for   field-id}
            label]))
       #_(when in-progress (ProgressIndeterminate {:class "absolute w-100"}))]
 
@@ -332,7 +239,7 @@
 
 (defview List
   "Presents multiple line items vertically as a single continuous element. [More](https://material.io/guidelines/components/lists.html)"
-  {:spec/props    {:props/keys  [::dense]
+  {:spec/props    {:props/keys  [::mdc/dense]
                    :avatar-list {:spec :Boolean
                                  :doc  "Adds modifier class to style start-detail elements as large, circular 'avatars'"}}
    :spec/children [:& :Element]}
@@ -346,7 +253,7 @@
 (defview ListItem
   "Collections of list items present related content in a consistent format. [More](https://material.io/guidelines/components/lists.html#lists-behavior)"
   {:key        (fn [{:keys [href text-primary]}] (or href text-primary))
-   :spec/props {:props/keys     [::ripple]
+   :spec/props {:props/keys     [::mdc/ripple]
                 :text-primary   :Element
                 :text-secondary :Element
                 :detail-start   :Element
@@ -402,7 +309,7 @@
   [{:keys [view/state view/props classes open-from] :as this} & items]
   [:.mdc-simple-menu (merge (v/pass-props this)
                             {:tab-index -1
-                             :class  (when open-from (str "mdc-simple-menu--open-from-" (name open-from)))
+                             :class     (when open-from (str "mdc-simple-menu--open-from-" (name open-from)))
                              :classes   (into classes (:mdc/SimpleMenu-classes @state))})
    (into [:.mdc-simple-menu__items.mdc-list
           {:role        "menu"
@@ -416,15 +323,12 @@
                                 :tab-index 0}))
 
 
-(defn- formField-attrs [{:keys [mdc/FormField-classes align-end rtl field-classes]}]
-  {:classes (cond-> (into field-classes FormField-classes)
-                    align-end (conj "mdc-form-field--align-end"))
-   :dir     (when rtl "rtl")})
+
 
 (defview Switch
   "Allow a selection to be turned on or off. [More](https://material.io/guidelines/components/selection-controls.html#selection-controls-radio-button)"
   {:key        :id
-   :spec/props {:props/keys [::rtl ::color]
+   :spec/props {:props/keys [::mdc/rtl ::mdc/color]
                 :align-end  :Keyword}}
   [{:keys [disabled rtl label color] :as this}]
   (let [color-class (case color :primary "mdc-theme--primary-bg"
@@ -442,8 +346,8 @@
 (defview SwitchField
   "Allow a selection to be turned on or off. [More](https://material.io/guidelines/components/selection-controls.html#selection-controls-radio-button)"
   {:key        :id
-   :spec/props {:props/keys    [::label ::rtl]
-                :id            {:spec         ::id
+   :spec/props {:props/keys    [::mdc/label ::mdc/rtl]
+                :id            {:spec         ::mdc/id
                                 :pass-through true
                                 :required     true}
                 :field-classes :Vector
@@ -460,51 +364,7 @@
 
 
 
-(defview Checkbox
-  "Allow the selection of multiple options from a set. [More](https://material.io/guidelines/components/selection-controls.html#)"
-  {:key               :id
-   :spec/props        {:props/keys [::disabled
-                                    ::dense
-                                    ::value
-                                    ::rtl
-                                    ::label
-                                    ::id]
-                       :checked    :Boolean
-                       :align-end  :Boolean}
-   :view/did-mount    #(mdc/init % mdc/Ripple mdc/Checkbox mdc/FormField)
-   :view/will-unmount #(mdc/destroy % mdc/Ripple mdc/Checkbox mdc/FormField)
-   :view/did-update   (mdc/mdc-style-update :Ripple)}
-  [{:keys [id name label view/props view/state
-           dense
-           label-class
-           input-class] :as this}]
-  (when (contains? props :label-class) (throw "label-class in Checkbox not supported"))
-  (let [{:keys [mdc/Checkbox-classes
-                mdc/Ripple-classes]} @state]
-    [:.mdc-form-field
-     (formField-attrs props)
-     [:.mdc-checkbox.mdc-ripple-target
-      {:classes                      (into Checkbox-classes Ripple-classes)
-       :data-mdc-ripple-is-unbounded true
-       :style                        (when dense {:margin "-0.5rem 0"})}
-      [:input.mdc-checkbox__native-control (-> (v/pass-props this)
-                                               (merge {:type  "checkbox"
-                                                       :class input-class
-                                                       :id    (or id name)}))]
-      [:div.mdc-checkbox__background
-       [:svg.mdc-checkbox__checkmark
-        {:view-box "0 0 24 24"}
-        [:path.mdc-checkbox__checkmark__path
-         {:fill   "none"
-          :stroke "white"
-          :d      "M1.73,12.91 8.1,19.28 22.79,4.59"}]]
-       [:.mdc-checkbox__mixedmark]]]
-     (when label
-       (-> label
-           (cond->> (string? label) (conj [:label]))
-           (update-attrs #(-> %
-                              (assoc :for (or id name))
-                              (update :classes conj label-class)))))]))
+(def Checkbox checkbox/Checkbox)
 
 #_(defview FormField
     {:key               (fn [_ _ {:keys [id]} _] id)
@@ -601,7 +461,7 @@
                                       :doc  "On scroll, toolbar will gain elevation."}
                        :flexible     {:spec #{true false :default-behavior}
                                       :doc  "Toolbar starts out large, then shrinks gradually as user scrolls down."}
-                       :rtl          ::rtl
+                       :rtl          ::mdc/rtl
                        :with-content {:spec :Boolean
                                       :doc  "If true, last child element will be rendered as sibling of Toolbar, with margin applied to adjust for fixed toolbar size."}}
    :spec/children     [:& :Element]

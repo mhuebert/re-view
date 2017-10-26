@@ -1,6 +1,10 @@
 {
+  "scripts": {
+    "test": "shadow-cljs test"
+  },
   "dependencies": {
     "react": "^16.0.0",
-    "react-dom": "^16.0.0"
+    "react-dom": "^16.0.0",
+    "shadow-cljs": "^2.0.42"
   }
 }
