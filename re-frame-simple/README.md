@@ -4,26 +4,59 @@
 
 A light, beginner-friendly syntax built for `re-frame`.
 
+#### Quick intro
+
+To read data:
+
+```
+(db/get :a)
+(db/get-in [:a :b])
+```
+
+To write data:
+
+```
+(db/assoc! :a 1)
+(db/assoc-in! [:b :c] 1)
+
+(db/update! :counter inc)
+(db/update-in! [:counters :a] inc)
+```
+
+These functions:
+
+1. map to a coherent set of re-frame operations based on Clojure core functions, 
+2. provide reactivity that 'just works' (no need for manual subscriptions), and
+3. don't get in your way if you want to go into more advanced stuff.
+
+Using a tool like re-frame-trace, we can still see a meaningful log of operations performed:
+
+![](https://i.imgur.com/vAuRHwo.png)
+
+(screenshot taken from the [example project](https://mhuebert.github.io/shadow-re-frame/))
+
 ----
+
+### Motivation and Approach
 
 Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
 
 Our approach:
 
-1. treat the `db` as a thing we perform ordinary Clojure operations on
+1. read and write using ordinary Clojure operations
 2. reactivity should 'just work'
 3. more advanced state management is **opt-in** (eg. named queries and updates, coeffects)
 
 (Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
-## Example project
+### Example project
 
 I have set up an example project which includes **re-frame-trace** so that you can see what's going on behind the scenes when you use `re-frame-simple`.
 
 - Check out the [live demo](https://mhuebert.github.io/shadow-re-frame/)
 - Read the [source code](https://github.com/mhuebert/shadow-re-frame)
 
-## Get Started
+### Get Started
 
 Add the dependency (`boot` or `project.clj`):
 
