@@ -16,31 +16,31 @@ We use the 'Advanced' approach as described on that page.
 
 ### Current status
 
-The first version of `re-view/material` was built before ClojureScript had support for `npm` dependencies, and was therefore monolithic, and JS deps were bundled with webpack. As of October/2017, that approach has been deprecated, and we have simultaneously migrated to the [shadow-cljs](https://github.com/thheller/shadow-cljs/) build tool for development. 
+The first version of `re-view/material` was built before ClojureScript had support for `npm` dependencies, so I packaged all the JS deps into a single file using webpack. That led to a monolithic design where I put all of the component's framework/adapter code into `re-view.material.mdc`, and all of the components into `re-view.material.components`. 
 
-Some next steps:
+Thankfully, ClojureScript added support for requiring deps directly from npm, so in October/2017 I updated this library to use the new style of js deps (at the same time, I switched to using the [shadow-cljs](https://github.com/thheller/shadow-cljs/) build tool). But I haven't had time to refactor the library into the modular style that is now possible.
 
-1. Put each component in its own namespace. This will satisfy Google's requirement for libraries that they promote to `Serve components in an à-la-carte delivery model`.
+So, next steps:
 
-- Currently, each component has one part in `material.core` and another part (its foundation/adapter) in `material.mdc`. 
-- All component-specific code should be in a namespace like `material.components.component-name`
-- All reusable utility code should remain in `material.mdc`
-    
-The result of this step is that users can require a single component and it will pull in _only_ the required code.
+1. Put each component in its own namespace. This will satisfy Google's [requirement](https://material.io/components/web/docs/framework-integration/#examples) for libraries that they promote to `"Serve components in an à-la-carte delivery model"`.
+
+Currently, each component has one part in `material.core` and another part (its foundation/adapter) in `material.mdc`. What we should do:
+
+- [ ] Put component-specific code in a namespace like `material.components.component-name`
+- [ ] Keep only reusable utility code in `material.mdc`
+
 
 2. Figure out a way for users to sanely include the CSS just for the components they use, in their app.
-
-3. Add more components
 
 ### Our approach
 
 **Docstrings and View Specs**
 
-The preview panels you see when you expand a component on the [component library](https://re-view.io/components) page are fully auto-generated, based on re-view's support for docstrings and [view specs](https://re-view.io/docs/re-view/view-specs):
+The component previews in the [component library](https://re-view.io/components) are fully auto-generated, based on re-view's support for docstrings and [view specs](https://re-view.io/docs/re-view/view-specs):
 
 ![Example](https://i.imgur.com/BLd9RdP.png)
 
-> Note: [view specs](https://re-view.io/docs/re-view/view-specs) are not implemented with Clojure Spec, although they share similarities. They are a light-weight construct designed to provide view-specific functionality at runtime with little overhead.
+(_Note:_ [view specs](https://re-view.io/docs/re-view/view-specs) are not implemented with Clojure Spec, although they share similarities. They are a light-weight construct designed to provide view-specific functionality at runtime with little overhead.)
 
 Components should include docstrings using the following format:
 
@@ -52,6 +52,10 @@ Components should include docstrings using the following format:
 
 Wherever reasonable, use the same description for the text as appears on the official site, and always end the docstring with a link to its official guideline page.
 
-**`ext` components**
+**additional components**
 
-There may be occasions where we wish to provide a component that is not part of the Material Design system. This should be rare and is not the focus of the library. Current exceptions include `re-view.material.persisted.core`, which wraps the Text widget with help for making a component manage local/persisted state, and `re-view.material.ext`, which has a helper for use with components that need to be 'opened'. These should not be relied on and will likely be moved elsewhere (if they remain at all).
+The goal of this library is _only_ to faithfully implement Google's official web components. We are not trying to make original design decisions here, only good _implementation_ decisions. 
+
+Any _additional_ components which are desired but are not part of the mdc system should be published into a different library/namespace.
+
+(Current exceptions to this include `re-view.material.persisted.core`, which wraps the Text widget with help for making a component manage local/persisted state, and `re-view.material.ext`, which has a helper for use with components that need to be 'opened'. These should be considered temporary.)
