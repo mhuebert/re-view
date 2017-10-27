@@ -21,7 +21,8 @@
     [re-view.material.components.switch :as switch]
     [re-view.material.components.drawer :as drawer]
     [re-view.material.components.toolbar :as toolbar]
-    [re-view.material.components.ripple :as ripple])
+    [re-view.material.components.ripple :as ripple]
+    [re-view.material.components.slider :as slider])
   (:import [goog Promise]))
 
 
@@ -54,6 +55,9 @@
 
 (def Switch switch/Switch)
 (def SwitchField switch/SwitchField)
+
+
+(def Slider slider/Slider)
 
 
 (def PermanentDrawerToolbarSpacer drawer/PermanentDrawerToolbarSpacer)
