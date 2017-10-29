@@ -1,10 +1,6 @@
 # Re-View
 
 ![badge](https://img.shields.io/clojars/v/re-view.svg)
-![badge](https://img.shields.io/clojars/v/re-view/hiccup.svg)
-![badge](https://img.shields.io/clojars/v/re-view/routing.svg)
-![badge](https://img.shields.io/clojars/v/re-view/material.svg)
-![badge](https://img.shields.io/clojars/v/re-view/prosemirror.svg)
 
 Re-View is a library for building React apps in ClojureScript. It's a beginner-friendly tool that is also suitable for demanding, production-grade apps.
 
