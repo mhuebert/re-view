@@ -3,14 +3,33 @@
                                                                        get-in get-in*
                                                                        swap!  swap!*})
   (:require [re-frame.core :as rf]
-            [re-frame.db :refer [app-db]])
-  (:require-macros [re-view.re-frame-simple]))
+            [re-frame.db :refer [app-db]]
+            [reagent.ratom :as r])
+  (:require-macros re-view.re-frame-simple))
 
 (rf/reg-sub :get (fn [db [_ key not-found]]
                    (get* db key not-found)))
 
-(rf/reg-sub :get-in (fn [db [_ path not-found]]
-                      (get-in* db path not-found)))
+(rf/reg-sub :get-in
+
+            ;; `get-in` creates an intermediate subscription for each path segment.
+            ;; without this optimization, _every_ `get-in` listener would require
+            ;; an additional equality check when the db changes.
+
+            (fn [[_ path]]
+              (if (<= (count path) 1)
+                app-db
+                (rf/subscribe [:get-in (drop-last path)])))
+            (fn [parent [_ path]]
+              (if (empty? path)
+                parent
+                (get* parent (last path)))))
+
+(comment
+
+  ;; old version, did not use intermediate subscriptions
+  (rf/reg-sub :get-in (fn [db [_ path not-found]]
+                        (get-in* db path not-found))))
 
 (rf/reg-sub :identity (fn [db [_]] db))
 
@@ -92,3 +111,4 @@
 
 (def dispatch "Dispatch a re-frame event." rf/dispatch)
 (def dispatch-sync "Synchronous version of `dispatch`" rf/dispatch-sync)
+
