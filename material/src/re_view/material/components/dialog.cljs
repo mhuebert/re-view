@@ -24,8 +24,8 @@
      :acceptButton                        accept-btn
      :eventTargetHasClass                 (fn [target class-name]
                                             (util/closest target #(classes/has % class-name)))
-     :registerSurfaceInteractionHandler   (mdc/interaction-handler :listen "surface")
-     :deregisterSurfaceInteractionHandler (mdc/interaction-handler :unlisten "surface")
+     :registerSurfaceInteractionHandler   (mdc/general-interaction-handler :listen "surface")
+     :deregisterSurfaceInteractionHandler (mdc/general-interaction-handler :unlisten "surface")
      :registerDocumentKeydownHandler      (mdc/interaction-handler :listen mdc/Document "keydown")
      :deregisterDocumentKeydownHandler    (mdc/interaction-handler :unlisten mdc/Document "keydown")
      :notifyAccept                        (or on-accept #(println :accept))

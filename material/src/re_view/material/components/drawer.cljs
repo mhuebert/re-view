@@ -19,10 +19,6 @@
             [goog.object :as gobj]
             [clojure.string :as string]))
 
-(defn remap-event [f]
-  (fn [event-type handler]
-    (f (remapEvent event-type) handler)))
-
 (mdc/defadapter TemporaryDrawerAdapter
   temporary-foundation/default
   [{:keys [view/state] :as ^react/Component component}]
@@ -30,10 +26,10 @@
         ^js drawer (util/find-node root (fn [el] (classes/has el "mdc-temporary-drawer__drawer")))]
     (cond-> {:drawer                             drawer
              :hasNecessaryDom                    #(do drawer)
-             :registerInteractionHandler         (remap-event (mdc/interaction-handler :listen root))
-             :deregisterInteractionHandler       (remap-event (mdc/interaction-handler :unlisten root))
-             :registerDrawerInteractionHandler   (remap-event (mdc/interaction-handler :listen drawer))
-             :deregisterDrawerInteractionHandler (remap-event (mdc/interaction-handler :unlisten drawer))
+             :registerInteractionHandler         (mdc/general-interaction-handler :listen root {:remap-event remapEvent})
+             :deregisterInteractionHandler       (mdc/general-interaction-handler :unlisten root {:remap-event remapEvent})
+             :registerDrawerInteractionHandler   (mdc/general-interaction-handler :listen drawer {:remap-event remapEvent})
+             :deregisterDrawerInteractionHandler (mdc/general-interaction-handler :unlisten drawer {:remap-event remapEvent})
              :registerTransitionEndHandler       (mdc/interaction-handler :listen drawer "transitionend")
              :deregisterTransitionEndHandler     (mdc/interaction-handler :unlisten drawer "transitionend")
              :getDrawerWidth                     #(util/force-layout drawer)

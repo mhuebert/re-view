@@ -89,28 +89,37 @@
 ;; Adapter implementation helpers
 ;;
 
-(defn interaction-handler
-  "Adds or removes an event handler of `event-type` to `element`.
+(defn general-interaction-handler
+  "Returns a function which adds or removes an event handler to `element`.
 
   `kind` may be `:listen` or `:unlisten`."
-  ([kind element event-type]
-   (fn [handler]
-     (this-as this
-       (let [^js target (cond->> element
-                                 (string? element)
-                                 (gobj/get this))]
-         (condp = kind
-           :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
-           :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive)))))))
-  ([kind element]
+  ([kind element] (general-interaction-handler kind element {}))
+  ([kind element {:keys [passive? remap-event]
+                  :or {passive? true}}]
    (fn [event-type handler]
      (this-as this
        (let [^js target (cond->> element
                                  (string? element)
-                                 (gobj/get this))]
+                                 (gobj/get this))
+             event-type (cond-> event-type
+                                remap-event (remap-event))]
          (condp = kind
-           :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
-           :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive))))))))
+           :listen (.addEventListener target event-type handler (if passive? (mdc-util/applyPassive) false))
+           :unlisten (.removeEventListener target event-type handler (if passive? (mdc-util/applyPassive) false))))))))
+
+(defn interaction-handler
+  "Returns a function which adds or removes an event handler of `event-type` to `element`.
+
+  `kind` may be `:listen` or `:unlisten`."
+  [kind element event-type]
+  (fn [handler]
+    (this-as this
+      (let [^js target (cond->> element
+                                (string? element)
+                                (gobj/get this))]
+        (condp = kind
+          :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
+          :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive)))))))
 
 (defn style-handler
   "Returns a function which adds the given CSS attribute-value pair to `element`"
@@ -176,8 +185,8 @@
    :removeClass                      (class-handler :remove)
    :hasClass                         #(this-as this
                                         (classes/has (gobj/get this "root") %))
-   :registerInteractionHandler       (interaction-handler :listen "root")
-   :deregisterInteractionHandler     (interaction-handler :unlisten "root")
+   :registerInteractionHandler       (general-interaction-handler :listen "root" nil)
+   :deregisterInteractionHandler     (general-interaction-handler :unlisten "root" nil)
    :registerDocumentKeydownHandler   (interaction-handler :listen Document "keydown")
    :deregisterDocumentKeydownHandler (interaction-handler :unlisten Document "keydown")
    :registerDocumentClickHandler     (interaction-handler :listen Document "click")

@@ -21,8 +21,8 @@
     {:root                         target
      :rippleTarget                 target
      :updateCssVariable            (mdc/style-handler target)
-     :registerInteractionHandler   (mdc/interaction-handler :listen "rippleTarget")
-     :deregisterInteractionHandler (mdc/interaction-handler :unlisten "rippleTarget")
+     :registerInteractionHandler   (mdc/general-interaction-handler :listen "rippleTarget")
+     :deregisterInteractionHandler (mdc/general-interaction-handler :unlisten "rippleTarget")
      :browserSupportsCssVars       #(supportsCssVariables mdc/Window)
      :isUnbounded                  #(dataset/has target "mdcRippleIsUnbounded")
      :isSurfaceActive              #(let [^js f (gobj/get target MatchesProperty)]
