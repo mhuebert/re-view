@@ -98,18 +98,16 @@
      (this-as this
        (let [^js target (cond->> element
                                  (string? element)
-                                 (gobj/get this))
-             event (mdc-util/remapEvent event-type)]
+                                 (gobj/get this))]
          (condp = kind
-           :listen (.addEventListener target event handler (mdc-util/applyPassive))
-           :unlisten (.removeEventListener target event handler (mdc-util/applyPassive)))))))
+           :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
+           :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive)))))))
   ([kind element]
    (fn [event-type handler]
      (this-as this
        (let [^js target (cond->> element
                                  (string? element)
-                                 (gobj/get this))
-             event-type (mdc-util/remapEvent event-type)]
+                                 (gobj/get this))]
          (condp = kind
            :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
            :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive))))))))
