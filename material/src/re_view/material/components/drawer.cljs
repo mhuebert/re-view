@@ -25,8 +25,6 @@
         ^js drawer (util/find-node root (fn [el] (classes/has el "mdc-temporary-drawer__drawer")))]
     (cond-> {:drawer                             drawer
              :hasNecessaryDom                    #(do drawer)
-             ;:registerInteractionHandler         #(.log js/console "i" %1 %2)
-             ;:deregisterInteractionHandler       #(.log js/console %1 %2)
              :registerDrawerInteractionHandler   (mdc/interaction-handler :listen "drawer")
              :deregisterDrawerInteractionHandler (mdc/interaction-handler :unlisten "drawer")
              :registerTransitionEndHandler       (mdc/interaction-handler :listen "drawer" (getCorrectEventName mdc/Window "transitionend"))
@@ -70,7 +68,7 @@
                                     (and prev-open? (not open?)) (.close this)))
    :view/will-unmount       #(do (mdc/destroy % TemporaryDrawerAdapter)
                                  (routing/unlisten (:route-listener @(:view/state %))))
-   :view/did-update         (mdc/mdc-style-update :TemporaryDrawer "drawer")
+   :view/did-update         (mdc/mdc-style-update :TemporaryDrawer :drawer)
    :foundation              (fn [this]
                               (let [^js foundation (gobj/get this "mdcTemporaryDrawer")]
                                 foundation))

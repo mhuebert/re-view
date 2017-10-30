@@ -41,7 +41,7 @@
                              (get-in element [1 :id])))
    :view/did-mount     #(mdc/init % RippleAdapter)
    :view/should-update #(do true)
-   :view/did-update    (mdc/mdc-style-update :Ripple "rippleTarget")
+   :view/did-update    (mdc/mdc-style-update :Ripple :rippleTarget)
    :view/will-unmount  #(mdc/destroy % RippleAdapter)}
   [{:keys [view/state]} hiccup-element]
   (update-attrs hiccup-element update :classes into (:mdc/Ripple-classes @state)))

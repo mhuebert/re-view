@@ -12,7 +12,7 @@
 
 (mdc/defadapter ToolbarAdapter
   foundation/default
-  [{:keys [with-content] :as component}]
+  [{:keys [with-content view/state] :as component}]
   (let [^js root (v/dom-node component)
         ^js toolbar-element (util/find-node root #(classes/has % "mdc-toolbar"))
         ^js first-row-element (util/find-node toolbar-element #(classes/has % "mdc-toolbar__row"))
@@ -20,13 +20,11 @@
         ^js parent-window (or (some-> root (gobj/get "ownerDocument") (gobj/get "defaultView"))
                               mdc/Window)
         ^js fixed-adjust-element (util/find-node root #(classes/has % "mdc-toolbar-fixed-adjust"))]
-    (js/console.log first-row-element)
     {:root                           toolbar-element
      :firstRowElement                first-row-element
      :titleElement                   title-element
      :registerScrollHandler          (mdc/interaction-handler :listen parent-window "scroll")
      :deregisterScrollHandler        (mdc/interaction-handler :unlisten parent-window "scroll")
-
      :registerResizeHandler          (mdc/interaction-handler :listen parent-window "resize")
      :deregisterResizeHandler        (mdc/interaction-handler :unlisten parent-window "resize")
      :getViewportWidth               #(.-innerWidth parent-window)
@@ -42,7 +40,7 @@
 
 
 (def update-toolbar-styles
-  (v/compseq (mdc/mdc-style-update :Toolbar)
+  (v/compseq (mdc/mdc-style-update :Toolbar :root)
              (mdc/mdc-style-update :Toolbar :titleElement)
              (mdc/mdc-style-update :Toolbar :flexibleRowElement)
              (mdc/mdc-style-update :Toolbar :fixedAdjustElement)))
@@ -68,7 +66,9 @@
                                       :doc  "If true, last child element will be rendered as sibling of Toolbar, with margin applied to adjust for fixed toolbar size."}}
    :spec/children     [:& :Element]
    :view/did-mount    (fn [this]
-                        (mdc/init this ToolbarAdapter))
+                        ;; free candy to the person who figures out why this only works after a delay
+                        (js/setTimeout #(when (v/mounted? this)
+                                          (mdc/init this ToolbarAdapter)) 500))
    :set-key-heights   (fn [^js this]
                         (.setKeyHeights_ ^js (.-mdcToolbar this)))
    :view/did-update   [(fn [{:keys [view/props
@@ -107,12 +107,6 @@
 
 (def ToolbarWithContent
   (v/partial Toolbar {:react-keys {:display-name "material/ToolbarWithContent"}} {:with-content true}))
-
-
-;(v/defelement [])
-;; defines element - parses hiccup immediately. not a function, so no arguments. (returns plain element.)
-
-
 
 (v/defview ToolbarSection
   "Toolbar section.

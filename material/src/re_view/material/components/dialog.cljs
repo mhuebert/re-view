@@ -44,8 +44,8 @@
    :spec/children      [:& :Element]
    :view/initial-state {:mdc/styles {}}
    :view/did-mount     [#(mdc/init % DialogAdapter)
-                        (mdc/mdc-style-update :Dialog)]
-   :view/did-update    (mdc/mdc-style-update :Dialog)
+                        (mdc/mdc-style-update :Dialog :root)]
+   :view/did-update    (mdc/mdc-style-update :Dialog :root)
    :view/will-unmount  #(mdc/destroy % DialogAdapter)
    :open               (fn [this]
                          (.open (gobj/get this "mdcDialog")))

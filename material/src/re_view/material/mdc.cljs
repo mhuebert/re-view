@@ -11,14 +11,25 @@
             [clojure.string :as string])
   (:require-macros re-view.material.mdc))
 
-(def browser? (exists? js/window))
-(def Document (when browser? js/document))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Environment
+;;
+
+(def ^js browser? (exists? js/window))
+(def ^js Document (when browser? js/document))
 (def ^js Body (when Document (.-body Document)))
-(def Window (when browser? js/window))
+(def ^js Window (when browser? js/window))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Functions to be called from a component's lifecycle methods
+;;
 
 (defn init
-  "Instantiate mdc foundations for a re-view component
-   (should be called in componentDidMount)."
+  "Initialize an adapter with a re-view component (should be called in componentDidMount).
+
+  Adapters are written to the component on a property of the form `mdc{ComponentName}`"
   [component & adapters]
   (doseq [{:keys [name adapter]} adapters]
     (let [foundation (adapter component)]
@@ -34,15 +45,54 @@
         (onDestroy))
       (.destroy foundation))))
 
-(defn current-target? [^js e]
-  (= (.-target e) (.-currentTarget e)))
 
-(defn wrap-log [msg f]
-  (fn [& args]
-    (prn msg)
-    (apply f args)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Handling of adapter state.
+;;
+;; Adapters are stored as plain javascript properties of re-view components.
+;; When an adapter initializes, it stores references to relevant DOM nodes to
+;; as properties on itself.
+;;
+;; State that changes while a component is mounted is stored in the component's
+;; `:view/state` atom.
+;;
+;; Property names and state keys should be predictably named after the official
+;; MDC component name and/or the name that a DOM node is given during `init`.
+;;
+
+
+(defn adapter
+  "Returns the adapter for `mdc-component-name` attached to `component`."
+  [component mdc-component-name]
+  (gobj/getValueByKeys component (str "mdc" (name mdc-component-name)) "adapter_"))
+
+(defn element
+  "Returns the element (stored in `init`) stored under `property-name`."
+  [adapter element-key]
+  (gobj/get adapter (name element-key)))
+
+(defn styles-key
+  "Returns keyword under which styles should be stored in state, given an element key"
+  [element-key]
+  (keyword "mdc" (str (name element-key) "-styles")))
+
+(defn classes-key
+  "Returns keyword under which classes should be stored in state, given an element key"
+  [element-key]
+  (keyword "mdc" (str (name element-key) "-classes")))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Adapter implementation helpers
+;;
 
 (defn interaction-handler
+  "Adds or removes an event handler of `event-type` to `element`.
+
+  `kind` may be `:listen` or `:unlisten`."
   ([kind element event-type]
    (fn [handler]
      (this-as this
@@ -57,44 +107,33 @@
    (fn [event-type handler]
      (this-as this
        (let [^js target (cond->> element
-                                         (string? element)
-                                         (gobj/get this))
+                                 (string? element)
+                                 (gobj/get this))
              event-type (mdc-util/remapEvent event-type)]
          (condp = kind
            :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
            :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive))))))))
 
-(defn adapter [component mdc-key]
-  (gobj/getValueByKeys component (str "mdc" (name mdc-key)) "adapter_"))
-
-(defn element [adapter k]
-  (gobj/get adapter (name k)))
-
-(defn styles-key
-  "Returns keyword under which styles should be stored in state, given an element key"
-  [element-key]
-  (keyword "mdc" (str (some-> element-key (name) (str "-")) "styles")))
-
-(defn classes-key
-  "Returns keyword under which classes should be stored in state, given an element key"
-  [element-key]
-  (keyword "mdc" (str (some-> element-key (name) (str "-")) "classes")))
-
 (defn style-handler
+  "Returns a function which adds the given CSS attribute-value pair to `element`"
   [element]
-  (fn [attr val]
-    (util/add-styles element {attr val})))
+  (fn [attribute value]
+    (util/add-styles element {attribute value})))
 
 (defn mdc-style-update
-  ([mdc-key]
-   (mdc-style-update mdc-key "root"))
-  ([mdc-key element-key]
-   (fn [{:keys [view/state
-                view/prev-state] :as this}]
+  "Returns a function which updates styles for the given component-name / element-key pair.
 
-     (let [target (element (adapter this mdc-key) element-key)
-           style-key (styles-key element-key)]
-       (util/add-styles target (get @state style-key) (get prev-state style-key))))))
+  Adapters follow a convention of keeping styles for a particular element under
+  a `:mdc/{element-key}-styles` key in the component's state.
+
+  Eg. (mdc-style-update :Ripple :root) will sync the styles stored under :mdc/Ripple-styles with
+  the element stored under the :root key in the adapter."
+  [mdc-component-name element-key]
+  (fn [{:keys [view/state
+               view/prev-state] :as this}]
+    (let [target (element (adapter this mdc-component-name) element-key)
+          style-key (styles-key element-key)]
+      (util/add-styles target (get @state style-key) (get prev-state style-key)))))
 
 #_(defn mdc-classes-update
     ([mdc-key]
@@ -107,14 +146,34 @@
              (classes/add target class)))))))
 
 (defn class-handler
-  ([action] (class-handler action nil))
+  "Adds or removes a class from the current adapter/component.
+
+  `prefix` may be specified when classes must be handled for more than one element
+  of a component.
+
+  javascript `this` is used to look up current component."
+  ([action]
+   (class-handler action nil))
   ([action prefix]
    (let [f (condp = action :add (fnil conj #{}) :remove (fnil disj #{}))]
      (fn [class-name]
        (this-as this
-         (swap! (aget this "state") update (keyword "mdc" (str (aget this "name") (some-> prefix (str "-")) "-classes")) f class-name))))))
+         (let [state-atom (aget this "state")
+               state-key (keyword "mdc"
+                                  (str (gobj/get this "name")
+                                       (some-> prefix (str "-"))
+                                       "-classes"))]
+           (swap! state-atom update state-key f class-name)))))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Adapter construction
+;;
 
 (def adapter-base
+  "Common adapter implementations which are used by multiple components."
   {:addClass                         (class-handler :add)
    :removeClass                      (class-handler :remove)
    :hasClass                         #(this-as this
@@ -129,8 +188,8 @@
                                         (let [^js root (gobj/get this "root")
                                               ^js styles (js/getComputedStyle root)]
                                           (= "rtl" (.getPropertyValue styles "direction"))))
-   :addBodyClass                     #(classes/add (gobj/get Document "body") %)
-   :removeBodyClass                  #(classes/remove (gobj/get Document "body") %)})
+   :addBodyClass                     #(classes/add Body %)
+   :removeBodyClass                  #(classes/remove Body %)})
 
 (defn bind-adapter
   "Return methods that bind an adapter to a specific component instance"
@@ -138,7 +197,7 @@
   (let [root-node (v/dom-node this)]
     {:root        root-node
      :nativeInput (util/find-tag root-node #"INPUT|TEXTAREA")
-     :state       (get this :view/state)
+     :state       state
      :component   this}))
 
 (defn make-foundation
@@ -151,10 +210,14 @@
                                    {:name name})
                             (clj->js)))))
 
-(defn log-ret [msg x]
-  (.log js/console msg x)
-  x)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; View Specs
+;;
+;; See: https://re-view.io/docs/re-view/view-specs
+;;
 
 (s/defspecs {::color         {:spec #{:primary :accent}
                               :doc  "Specifies color variable from theme."}

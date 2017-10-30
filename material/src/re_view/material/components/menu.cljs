@@ -93,8 +93,8 @@
    :view/did-mount    (fn [this] (mdc/init this SimpleMenuAdapter))
    :view/will-unmount (fn [this] (mdc/destroy this SimpleMenuAdapter))
    :open              (fn [this] (.open (gobj/get this "mdcSimpleMenu")))
-   :view/did-update   [(mdc/mdc-style-update :SimpleMenu "menuItemContainer")
-                       (mdc/mdc-style-update :SimpleMenu)]}
+   :view/did-update   [(mdc/mdc-style-update :SimpleMenu :menuItemContainer)
+                       (mdc/mdc-style-update :SimpleMenu :root)]}
   [{:keys [view/state view/props classes open-from] :as this} & items]
   [:.mdc-simple-menu (merge (v/pass-props this)
                             {:tab-index -1

@@ -44,7 +44,7 @@
                        :align-end  :Boolean}
    :view/did-mount    #(mdc/init % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
    :view/will-unmount #(mdc/destroy % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
-   :view/did-update   (mdc/mdc-style-update :Ripple)}
+   :view/did-update   (mdc/mdc-style-update :Ripple :root)}
   [{:keys [id name label view/props view/state
            dense
            label-class
