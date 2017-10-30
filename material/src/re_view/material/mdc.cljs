@@ -123,10 +123,14 @@
 (defn element [adapter k]
   (gobj/get adapter (name k)))
 
-(defn styles-key [element-key]
+(defn styles-key
+  "Returns keyword under which styles should be stored in state, given an element key"
+  [element-key]
   (keyword "mdc" (str (some-> element-key (name) (str "-")) "styles")))
 
-(defn classes-key [element-key]
+(defn classes-key
+  "Returns keyword under which classes should be stored in state, given an element key"
+  [element-key]
   (keyword "mdc" (str (some-> element-key (name) (str "-")) "classes")))
 
 (defn style-handler

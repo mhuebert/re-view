@@ -1,17 +1,24 @@
 # Re-Frame Simple
 
-[alpha]
+Lightweight syntax for `re-frame`.
 
-A light, beginner-friendly syntax built for `re-frame`.
+Goals:
+
+1. No boilerplate: eliminate tedious, repetitive code.
+2. Fewer invented names: no need to assign names to operations which are adequately described by the structure of your data + functions that operate on it.
+
+(Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
 
 #### Quick intro
 
-To read data:
+To read data from your re-frame db:
 
 ```
 (db/get :a)
 (db/get-in [:a :b])
 ```
+
+These are backed by subscriptions, which update reactively in a Reagent component or reaction. For more improved performance as your db grows, `get-in` uses an intermediate subscription for each segment of the path.
 
 To write data:
 
@@ -23,13 +30,9 @@ To write data:
 (db/update-in! [:counters :a] inc)
 ```
 
-These functions:
+These map to a coherent set of re-frame events based on core Clojure functions.
 
-1. map to a coherent set of re-frame operations based on Clojure core functions, 
-2. provide reactivity that 'just works' (no need for manual subscriptions), and
-3. don't get in your way if you want to go into more advanced stuff.
-
-Using a tool like re-frame-trace, we can still see a meaningful log of operations performed:
+Using a tool like re-frame-trace, we can see a meaningful log of operations performed:
 
 ![](https://i.imgur.com/vAuRHwo.png)
 
@@ -39,15 +42,11 @@ Using a tool like re-frame-trace, we can still see a meaningful log of operation
 
 ### Motivation and Approach
 
-Learning `re-frame` involves wrapping one's head around many new words and concepts. However, the basic thing it does is quite simple and shouldn't be hard to get started with. `re-frame-simple` is a light syntax on top of `re-frame` which feels more like ordinary Clojure. It makes getting started and prototyping easier, without preventing you from using lower-level constructs where desired. 
+`re-frame-simple` is a light syntax on top of `re-frame` which introduces fewer words and concepts, and feels more like ordinary Clojure.
 
-Our approach:
+At a minimum, this syntax could be useful for beginners and for quick prototyping; I have used similar syntax for large systems and been very satisfied with the result. Using paths into data and plain functions as 'identifiers' for transactions means that whether your system remains legible depends on the _structure_ of your data and the _functions_ you define to manipulate it, rather than names you invent to represent events and queries.
 
-1. read and write using ordinary Clojure operations
-2. reactivity should 'just work'
-3. more advanced state management is **opt-in** (eg. named queries and updates, coeffects)
-
-(Syntax is roughly derived from [re-view](https://www.re-view.io) and its associated re-db library.)
+`re-frame-simple` is a library, not a fork. it can be used in conjunction with existing `re-frame` code and should never get in your way. Whenever you want to do something more 'advanced', you can dive down and use lower-level re-frame tools.
 
 ### Example project
 
@@ -60,7 +59,7 @@ I have set up an example project which includes **re-frame-trace** so that you c
 
 Add the dependency (`boot` or `project.clj`):
 
-`[re-view/re-frame-simple "0.1.2"]`
+`[re-view/re-frame-simple "0.1.3"]`
 
 Require the namespace:
 
@@ -99,8 +98,7 @@ Write using `assoc!`, `update!`, `assoc-in!`, `update-in!`:
 
 These functions map to re-frame **event handlers** which mutate the current state of the world (the db). They end in `!` as a reminder that you're mutating the world.
 
-Also available are some operations for the whole db (rather than at a particular
-key or path). We'll use these less often, as it's easier to understand, inspect, and debug your app when operations are scoped to specific paths.
+Also available are some operations for the whole db (rather than at a particular key or path). We'll use these less often, as it's easier to understand, inspect, and debug your app when operations are scoped to specific paths.
 
 ```clj
 
@@ -119,12 +117,8 @@ Here is a counter widget which uses `get-in` and `update-in` to read and write a
   "Render an interactive counter for `id`"
   [id]
                    ;; NOTICE: `db/update-in!` to write
-  [:div {:on-click #(db/update-in! [::counters id] inc)
-         :style    {:padding    20
-                    :margin     "10px 0"
-                    :background "rgba(0,0,0,0.05)"
-                    :cursor     "pointer"}}
-   (str "Counter " (name id) ": ")
+  [:div {:on-click #(db/update-in! [::counters id] inc)}
+   (str "Counter " id ": ")
 
    ;; NOTICE: `db/get-in` to read
    (db/get-in [::counters id])])
@@ -187,3 +181,6 @@ Usage:
 ### Wrapping up
 
 I hope you've found this helpful or interesting. Feedback is welcome!
+
+
+
