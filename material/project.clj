@@ -1,4 +1,4 @@
-(defproject re-view/material "0.2.0-SNAPSHOT"
+(defproject re-view/material "0.2.0"
 
   :description "Material design components in re-view"
 
