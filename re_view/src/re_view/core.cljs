@@ -43,7 +43,7 @@
   [f]
   (fn []
     (this-as this
-      (let [re$view       (gobj/get this "re$view")
+      (let [re$view (gobj/get this "re$view")
             {:keys [patterns value]} (patterns/capture-patterns (apply f this (:view/children @re$view)))
 
             prev-patterns (:view/re-db.patterns @re$view)]
@@ -141,9 +141,9 @@
   (add-watch state component (fn [_ _ old-state new-state]
                                (when (not= old-state new-state)
                                  (vswap! (gobj/get component "re$view") assoc :view/prev-state old-state)
-                                 (when-let [^js/Function will-receive (gobj/get component "componentWillReceiveState")]
+                                 (when-let [^js will-receive (gobj/get component "componentWillReceiveState")]
                                    (.call will-receive component))
-                                 (when (and *trigger-state-render* (if-let [^js/Function should-update (gobj/get component "shouldComponentUpdate")]
+                                 (when (and *trigger-state-render* (if-let [^js should-update (gobj/get component "shouldComponentUpdate")]
                                                                      (.call should-update component)
                                                                      true))
                                    (force-update component)))))
@@ -174,15 +174,15 @@
 (defn- lifecycle-methods
   "Augment lifecycle methods with default behaviour."
   [methods]
-  (->> (collect [{:view/will-receive-props (fn [this props]
+  (->> (collect [{:view/will-receive-props (fn [this incoming-prop-obj]
                                              ;; when a component receives new props, update internal state.
-                                             (let [{prev-props :view/props prev-children :view/children :as this} this]
-                                               (let [next-props (aget props "props")]
+                                             (let [{prev-props :view/props prev-children :view/children} this]
+                                               (let [next-props (aget incoming-prop-obj "props")]
                                                  (vswap! (gobj/get this "re$view")
                                                          assoc
                                                          :view/props next-props
                                                          :view/prev-props prev-props
-                                                         :view/children (aget props "children")
+                                                         :view/children (aget incoming-prop-obj "children")
                                                          :view/prev-children prev-children))))
                   :view/should-update      (fn [{:keys [view/props
                                                         view/prev-props
@@ -218,7 +218,7 @@
   "Bind element methods and populate initial props for `component`."
   [component $props]
   (if $props
-    (let [props    (gobj/get $props "props")
+    (let [props (gobj/get $props "props")
           children (gobj/get $props "children")]
       (gobj/set component "re$view"
                 (volatile! (-> (gobj/get $props "class")
@@ -268,18 +268,18 @@
                                               (update :spec/props vspec/normalize-props-map)
                                               (update :spec/children vspec/resolve-spec-vector))
         class-react-key (gobj/get constructor "key")
-        display-name    (gobj/get constructor "displayName")]
+        display-name (gobj/get constructor "displayName")]
     (doto (fn [props & children]
             (let [[props children] (if (or (map? props)
                                            (nil? props)) [props children] [nil (cons props children)])
                   props (cond->> props defaults (merge defaults))
-                  key   (or (get props :key)
-                            (when class-react-key
-                              (cond (string? class-react-key) class-react-key
-                                    (keyword? class-react-key) (get props class-react-key)
-                                    (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
-                                    :else (throw (js/Error "Invalid key supplied to component"))))
-                            display-name)]
+                  key (or (get props :key)
+                          (when class-react-key
+                            (cond (string? class-react-key) class-react-key
+                                  (keyword? class-react-key) (get props class-react-key)
+                                  (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
+                                  :else (throw (js/Error "Invalid key supplied to component"))))
+                          display-name)]
 
               (when (true? INSTRUMENT!)
                 (vspec/validate-props display-name prop-spec props)
@@ -296,12 +296,12 @@
 (defn- ^:export class*
   [{:keys [lifecycle-keys
            react-keys] :as re-view-base}]
-  (let [prototype   (new react/Component)
-        _           (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+  (let [prototype (new react/Component)
+        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
         constructor (fn ReView [$props]
                       (this-as this
                         (init-component this $props)))
-        _           (gobj/set constructor "prototype" prototype)]
+        _ (gobj/set constructor "prototype" prototype)]
     (doseq [[k v] (seq react-keys)]
       (gobj/set constructor (v-util/camelCase k) v))
     (doto constructor

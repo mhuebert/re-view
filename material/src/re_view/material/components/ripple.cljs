@@ -4,7 +4,7 @@
             [re-view.util :refer [update-attrs]]
             [re-view.material.util :as util]
 
-            ["@material/ripple" :as ripple]
+            ["@material/ripple/foundation" :as foundation]
             ["@material/ripple/util" :refer [supportsCssVariables, getMatchesProperty]]
 
             [goog.dom.classes :as classes]
@@ -14,18 +14,18 @@
 (def MatchesProperty (when mdc/browser? (getMatchesProperty (.-prototype js/HTMLElement))))
 
 (mdc/defadapter RippleAdapter
-  ripple/MDCRippleFoundation
+  foundation/default
   [component]
-  (let [^js/Element target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
-                                                                       (classes/has % "mdc-ripple-target")))]
+  (let [^js target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
+                                                               (classes/has % "mdc-ripple-target")))]
     {:root                         target
      :rippleTarget                 target
-     :updateCssVariable            (mdc/style-handler :Ripple "rippleTarget")
+     :updateCssVariable            (mdc/style-handler target)
      :registerInteractionHandler   (mdc/interaction-handler :listen "rippleTarget")
      :deregisterInteractionHandler (mdc/interaction-handler :unlisten "rippleTarget")
      :browserSupportsCssVars       #(supportsCssVariables mdc/Window)
      :isUnbounded                  #(dataset/has target "mdcRippleIsUnbounded")
-     :isSurfaceActive              #(let [^js/Function f (gobj/get target MatchesProperty)]
+     :isSurfaceActive              #(let [^js f (gobj/get target MatchesProperty)]
                                       (.call f target ":active"))
      :registerResizeHandler        #(.addEventListener mdc/Window "resize" %)
      :deregisterResizeHandler      #(.removeEventListener mdc/Window "resize" %)

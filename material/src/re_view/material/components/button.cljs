@@ -54,3 +54,11 @@
        (when icon-end
          (cond-> (icons/style icon-end {:margin-left "0.5rem"})
                  dense (icons/size 20)))])))
+
+(defn Submit [label]
+  (Button
+    {:type  :raised
+     :color :primary
+     :class "w-100 f4 mv3 pv2"
+     :label label
+     :style {:height "auto"}}))

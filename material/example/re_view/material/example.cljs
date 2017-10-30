@@ -1,15 +1,8 @@
 (ns re-view.material.example
   (:require [re-view.core :as v :refer-macros [defview view]]
             [re-view.material.core :as ui]
-            [re-view.material.ext :as ui-ext]
-            [re-view.material.persisted.core :as ui-fire]
-            [re-view.material.util :as util]
             [re-view.hoc :as hoc]
             [re-view.example.helpers :as h :refer [atom-as]]
-            [clojure.string :as string]
-            [goog.dom :as gdom]
-            [goog.object :as gobj]
-            [re-view.hiccup.core :as hiccup]
             [re-view.material.icons :as icons]))
 
 (def examples-data
@@ -44,9 +37,7 @@
                                         :disabled  false
                                         :value     "enabled"
                                         :checked   false
-                                        :on-change #(swap! example-props assoc-in [0 :checked] (.. % -target -checked))
-
-                                        }])}
+                                        :on-change #(swap! example-props assoc-in [0 :checked] (.. % -target -checked))}])}
    {:component ui/Text
     :prop-atom (atom-as example-props [{:value                ""
                                         :on-change            #(swap! example-props assoc-in [0 :value] (.. % -target -value))
@@ -56,12 +47,13 @@
                                         :help-text-persistent false
                                         :hint                 "You can omit your middle name(s)"}])}
 
-   {:component ui/ToolbarWithContent
+   {:component ui/Toolbar
     :wrap      #(hoc/Frame {:height 350
-                          :class  "bg-light-blue"} %)
-    :prop-atom (atom [{:waterfall true
-                       :fixed     :lastrow-only
-                       :flexible  :default-behavior}
+                            :class  "bg-light-blue"} %)
+    :prop-atom (atom [{:waterfall    true
+                       :fixed        false
+                       :flexible     :default-behavior
+                       :with-content true}
                       (ui/ToolbarRow
                         (ui/ToolbarSection {:align :start}
                                            [:a.mr3 {:href "/"} icons/Menu]

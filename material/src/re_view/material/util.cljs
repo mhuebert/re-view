@@ -15,8 +15,8 @@
   ([target styles]
    (add-styles target styles {}))
   ([target styles prev-styles]
-   (when (or styles prev-styles)
-     (let [style (gobj/get target "style")]
+   (when (and target (or styles prev-styles))
+     (let [^js style (gobj/get target "style")]
        (doseq [attr (-> #{}
                         (into (keys styles))
                         (into (keys prev-styles)))]
@@ -50,17 +50,17 @@
                :when (ensure-str msg)]
            msg))))
 
-(defn find-node [^js/Element root p]
+(defn find-node [^js root p]
   (if (p root) root (gdom/findNode root p)))
 
-(defn find-tag [^js/Element root re]
-  (gdom/findNode root (fn [^js/Element el]
+(defn find-tag [^js root re]
+  (gdom/findNode root (fn [^js el]
                         (some->> (.-tagName el) (re-find re)))))
 
-(defn closest [^js/Element root p]
+(defn closest [^js root p]
   (if (p root) root (gdom/getAncestor root p)))
 
-(defn force-layout [^js/HTMLElement el]
+(defn force-layout [^js el]
   (.-offsetWidth el))
 
 (defview sync-element-css!

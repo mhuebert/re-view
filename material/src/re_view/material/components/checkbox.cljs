@@ -6,15 +6,16 @@
             [re-view.material.util :as util]
             [re-view.material.components.ripple :refer [Ripple]]
             [re-view.material.components.ripple :as ripple]
+            [re-view.material.components.form-field :refer [FormFieldAdapter]]
 
-            ["@material/checkbox" :as checkbox]
+            ["@material/checkbox/foundation" :as foundation]
             ["@material/animation" :refer [getCorrectEventName]]
 
             [goog.dom.classes :as classes]
             [goog.object :as gobj]))
 
 (mdc/defadapter CheckboxAdapter
-  checkbox/MDCCheckboxFoundation
+  foundation/default
   [component]
   {:root                          (util/find-node (v/dom-node component) #(classes/has "mdc-checkbox"))
    :registerAnimationEndHandler   (mdc/interaction-handler :listen "root" (getCorrectEventName mdc/Window "animationend"))
@@ -41,8 +42,8 @@
                                     ::mdc/id]
                        :checked    :Boolean
                        :align-end  :Boolean}
-   :view/did-mount    #(mdc/init % ripple/RippleAdapter CheckboxAdapter mdc/FormField)
-   :view/will-unmount #(mdc/destroy % ripple/RippleAdapter CheckboxAdapter mdc/FormField)
+   :view/did-mount    #(mdc/init % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
+   :view/will-unmount #(mdc/destroy % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
    :view/did-update   (mdc/mdc-style-update :Ripple)}
   [{:keys [id name label view/props view/state
            dense

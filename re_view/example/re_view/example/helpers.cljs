@@ -86,9 +86,8 @@
                          [:option {:value value
                                    :label (value-display-string value)}]))
        :String (string-editor {:id id :value v} set-val!)
-       :Boolean [:.pv2 (ui/Switch {:checked   v
+       :Boolean [:.pv2 (ui/Switch {:checked   (boolean v)
                                    :id        id
-
                                    :on-change #(set-val! (boolean (.. % -target -checked)))})]
        :Vector [:.ph2.relative
                 [:.absolute.top-0.left-0.di.b "["]
