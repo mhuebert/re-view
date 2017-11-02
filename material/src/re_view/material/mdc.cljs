@@ -32,7 +32,7 @@
   Adapters are written to the component on a property of the form `mdc{ComponentName}`"
   [component & adapters]
   (doseq [{:keys [name adapter]} adapters]
-    (let [foundation (adapter component)]
+    (let [^js foundation (adapter component)]
       (gobj/set component (str "mdc" name) foundation)
       (.init foundation))))
 
@@ -40,7 +40,7 @@
   "Destroy mdc foundation instances for component (should be called in componentWillUnmount)."
   [component & adapters]
   (doseq [{:keys [name]} adapters]
-    (let [foundation (gobj/get component (str "mdc" name))]
+    (let [^js foundation (gobj/get component (str "mdc" name))]
       (when-let [onDestroy (aget foundation "adapter_" "onDestroy")]
         (onDestroy))
       (.destroy foundation))))
