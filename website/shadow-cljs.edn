@@ -1,5 +1,6 @@
 {:dependencies [[org.clojure/core.match "0.3.0-alpha5"]
-                [re-db "0.1.13"]]
+                [re-db "0.1.13"]
+                [binaryage/devtools "0.9.7"]]
  :source-paths ["src"
                 "../re_db/src"
                 "../prosemirror/src"
@@ -16,4 +17,5 @@
                           :devtools         {:http-root    "public"
                                              :http-handler shadow.http.push-state/handle
                                              :http-port    8706
-                                             :after-load   app.core/render}}}}
+                                             :after-load   app.core/render
+                                             :preloads     [devtools.preload]}}}}
