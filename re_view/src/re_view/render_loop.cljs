@@ -34,7 +34,7 @@
   (vswap! to-run conj f)
   (request-render))
 
-(defn force-update-caught [this]
+(defn force-update-caught [^js this]
   (when-not (true? (aget this "unmounted"))
     (try (.forceUpdate this)
          (catch js/Error e

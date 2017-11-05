@@ -39,7 +39,7 @@
 
         (list? form)
         (reduce (fn [out el]
-                  (doto out (.push (-to-element el)))) #js [] form)
+                  (doto ^js out (.push (-to-element el)))) #js [] form)
 
         :else form))
 
