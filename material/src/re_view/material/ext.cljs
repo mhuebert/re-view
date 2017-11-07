@@ -4,6 +4,7 @@
             [re-view.material.util :as util]
             [re-view.util :as v-util]
             [goog.dom.classes :as classes]
+            [goog.events :as events]
             [goog.dom :as gdom]))
 
 
@@ -17,15 +18,17 @@
   [{:keys [view/props view/state component container-classes]} & args]
   (let [[trigger & items] (v-util/flatten-seqs args)]
     [:span
-     {:classes  container-classes
+     {:classes container-classes
 
       ;; use :ref to get DOM element of trigger.
-      :ref      #(when % (swap! state assoc :Trigger (gdom/getFirstElementChild %)))
-      :on-click (fn [e]
-                  (let [Trigger (:Trigger @state)]
-                    ;; check if click was on or inside trigger
-                    (when (util/closest (.-target e) #(= % Trigger))
-                      (.open (:Component @state)))))}
+      :ref     (fn [^js ref]
+                 (when (and ref (not (.-triggerListener ref)))
+                   (let [Trigger (gdom/getFirstElementChild ref)]
+                     (set! (.-triggerListener ref)
+                           (events/listen ref "click"
+                                          (fn [e]
+                                            (when (util/closest (.-target e) (partial = Trigger))
+                                              (.open (:Component @state)))) true)))))}
      trigger
      (apply component
             (-> props

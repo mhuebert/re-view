@@ -75,8 +75,8 @@
    :foundation              (fn [this]
                               (let [^js foundation (gobj/get this "mdcTemporaryDrawer")]
                                 foundation))
-   :open                    (fn [this] (.open (.foundation this)))
-   :close                   (fn [this] (.close (.foundation this)))
+   :open                    (fn [this] (.open ^js (.foundation this)))
+   :close                   (fn [this] (.close ^js (.foundation this)))
    :notifyOpen              (fn [{:keys [on-open]}] (when on-open (on-open)))
    :notifyClose             (fn [{:keys [on-close]}] (when on-close (on-close)))
    :spec/props              {:toolbar-spacer? :Boolean
