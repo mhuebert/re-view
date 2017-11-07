@@ -11,10 +11,10 @@
                                  :doc  "Adds modifier class to style start-detail elements as large, circular 'avatars'"}}
    :spec/children [:& :Element]}
   [{:keys [dense avatar-list] :as this} & items]
-  [:div (-> (v/pass-props this)
-            (update :classes into ["mdc-list"
-                                   (when dense "mdc-list--dense")
-                                   (when avatar-list "mdc-list--avatar-list")]))
+  [:ul (-> (v/pass-props this)
+           (update :classes into ["mdc-list"
+                                  (when dense "mdc-list--dense")
+                                  (when avatar-list "mdc-list--avatar-list")]))
    items])
 
 (v/defview ListItem
@@ -36,7 +36,7 @@
            view/props] :as this}]
   (when-let [dep (some #{:title :body :avatar} (set (keys props)))]
     (throw (js/Error. "Deprecated " dep "... title, body - primary/text-secondary, avatar - detail-start or detail-end")))
-  (let [el (if href :a :div)]
+  (let [el (if href :a :li)]
     (cond-> [el (-> (v/pass-props this)
                     (update :classes into ["mdc-list-item"
                                            (when ripple "mdc-ripple-target")])
@@ -52,8 +52,9 @@
              (some->> detail-end (conj [:.mdc-list-item__end-detail]))]
             ripple (Ripple))))
 
-(defn ListDivider []
-  [:.mdc-list-divider {:role "presentation"}])
+(defn ListDivider [& [{:keys [inset?]}]]
+  [:li.mdc-list-divider {:role  "presentation"
+                         :class (when inset? "mdc-list-divider--inset")}])
 
 (defn ListGroup [& content]
   (into [:.mdc-list-group] content))

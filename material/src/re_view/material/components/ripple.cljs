@@ -16,8 +16,9 @@
 (mdc/defadapter RippleAdapter
   foundation/default
   [component]
-  (let [^js target (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
-                                                               (classes/has % "mdc-ripple-target")))]
+  (let [^js target (or (util/find-node (v/dom-node component) #(or (classes/has % "mdc-ripple-surface")
+                                                                   (classes/has % "mdc-ripple-target")))
+                       (v/dom-node component))]
     {:root                         target
      :rippleTarget                 target
      :updateCssVariable            (mdc/style-handler target)

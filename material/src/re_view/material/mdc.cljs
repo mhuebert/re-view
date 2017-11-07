@@ -111,15 +111,17 @@
   "Returns a function which adds or removes an event handler of `event-type` to `element`.
 
   `kind` may be `:listen` or `:unlisten`."
-  [kind element event-type]
-  (fn [handler]
-    (this-as this
-      (let [^js target (cond->> element
-                                (string? element)
-                                (gobj/get this))]
-        (condp = kind
-          :listen (.addEventListener target event-type handler (mdc-util/applyPassive))
-          :unlisten (.removeEventListener target event-type handler (mdc-util/applyPassive)))))))
+  ([kind element event-type] (interaction-handler kind element event-type {}))
+  ([kind element event-type {:keys [passive?]
+                             :or {passive? true}}]
+   (fn [handler]
+     (this-as this
+       (let [^js target (cond->> element
+                                 (string? element)
+                                 (gobj/get this))]
+         (condp = kind
+           :listen (.addEventListener target event-type handler (if passive? (mdc-util/applyPassive) false))
+           :unlisten (.removeEventListener target event-type handler (if passive? (mdc-util/applyPassive) false))))))))
 
 (defn style-handler
   "Returns a function which adds the given CSS attribute-value pair to `element`"
