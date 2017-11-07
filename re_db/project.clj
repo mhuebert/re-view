@@ -24,14 +24,14 @@
                         :compiler     {:main                 app.core
                                        :parallel-build       true
                                        :asset-path           "/js/compiled/out"
-                                       :output-to            "resources/public/js/compiled/outliner.js"
-                                       :output-dir           "resources/public/js/compiled/out"
+                                       :output-to            "public/js/compiled/outliner.js"
+                                       :output-dir           "public/js/compiled/out"
                                        :source-map-timestamp true
                                        :cache-analysis       true}}
                        {:id           "test"
                         :source-paths ["src" "test"]
-                        :compiler     {:output-to      "resources/public/js/test.js"
-                                       :output-dir     "resources/public/js/test"
+                        :compiler     {:output-to      "public/js/test.js"
+                                       :output-dir     "public/js/test"
                                        :main           re-db.runner
                                        :optimizations  :none
-                                       :source-map-dir "resources/public/js/"}}]})
+                                       :source-map-dir "public/js/"}}]})
