@@ -1,7 +1,4 @@
-(ns re-view.re-frame-simple
-  (:require [re-view.util :refer [parse-opt-args]]))
-
-(defmacro defview [])
+(ns re-view.re-frame-simple)
 
 (defmacro defupdate
   "Registers an event handler with re-frame which updates the db."
