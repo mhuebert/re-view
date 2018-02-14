@@ -7,9 +7,9 @@
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.946"  :scope "provided"]
-                 [re-frame "0.10.2"]]
+  :dependencies [[org.clojure/clojure "1.8.0" :scope "provided"]
+                 [org.clojure/clojurescript "1.9.946" :scope "provided"]
+                 [re-frame "0.10.2" :scope "provided"]]
 
   :source-paths ["src"]
 

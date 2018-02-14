@@ -1,5 +1,5 @@
 (ns re-view.hiccup.hiccup
-  (:require [clojure.string :as string]
+  (:require [clojure.string :as str]
             ["react" :as react]))
 
 (defn parse-key
@@ -7,9 +7,9 @@
    If tag-name is ommitted, defaults to 'div'. Class names are padded with spaces."
   [x]
   (-> (re-find #":([^#.]*)(?:#([^.]+))?(.*)?" (str x))
-      (update 1 #(if (= "" %) "div" (string/replace % "/" ":")))
+      (update 1 #(if (= "" %) "div" (str/replace % "/" ":")))
       (update 3 #(when %
-                   (string/replace (subs % 1) "." " ")))))
+                   (str/replace (subs % 1) "." " ")))))
 
 ;; parse-key is an ideal target for memoization, because keyword forms are
 ;; frequently reused (eg. in lists) and almost never generated dynamically.
@@ -35,7 +35,7 @@
           :else [{} (subvec form 1 len)])))
 
 (defn ^string camelCase [s]
-  (string/replace s #"-([a-z])" (fn [[_ s]] (string/upper-case s))))
+  (str/replace s #"-([a-z])" (fn [[_ s]] (str/upper-case s))))
 
 (defn ^boolean camelCase?
   "CamelCase by default, only exceptions are data- and aria- attributes."
@@ -59,14 +59,33 @@
       (aset style-js (camelCase (name k)) v))
     style-js))
 
-(defn concat-classes
+(defn parse-class [class]
+  (cond (string? class)
+        class
+        (keyword? class)
+        (name class)
+        (nil? class)
+        nil
+        (vector? class)
+        (str/join "-" class)
+        :else (do (js/console.warn (str "Unrecognized class: " class))
+                  nil)))
+
+(defn merge-classes
   "Build className from keyword classes, :class and :classes."
+  ;; TODO
+  ;; benchmark different ways of merging strings.
+  ;; eg. use a clojure StringBuilder,
+  ;;     transient vs. ordinary vector
   [^js/String k-classes ^js/String class classes]
-  (->> (cond-> []
-               k-classes (conj k-classes)
-               class (conj class)
-               classes (into classes))
-       (string/join " ")))
+  (->> (reduce
+        (fn [out class]
+          (cond-> out
+                  class (conj! out (parse-class class))))
+        (transient [k-classes class])
+        classes)
+       (persistent!)
+       (str/join " ")))
 
 (def ^:dynamic *wrap-props* nil)
 
@@ -80,7 +99,7 @@
                                                                (*wrap-props* tag))
           prop-js (cond-> (js-obj)
                           k-id (doto (aset "id" k-id))
-                          (or k-classes class class-name classes) (doto (aset "className" (concat-classes k-classes (or class class-name) classes))))]
+                          (or k-classes class class-name classes) (doto (aset "className" (merge-classes k-classes (or class class-name) classes))))]
       (doseq [[k v] props]
         (cond
           ;; convert :style and :dangerouslySetInnerHTML to js objects
