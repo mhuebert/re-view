@@ -5,7 +5,7 @@
 
 ## API
 
-**`re-view-routing.core/listen`** calls a listener function when the browser's location changes. The listener is passed a location map consisting of the route's `:path` (string), `:segments` (vector), and `:query` (map). Options may be passed in the second parameter:
+**`re-view.routing/listen`** calls a listener function when the browser's location changes. The listener is passed a location map consisting of the route's `:path` (string), `:segments` (vector), and `:query` (map). Options may be passed in the second parameter:
 
 - `:intercept-clicks?` (boolean, `true`): For _click_ events on local links, prevent page reload & use history navigation instead.
 - `:fire-now?` (boolean, `true`): in addition to listening for changes, fire callback immediately with current parsed route. Useful for populating app state before the initial render.
@@ -19,7 +19,7 @@ Create a listener that writes the current location to `re-db`. Views that read t
     
 ```clj 
 (ns my-app.core 
-  (:require [re-view-routing.core :as routing]
+  (:require [re-view.routing :as routing]
             [re-view.core :as v :refer [defview]]
             [re-db.d :as d]))
 
