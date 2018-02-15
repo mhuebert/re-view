@@ -22,7 +22,7 @@ In more detail:
 ## Source Code
 
 - [Re-View](https://www.github.com/braintripping/re-view)
-- [Re-DB](https://www.github.com/braintripping/re-db)
+- [Re-DB](https://github.com/braintripping/re-view/tree/master/re_db)
 
 ## Components
 
