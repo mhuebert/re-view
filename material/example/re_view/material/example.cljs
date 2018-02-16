@@ -11,6 +11,13 @@
                        :raised true
                        :label  "Button"
                        :color  :accent}])}
+
+   {:component ui/Slider
+    :prop-atom (atom [{:value 15
+                       :min 0
+                       :max 100
+                       :step 1}])}
+
    {:component ui/Checkbox
     :prop-atom (atom-as example-props [{:id        "checkbox"
                                         :checked   false
