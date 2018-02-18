@@ -48,6 +48,8 @@ When called, views return React elements that can be rendered to the page using 
 (v/render-to-dom (greeting) "some-element-id")
 ```
 
+### State
+
 Every component is assigned an atom, under the key `:view/state` on the component. This is for local state.
 
 > React components are upgraded to behave kind of like Clojure maps: we can  `get` internal data by using keywords on the component itself, eg. `(:view/state this)`. 
@@ -60,6 +62,8 @@ Every component is assigned an atom, under the key `:view/state` on the componen
 ```
 
 When a component's state atom changes, the component is re-rendered -- exactly like `setState` in React.
+
+### Props
 
 If you pass a Clojure map as the first argument to a view, it is considered the component's 'props'.
 
@@ -85,16 +89,19 @@ You can `get` props by key directly on the component, eg. `(:name this)`.
 >   [:div "Hello, " name ])
 > ```
 
-You can get the props map itself via the `:view/props` key, eg. `(:view/props this)`. Other keys are also available:
+### Component keys
 
-| Key                 | Description                                        |
-|---------------------|----------------------------------------------------|
-| :view/props         | the props map passed to the component              |
-| :view/state         | the component's state atom (created on-demand)     |
-| :view/children      | list of children passed to the component           |
-| :view/prev-props    | value of props map during previous lifecycle       |
-| :view/prev-state    | value of state atom during previous lifecycle      |
-| :view/prev-children | value of `children` list during previous lifecycle |
+You can get the props map of a component via the `:view/props` key, eg. `(:view/props this)`. Other keys are also available:
+
+| Key                 | Description                                              |
+|---------------------|----------------------------------------------------------|
+| :view/props         | the props map passed to the component                    |
+| :view/state         | the component's state atom (created on-demand)           |
+| :view/children      | list of children passed to the component                 |
+| :view/prev-props    | value of props map during previous lifecycle             |
+| :view/prev-state    | value of state atom during previous lifecycle            |
+| :view/prev-children | value of `children` list during previous lifecycle       |
+| other keys          | looked up directly in the component's `:view/props` map. |
 
 React [lifecycle methods](/docs/re-view/getting-started#__lifecycle-methods) can be included in a map before the argument list.
 
