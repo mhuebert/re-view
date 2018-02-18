@@ -5,7 +5,7 @@ _Re-View_ is a beginner-friendly, production-strength library for building [Reac
 - Readable code
 - Precise and transparent reactivity/dataflow
 - Convenient access to React lifecycle methods - do not try to hide the React component model
-- A smooth 'upgrade continuum': simple components are extremely simple to create, while 'advanced' components are created by progressively adding information to simple components (no need to switch paradigms along the way)
+- A smooth upgrade curve: simple components are extremely easy to create, and become 'advanced' by progressively adding information along the way (no need to switch between different 'modes' or 'forms').
 
 ## Motivation
 
