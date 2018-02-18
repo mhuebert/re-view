@@ -18,7 +18,7 @@ It is normal to use just one re-db namespace, `re-db.d`, for reads and writes th
 
 ```clj
 (ns my-app.core
-  (:require [re-db.d :as d))
+  (:require [re-db.d :as d]))
 ```
 
 ### Writing data
