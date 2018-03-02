@@ -132,8 +132,28 @@ Use `d/merge-schema!` to update indexes.
 Use `d/entity-ids` and `d/entities` to find entities which match a collection of predicates, each of which should be:
 
 1. An attribute-value **vector**, to match entities which contain the attribute-value pair. If the attribute is indexed, this will be very fast. Logs an attribute-value pattern read (:_av).
+
+```clj
+(d/entity-ids [[:name "Matt"]])
+;; or
+(d/entities [[:name "Matt"]])
+```
+
 2. A **keyword**, to match entities that contain the keyword. Logged as an attribute pattern read (:_a_).
+
+```clj
+(d/entity-ids [:name])
+;; or
+(d/entities [:name])
+```
+
 3. A **predicate function**, to match entities for which the predicate returns true.
+
+```clj
+(d/entity-ids [:name (fn [{:keys [name]}] (= name "Matt"))])
+;; or
+(d/entities [:name (fn [{:keys [name]}] (= name "Matt"))])
+```
 
 `d/entities` logs an entity pattern read (:e__) for every entity returned.
 
