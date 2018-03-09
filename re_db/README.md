@@ -28,11 +28,14 @@ To write data, pass a collection of transactions to `d/transact!`. There are two
 1. Map transactions are a succinct way to transact entire entities. A map __must__ have a `:db/id` attribute.
 
     ```clj
-    {:db/id 1 :name "Matt"}
+    {:db/id 1 
+     :name "Matt"}
 
     ;; usage
 
-    (d/transact! [{:db/id 1 :name "Matt"}])
+    (d/transact! [{:db/id 1 
+                   :name "Matt"
+                   :website "https://matt.is"}])
     ```
 
 2. Vector transactions allow more fine-grained control.
@@ -62,7 +65,7 @@ Read a single entity by passing its ID to `d/entity`.
 
 ```clj
 (d/entity 1)
-;; => {:db/id 1 :name "Matt"}
+;; => {:db/id 1, :name "Matt"}
 ```
 
 An entity pattern read (:e__) is logged.
@@ -74,7 +77,7 @@ Read an attribute by passing an ID and attribute to `d/get`.
 ;; => "Matt"
 ```
 
-An entity-attribute pattern read (:ea\_) is logged.
+An entity-attribute pattern read (`:ea_`) is logged.
 
 Read nested attributes via `d/get-in`.
 
@@ -82,7 +85,7 @@ Read nested attributes via `d/get-in`.
 (d/get-in 1 [:address :zip])
 ```
 
-An entity-attribute pattern read (:ea_) is logged.
+An entity-attribute pattern read (`:ea_`) is logged.
 
 ### Listening for changes
 
@@ -94,9 +97,6 @@ Use `d/listen` to be notified of changes to specific entities or patterns in the
     [attr val]           :_av                 attribute-value pattern
     attr                 :_a_                 attribute pattern
    
-
-
-
 Pass `d/listen` a map of the form `{<pattern> [<...values...>]}`, and a function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
 
 Examples:
