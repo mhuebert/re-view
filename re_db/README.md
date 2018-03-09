@@ -87,36 +87,35 @@ Read nested attributes via `d/get-in`.
 
 An entity-attribute pattern read (`:ea_`) is logged.
 
-### Listening for changes
+### Listening for changes in the db
 
-Use `d/listen` to be notified of changes to specific entities or patterns in the db. Five patterns are supported:
+Use `d/listen` to be notified when data which matches a pattern changes. Five patterns are supported:
 
-    Value Format         Pattern              Description
-    id                   :e__                 entity pattern
-    [id attr]            :ea_                 entity-attribute pattern
-    [attr val]           :_av                 attribute-value pattern
-    attr                 :_a_                 attribute pattern
+    Pattern Value        Pattern Key          What it matches
+    id                   :e__                 a single entity, by id
+    [id attr]            :ea_                 a specific entity-attribute pair
+    [attr val]           :_av                 a specific attribute-value pair
+    attr                 :_a_                 a specific attribute
    
-Pass `d/listen` a map of the form `{<pattern> [<...values...>]}`, and a function that should be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction.
+Pass `d/listen` a map of the form `{<pattern> [<...values...>]}` (see the above table for how values should be formatted for each pattern), along with a listener function to be called when data that matches one of the patterns has changed. A listener will be called at most once per transaction. 
 
 Examples:
-TODO: update examples to new syntax
 
 ```clj
 ;; entity
-(d/listen! [[1 nil nil]] #(println "The entity with id 1 was changed"))
+(d/listen! {:e__ [1]} #(println "The entity with id 1 was changed"))
 
 ;; entity-attribute
-(d/listen! [[1 :name nil]] #(println "The :name attribute of entity 1 was changed"))
+(d/listen! {:ea [[1 :name]]} #(println "The :name attribute of entity 1 was changed"))
 
 ;; attribute-value
-(d/listen! [[nil :name "Matt"]] #(println "The value 'Matt' has been removed or added to the :name attribute of an entity"))
+(d/listen! {:_av [[:name "Matt"]]} #(println "The value 'Matt' has been removed or added to the :name attribute of an entity"))
 
 ;; attribute
-(d/listen! [[nil :name nil]] #(println "A :name attribute has been changed"))
+(d/listen! {:_a_ [:name]} #(println "A :name attribute has been changed"))
 
-;; tx-log
-(d/listen! [:tx-log] #(println "The database has been changed"))
+;; call d/listen! with a single argument (listener function) to be notified on all changes
+(d/listen! #(println "The db has changed"))
 ```
 
 ### Indexes
