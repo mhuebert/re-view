@@ -1,5 +1,5 @@
 (ns re-view.hiccup.hiccup
-  (:require [clojure.string :as str]
+  (:require [clojure.string :as string]
             ["react" :as react]))
 
 (defn parse-key
@@ -7,9 +7,9 @@
    If tag-name is ommitted, defaults to 'div'. Class names are padded with spaces."
   [x]
   (-> (re-find #":([^#.]*)(?:#([^.]+))?(.*)?" (str x))
-      (update 1 #(if (= "" %) "div" (str/replace % "/" ":")))
+      (update 1 #(if (= "" %) "div" (string/replace % "/" ":")))
       (update 3 #(when %
-                   (str/replace (subs % 1) "." " ")))))
+                   (string/replace (subs % 1) "." " ")))))
 
 ;; parse-key is an ideal target for memoization, because keyword forms are
 ;; frequently reused (eg. in lists) and almost never generated dynamically.
@@ -34,13 +34,14 @@
                 (instance? PersistentHashMap first-child))) [(form 1) (if (> len 2) (subvec form 2 len) [])]
           :else [{} (subvec form 1 len)])))
 
-(defn ^string camelCase [s]
-  (str/replace s #"-([a-z])" (fn [[_ s]] (str/upper-case s))))
+(def camelCase
+  (memoize (fn [s]
+             (string/replace s #"-([a-z])" (fn [[_ s]] (string/upper-case s))))))
 
-(defn ^boolean camelCase?
+(def camelCase?
   "CamelCase by default, only exceptions are data- and aria- attributes."
-  [attr-name]
-  (not (re-find #"^(?:data\-|aria\-)" attr-name)))
+  (memoize (fn [attr-name]
+             (not (re-find #"^(?:data\-|aria\-)" attr-name)))))
 
 (defn key->react-attr
   "CamelCase react keys, except for aria- and data- attributes"
@@ -60,16 +61,13 @@
     style-js))
 
 (defn parse-class [class]
-  (cond (string? class)
-        class
-        (keyword? class)
-        (name class)
-        (nil? class)
-        nil
-        (vector? class)
-        (str/join "-" class)
-        :else (do (js/console.warn (str "Unrecognized class: " class))
-                  nil)))
+  (cond (string? class) class
+        (keyword? class) (name class)
+        (nil? class) nil
+        (vector? class) (string/join "-" class)
+        :else
+        (do (js/console.warn (str "Unrecognized class: " class))
+            nil)))
 
 (defn merge-classes
   "Build className from keyword classes, :class and :classes."
@@ -85,7 +83,7 @@
         (transient [k-classes class])
         classes)
        (persistent!)
-       (str/join " ")))
+       (string/join " ")))
 
 (def ^:dynamic *wrap-props* nil)
 

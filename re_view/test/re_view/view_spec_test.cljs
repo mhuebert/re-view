@@ -45,15 +45,15 @@
                                        :required     true
                                        :pass-through true
                                        :default      "y-value"}})
-           {:x              {:spec #{:primary :accent}
-                             :doc  "Specifies color variable from theme."}
-            :y              {:spec         fn?
-                             :spec-name    :Function
-                             :required     true
-                             :pass-through true
-                             :default      "y-value"}
-            :props/consumed [:x]
-            :props/required [:y]
+           {:x {:spec #{:primary :accent}
+                :doc "Specifies color variable from theme."}
+            :y {:spec fn?
+                :spec-name :Function
+                :required true
+                :pass-through true
+                :default "y-value"}
+            :props/consumed #{:x}
+            :props/keys-req #{:y}
             :props/defaults {:y "y-value"}}))
 
     (is (thrown? js/Error (s/validate-spec :x (s/resolve-spec :Function) "s")))

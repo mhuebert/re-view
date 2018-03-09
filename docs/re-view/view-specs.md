@@ -4,11 +4,11 @@ View specs are a way to add documentation and validation to components, inspired
 
 ## Benefits
 
-1. Documentation - Quickly identify how to use a view by looking at its spec.
+1. Documentation - components "explain how to use themselves" when props are declared, with optional per-prop docstrings.
 
-2. Debugging - Validate props and children passed to components to ensure correct usage and provide helpful error messages
+2. Debugging - Runtime validation of props and children to ensure correct usage and provide helpful error messages
 
-3. Productivity - Facilitate the pruning of props that are passed down to child components.
+3. Productivity - Efficient pruning of props that are passed down to child components.
 
 ## Usage
 
@@ -27,7 +27,7 @@ Above, we used the built-in `:String` spec. A spec may be any of the following:
    ```clj
    :Boolean :String :Number :Function :Map :Vector :Element :Hiccup :SVG :Object :Keyword
    ```
-2. A Clojure set:
+2. A set of permissible values:
     ```clj 
     {:spec/props {:flavour #{:vanilla :chocolate}}}
     ```
@@ -35,13 +35,15 @@ Above, we used the built-in `:String` spec. A spec may be any of the following:
     ```clj 
     {:spec/props {:age #(> % 13)}}
     ```
-3. A map containing a `:spec` key, which itself is a spec. (Specs are recursively resolved.)
+3. A map containing a `:spec` key, which itself is a spec, alongside additional options.
     ```clj 
     {:spec/props {:age {:spec #(> % 13)
                         :required true}}}
     ```
 
-With the map form, can add metadata. Let's add a docstring (`:doc`), and specify that the key is required (`:required`):
+### Spec options
+
+With the map form, we can add metadata like `:doc` and `:required`.
 
 ```clj
 (defview greeting
@@ -51,6 +53,14 @@ With the map form, can add metadata. Let's add a docstring (`:doc`), and specify
   [this]
   [:div (str "Hello, " (get this :name) ".")])
 ```
+
+| key | info |
+| --- | --- |
+| **:doc** (string) | docstring that describes what the prop is for, usage instructions, etc. |
+| **:required** (boolean) | key *must* be present |
+| **:pass-through** (boolean) | key will be passed on to child component (via `re-view.core/pass-props`)|
+
+### Defining specs
 
 For specs that we wish to re-use in multiple places, we call `defspecs` with a map of spec bindings:
 
@@ -65,14 +75,18 @@ Now we can use the `::label` spec:
 {:spec/props {:label ::label}}
 ```
 
-Above, we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a vector of registered specs, which will be paired with their equivalent non-namespaced prop keys:
+### Specifying keys
+
+Above, we've repeated ourselves, because the `::label` spec refers to the `:label` key in a props map. Under `:props/keys`, we can specify a set of registered specs, which will be paired with their equivalent non-namespaced prop keys:
 
 ```clj
-{:spec/props {:props/keys [::label]}}
+{:spec/props {:props/keys #{::label}}
 ;; means the component expects a `:label` prop, which conforms to the `::label` spec
 ```
 
-This is more concise. Remember, specs in `:props/keys` are matched to _unqualified_ keywords in props. `::label` matches `:label`, and so on.
+This is more concise.
+
+Specs in `:props/keys` are matched to _simple_ (non-namespaced) keywords in props. `::label` matches `:label`, and so on.
 
 Lastly, we can add `:spec/children` to spec the additional arguments passed to views. This should be a vector of specs, plus the special `:&` keyword, which behaves like the `&` in ordinary Clojure argument lists.
 
@@ -101,16 +115,8 @@ In the `:spec/props` map, we may include the special keys:
 
 | key | info |
 | --- | --- |
-| **:props/keys** | A vector of registered specs (keywords) |
-| **:props/required** | A vector of required prop keys |
-
-A spec can be the keyword of a registered spec, a function, a set, or a map. If it is a map, it must contain a `:spec` key (which is recursively resolved), and may also include:
-
-| key | info |
-| --- | --- |
-| **:doc** (string) | docstring that describes what the prop is for, usage instructions, etc. |
-| **:required** (boolean) | key *must* be present |
-| **:pass-through** (boolean) | key will be passed on to child component (via `re-view.core/pass-props`)|
+| **:props/keys** | A set of registered specs (keywords) of permissible props for the component |
+| **:props/keys-req** | A set of registered specs representing _required_ props for the component |
 
 **Why not just use Clojure Spec?**
 
@@ -120,4 +126,4 @@ While there are similarities between view specs and Clojure Spec, they do not so
 2. Documentation: Clojure Spec does not yet support docstrings.
 3. Ease of learning: We'd like view specs to be as simple to learn and use as React prop-types. Clojure Spec's great power comes at the cost of a steeper learning curve. 
 
-However, you can absolutely use Clojure Spec _in addition_ to view specs, for more inspection and testing during development.
+One can certainly use Clojure Spec _in addition_ to view specs, for more inspection and testing during development.

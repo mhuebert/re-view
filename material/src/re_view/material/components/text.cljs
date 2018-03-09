@@ -77,40 +77,43 @@
 
 (v/defview Text
   "Allow users to input, edit, and select text. [More](https://material.io/guidelines/components/text-fields.html)"
-  {:key                :name
-   :spec/props         {:props/keys           [::mdc/label ::mdc/dense ::mdc/auto-focus ::mdc/dirty]
-                        :floating-label       {:spec    :Boolean
-                                               :default true}
-                        :help-text-persistent :Boolean
-                        :multi-line           :Boolean
-                        :full-width           :Boolean
-                        :expandable           :Boolean
+  {:key :name
+   :spec/props {:props/keys #{::mdc/label
+                              ::mdc/dense
+                              ::mdc/auto-focus
+                              ::mdc/dirty}
+                :floating-label {:spec :Boolean
+                                 :default true}
+                :help-text-persistent :Boolean
+                :multi-line :Boolean
+                :full-width :Boolean
+                :expandable :Boolean
 
-                        :hint                 :String
-                        :error                :String
-                        :info                 :String
-                        :placeholder          {:spec         :String
-                                               :pass-through true}
+                :hint :String
+                :error :String
+                :info :String
+                :placeholder {:spec :String
+                              :pass-through true}
 
-                        :on-save              :Function
-                        :in-progress          :Boolean
-                        :input-styles         :Map
-                        :container-props      :Map
-                        :field-props          :Map
+                :on-save :Function
+                :in-progress :Boolean
+                :input-styles :Map
+                :container-props :Map
+                :field-props :Map
 
-                        :value                {:spec         ::mdc/value
-                                               :pass-through true}
-                        :default-value        {:spec         ::mdc/default-value
-                                               :pass-through true}}
-   :view/initial-state {:dirty                 false
+                :value {:spec ::mdc/value
+                        :pass-through true}
+                :default-value {:spec ::mdc/default-value
+                                :pass-through true}}
+   :view/initial-state {:dirty false
                         :mdc/Textfield-classes #{"mdc-textfield--upgraded"}
-                        :mdc/label-classes     #{"mdc-textfield__label"}
-                        :mdc/help-classes      #{"mdc-textfield-helptext"}}
-   :view/did-mount     (fn [this]
-                         (mdc/init this TextfieldAdapter))
-   :view/will-unmount  (fn [this]
-                         (mdc/destroy this TextfieldAdapter))
-   :reset              #(swap! (:view/state %) assoc :dirty false)}
+                        :mdc/label-classes #{"mdc-textfield__label"}
+                        :mdc/help-classes #{"mdc-textfield-helptext"}}
+   :view/did-mount (fn [this]
+                     (mdc/init this TextfieldAdapter))
+   :view/will-unmount (fn [this]
+                        (mdc/destroy this TextfieldAdapter))
+   :reset #(swap! (:view/state %) assoc :dirty false)}
   [{:keys [id
            label
            floating-label

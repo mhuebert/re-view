@@ -6,9 +6,9 @@
 
 (v/defview List
   "Presents multiple line items vertically as a single continuous element. [More](https://material.io/guidelines/components/lists.html)"
-  {:spec/props    {:props/keys  [::mdc/dense]
-                   :avatar-list {:spec :Boolean
-                                 :doc  "Adds modifier class to style start-detail elements as large, circular 'avatars'"}}
+  {:spec/props {:props/keys #{::mdc/dense}
+                :avatar-list {:spec :Boolean
+                              :doc "Adds modifier class to style start-detail elements as large, circular 'avatars'"}}
    :spec/children [:& :Element]}
   [{:keys [dense avatar-list] :as this} & items]
   [:ul (-> (v/pass-props this)
@@ -19,13 +19,13 @@
 
 (v/defview ListItem
   "Collections of list items present related content in a consistent format. [More](https://material.io/guidelines/components/lists.html#lists-behavior)"
-  {:key        (fn [{:keys [href text-primary]}] (or href text-primary))
-   :spec/props {:props/keys     [::mdc/ripple]
-                :text-primary   :Element
+  {:key (fn [{:keys [href text-primary]}] (or href text-primary))
+   :spec/props {:props/keys #{::mdc/ripple}
+                :text-primary :Element
                 :text-secondary :Element
-                :detail-start   :Element
-                :detail-end     :Element
-                :dense          :Boolean}}
+                :detail-start :Element
+                :detail-end :Element
+                :dense :Boolean}}
   [{:keys [text-primary
            text-secondary
            detail-start

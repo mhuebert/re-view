@@ -27,17 +27,13 @@
   (-> (reduce-kv (fn [m k v]
                    (assoc-in m [(case k (:key :display-name :docstring) :react-keys
                                         (case (namespace k)
-                                          "spec" :class-keys
+                                          "spec" :spec-keys
                                           "view" :lifecycle-keys
                                           :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
       ;; must use set! for the keys, otherwise they will
       ;; be modified in advanced compilation.
-      (update :instance-keys js-obj-with-set!)
-
-      ;; this won't last - currently building :view/default-props
-      ;; in the macro so there's no way to reuse specs.
-      ))
+      (update :instance-keys js-obj-with-set!)))
 
 (clojure.core/defn parse-view-args [args]
   (let [args (util/parse-opt-args [symbol? string? map?] args)]

@@ -7,16 +7,16 @@
 
 (v/defview Button
   "Communicates the action that will occur when the user touches it. [More](https://material.io/guidelines/components/buttons.html)"
-  {:key        :label
-   :spec/props {:props/keys [::mdc/color
-                             ::mdc/compact
-                             ::mdc/dense
-                             ::mdc/disabled
-                             ::mdc/label
-                             ::mdc/raised
-                             ::mdc/ripple]
-                :icon       :SVG
-                :icon-end   :SVG}}
+  {:key :label
+   :spec/props {:props/keys #{::mdc/color
+                              ::mdc/compact
+                              ::mdc/dense
+                              ::mdc/disabled
+                              ::mdc/label
+                              ::mdc/raised
+                              ::mdc/ripple}
+                :icon :SVG
+                :icon-end :SVG}}
   [{:keys [href
            label
            icon

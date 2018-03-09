@@ -36,40 +36,39 @@
   [props tag]
   (cond-> props
           (and (contains? props :on-change)
-               (#{"input" "textarea"} tag)) (update :on-change render-loop/apply-sync!)))
+               (or (identical? "input" tag)
+                   (identical? "textarea" tag))) (update :on-change render-loop/apply-sync!)))
 
 (defn reactive-render
   "Wrap a render function to force-update the component when re-db patterns accessed during evaluation are invalidated."
   [f]
   (fn []
-    (this-as this
-      (let [re$view (gobj/get this "re$view")
-            {:keys [patterns value]} (patterns/capture-patterns (apply f this (:view/children @re$view)))
+    (this-as ^js this
+      (let [{:keys [patterns value]} (patterns/capture-patterns (apply f this (.-re$children this)))
 
-            prev-patterns (:view/re-db.patterns @re$view)]
+            prev-patterns (.-re$dbPatterns this)]
         (when-not (= prev-patterns patterns)
-          (when-let [un-sub (gobj/get this "reactiveUnsubscribe")] (un-sub))
-
-          (gobj/set this "reactiveUnsubscribe" (when-not (empty? patterns)
-                                                 (d/listen patterns #(force-update this))))
-          (vswap! re$view assoc :view/re-db.patterns patterns))
+          (when-let [un-sub (.-reactiveUnsubscribe this)] (un-sub))
+          (set! (.-reactiveUnsubscribe this) (when-not (empty? patterns)
+                                               (d/listen patterns #(force-update this))))
+          (set! (.-re$dbPatterns this) patterns))
         value))))
 
 (def ^:private kmap
   "Mapping of methods-map keys to React lifecycle keys."
-  {:constructor             "constructor"
-   :view/initial-state      "$initialState"
-   :view/state              "$state"
-   :view/did-catch          "componentDidCatch"
-   :view/will-mount         "componentWillMount"
-   :view/did-mount          "componentDidMount"
+  {:constructor "constructor"
+   :view/initial-state "$initialState"
+   :view/state "$state"
+   :view/did-catch "componentDidCatch"
+   :view/will-mount "componentWillMount"
+   :view/did-mount "componentDidMount"
    :view/will-receive-props "componentWillReceiveProps"
    :view/will-receive-state "componentWillReceiveState"
-   :view/should-update      "shouldComponentUpdate"
-   :view/will-update        "componentWillUpdate"
-   :view/did-update         "componentDidUpdate"
-   :view/will-unmount       "componentWillUnmount"
-   :view/render             "render"})
+   :view/should-update "shouldComponentUpdate"
+   :view/will-update "componentWillUpdate"
+   :view/did-update "componentDidUpdate"
+   :view/will-unmount "componentWillUnmount"
+   :view/render "render"})
 
 (defn compseq
   "Compose fns to execute sequentially over the same arguments"
@@ -88,17 +87,12 @@
                                                          (last fns)
                                                          (apply compseq fns))))) methods methods)))
 
-(defn finish-lifecycle [this]
+(defn finish-lifecycle [^js this]
   "after update, update prev-props and prev-state"
-  (let [re$view (aget this "re$view")
-        {prev-props :view/props
-         state      :view/state
-         children   :view/children} @re$view]
-    (vreset! re$view
-             (cond-> (assoc @re$view
-                       :view/prev-props prev-props
-                       :view/prev-children children)
-                     state (assoc :view/prev-state @state)))))
+  (set! (.-re$prevProps this) (.-re$props this))
+  (set! (.-re$prevChildren this) (.-re$children this))
+  (when-let [state (.-re$state this)]
+    (set! (.-re$prevState this) @state)))
 
 (defn- wrap-methods
   "Wrap a component's methods, binding arguments and specifying lifecycle update behaviour."
@@ -107,9 +101,9 @@
     f
     (case method-k
       (:view/initial-state
-        :view/state
-        :key
-        :constructor) f
+       :view/state
+       :key
+       :constructor) f
       :view/render (reactive-render f)
       :view/will-receive-props
       (fn [props]
@@ -117,18 +111,18 @@
           (this-as this
             (f this props))))
       (:view/will-mount
-        :view/will-unmount
-        :view/will-receive-state
-        :view/will-update)
+       :view/will-unmount
+       :view/will-receive-state
+       :view/will-update)
       (fn []
         (binding [*trigger-state-render* false]
           (this-as this
-            (apply f this (:view/children @(gobj/get this "re$view"))))))
+            (apply f this (.-re$children this)))))
       (:view/did-mount
-        :view/did-update)
+       :view/did-update)
       (fn []
         (this-as this
-          (apply f this (:view/children @(gobj/get this "re$view")))))
+          (apply f this (.-re$children this))))
       (fn [& args]
         (this-as this
           (apply f this args))))))
@@ -136,11 +130,13 @@
 (defn- init-state!
   "Bind a component to update whenever `state` changes.
   `state` can be any type which implements IWatchable and IDeref."
-  [component state]
-  (vswap! (gobj/get component "re$view") assoc :view/state state :view/prev-state @state)
+  [^js component state]
+  (set! (.-re$state component) state)
+  (set! (.-re$prevState component) @state)
+
   (add-watch state component (fn [_ _ old-state new-state]
                                (when (not= old-state new-state)
-                                 (vswap! (gobj/get component "re$view") assoc :view/prev-state old-state)
+                                 (set! (.-re$prevState component) old-state)
                                  (when-let [^js will-receive (gobj/get component "componentWillReceiveState")]
                                    (.call will-receive component))
                                  (when (and *trigger-state-render* (if-let [^js should-update (gobj/get component "shouldComponentUpdate")]
@@ -151,8 +147,8 @@
 
 (defn- ensure-state!
   "Lazily create and bind a state atom for `component`"
-  [component]
-  (when-not (contains? @(aget component "re$view") :view/state)
+  [^js component]
+  (when-not (.-re$state component)
     (init-state! component (atom nil))))
 
 (extend-protocol ILookup
@@ -160,50 +156,61 @@
   ;; directly on the component. this enables destructuring in lifecycle/render method arglist.
   react/Component
   (-lookup
-    ([this k]
-     (if (#{"view" "spec"} (namespace k))
-       (do (when (keyword-identical? k :view/state) (ensure-state! this))
-           (get @(gobj/get this "re$view") k))
-       (get-in @(gobj/get this "re$view") [:view/props k])))
+    ([^js this k]
+     ;; TODO (perf)
+     ;; - use direct comparisons instead of set operations
+     ;; - save props/state/children directly on the component instead of in a single map
+     (let [ns (namespace k)]
+       (cond (identical? ns "view")
+             (if (keyword-identical? k :view/state)
+               (do (ensure-state! this)
+                   (.-re$state this))
+               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+
+             (identical? ns "spec")
+             (get (.-re$spec this) k)
+
+             :else
+             (get (.-re$props this) k))))
     ([this k not-found]
-     (if (#{"view" "spec"} (namespace k))
-       (do (when (keyword-identical? k :view/state) (ensure-state! this))
-           (get @(gobj/get this "re$view") k))
-       (get-in @(gobj/get this "re$view") [:view/props k] not-found)))))
+     (let [ns (namespace k)]
+       (cond (identical? ns "view")
+             (if (keyword-identical? k :view/state)
+               (do (ensure-state! this)
+                   (.-re$state this))
+               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+
+             (identical? ns "spec")
+             (get (.-re$spec this) k)
+
+             :else
+             (get (.-re$props this) k not-found))))))
 
 (defn- lifecycle-methods
   "Augment lifecycle methods with default behaviour."
   [methods]
-  (->> (collect [{:view/will-receive-props (fn [this incoming-prop-obj]
+  (->> (collect [{:view/will-receive-props (fn [^js this ^js incoming-prop-obj]
                                              ;; when a component receives new props, update internal state.
-                                             (let [{prev-props :view/props prev-children :view/children} this]
-                                               (let [next-props (aget incoming-prop-obj "props")]
-                                                 (vswap! (gobj/get this "re$view")
-                                                         assoc
-                                                         :view/props next-props
-                                                         :view/prev-props prev-props
-                                                         :view/children (aget incoming-prop-obj "children")
-                                                         :view/prev-children prev-children))))
-                  :view/should-update      (fn [{:keys [view/props
-                                                        view/prev-props
-                                                        view/children
-                                                        view/prev-children
-                                                        view/state
-                                                        view/prev-state]}]
-                                             ;; default should-update behaviour compares props, children, and state.
-                                             (or (not= props prev-props)
-                                                 (not= children prev-children)
-                                                 (when-not (nil? state)
-                                                   (not= @state prev-state))))}
+                                             (set! (.-re$prevProps this) (.-re$props this))
+                                             (set! (.-re$props this) (.-props incoming-prop-obj))
+                                             (set! (.-re$prevChildren this) (.-re$children this))
+                                             (set! (.-re$children this) (.-children incoming-prop-obj)))
+                  :view/should-update (fn [this]
+                                        ;; default should-update behaviour compares props, children, and state.
+                                        (or (not= (.-re$props this) (.-re$prevProps this))
+                                            (not= (.-re$children this) (.-re$prevChildren this))
+                                            (when-let [state (.-re$state this)]
+                                              (not= @state (.-re$prevState this)))))}
                  methods
                  {:view/will-unmount (fn [{:keys [view/state] :as this}]
                                        ;; manually track unmount state, react doesn't do this anymore,
                                        ;; otherwise our async render loop can't tell if a component is still on the page.
                                        (gobj/set this "unmounted" true)
-                                       (when-let [un-sub (aget this "reactiveUnsubscribe")]
+
+                                       (when-let [un-sub (.-reactiveUnsubscribe this)]
                                          (un-sub))
                                        (some-> state (remove-watch this)))
-                  :view/did-update   finish-lifecycle}])
+                  :view/did-update finish-lifecycle}])
        (reduce-kv (fn [obj method-k method]
                     (doto obj
                       (gobj/set (get kmap method-k) (wrap-methods method-k method)))) #js {})))
@@ -216,65 +223,62 @@
 
 (defn- init-component
   "Bind element methods and populate initial props for `component`."
-  [component $props]
+  [component ^js $props]
   (if $props
-    (let [props (gobj/get $props "props")
-          children (gobj/get $props "children")]
-      (gobj/set component "re$view"
-                (volatile! (-> (gobj/get $props "class")
-                               (assoc :view/props (dissoc props :view/state)
-                                      :view/children children))))
-      (when-let [instance-keys (gobj/get $props "instance")]
+    (let [props (.-props $props)
+          children (.-children $props)]
+
+      (set! (.-re$spec component) (.-spec $props))
+      (set! (.-re$props component) (dissoc props :view/state))
+      (set! (.-re$children component) children)
+
+      (when-let [instance-keys (.-instance $props)]
         (doseq [k (gobj/getKeys instance-keys)]
           (let [f (gobj/get instance-keys k)]
             (gobj/set component k (if (fn? f) (fn [& args]
                                                 (apply f component args)) f)))))
       (when-let [state (or
-                         ;;;;;;;;;;;;;;;
-                         ;;
-                         ;; state can be provided in 1 of 3 ways, depends on whether you want to provide state
-                         ;; at time of component definition or element instantiation.
-                         ;;
-                         ;; 1. pass state as :view/state prop, when element is created:
-                         ;;    in this case it must be an atom-like thing that implements IWatchable/IDeref
+                        ;;;;;;;;;;;;;;;
+                        ;;
+                        ;; state can be provided in 1 of 3 ways, depends on whether you want to provide state
+                        ;; at time of component definition or element instantiation.
+                        ;;
+                        ;; 1. pass state as :view/state prop, when element is created.
+                        ;;    in this case it must be an atom-like thing that implements IWatchable/IDeref
 
-                         (get props :view/state)
+                        (get props :view/state)
 
-                         ;; 2. in the component's methods map, :view/initial-state can either be a static value or
-                         ;;    a function, which will be called w/ the component to return initial state.
-                         ;;    the initial value is wrapped in an atom.
+                        ;; 2. in the component's methods map, :view/initial-state can either be a static value or
+                        ;;    a function, which will be called w/ the component to return initial state.
+                        ;;    the initial value is wrapped in an atom.
 
-                         (when-let [initial-state (gobj/get component "$initialState")]
-                           (atom (cond-> initial-state (fn? initial-state) (apply component children))))
+                        (when-let [initial-state (gobj/get component "$initialState")]
+                          (atom (cond-> initial-state (fn? initial-state) (apply component children))))
 
-                         ;; 3. in the component's methods map, can specify :view/state directly. Must be
-                         ;;    an atom-like thing.
+                        ;; 3. in the component's methods map, can specify :view/state directly. Must be
+                        ;;    an atom-like thing.
 
-                         (when-let [watchable-state (gobj/get component "$state")]
-                           (cond-> watchable-state (fn? watchable-state) (apply component children))))]
-        (init-state! component state)))
-    (gobj/set component "re$view" (volatile! {})))
+                        (when-let [watchable-state (gobj/get component "$state")]
+                          (cond-> watchable-state (fn? watchable-state) (apply component children))))]
+        (init-state! component state))))
   component)
 
 (defn- factory
   "Return a function which returns a React element when called with props and children."
-  [constructor]
-  (let [{:keys [class-keys
-                instance-keys] :as re$view$base} (gobj/get constructor "re$view$base")
-        {{defaults :props/defaults
-          :as      prop-spec} :spec/props
-         children-spec        :spec/children
-         :as                  class-keys} (-> class-keys
-                                              (update :spec/props vspec/normalize-props-map)
-                                              (update :spec/children vspec/resolve-spec-vector))
-        class-react-key (gobj/get constructor "key")
-        display-name (gobj/get constructor "displayName")]
+  [^js constructor]
+  (let [{:keys [spec-keys
+                instance-keys] :as re$view$base} (.-re$view$base constructor)
+        normalized-specs {:spec/props (vspec/normalize-props-map (get spec-keys :spec/props))
+                          :spec/children (vspec/resolve-spec-vector (get spec-keys :spec/children))}
+        display-name (.-displayName constructor)]
     (doto (fn [props & children]
             (let [[props children] (if (or (map? props)
                                            (nil? props)) [props children] [nil (cons props children)])
-                  props (cond->> props defaults (merge defaults))
+                  props (if-let [spec-defaults (get-in normalized-specs [:spec/props :props/defaults])]
+                          (merge spec-defaults props)
+                          props)
                   key (or (get props :key)
-                          (when class-react-key
+                          (when-let [class-react-key (.-key constructor)]
                             (cond (string? class-react-key) class-react-key
                                   (keyword? class-react-key) (get props class-react-key)
                                   (fn? class-react-key) (apply class-react-key (assoc props :view/children children) children)
@@ -282,15 +286,15 @@
                           display-name)]
 
               (when (true? INSTRUMENT!)
-                (vspec/validate-props display-name prop-spec props)
-                (vspec/validate-children display-name children-spec children))
+                (vspec/validate-props display-name (get normalized-specs :spec/props) props)
+                (vspec/validate-children display-name (get normalized-specs :spec/children) children))
 
-              (react/createElement constructor #js {"key"      key
-                                                    "ref"      (get props :ref)
-                                                    "props"    (dissoc props :ref)
+              (react/createElement constructor #js {"key" key
+                                                    "ref" (get props :ref)
+                                                    "props" (dissoc props :ref)
                                                     "children" children
                                                     "instance" instance-keys
-                                                    "class"    class-keys})))
+                                                    "spec" normalized-specs})))
       (gobj/set "re$view$base" re$view$base))))
 
 (defn- ^:export class*
@@ -298,14 +302,15 @@
            react-keys] :as re-view-base}]
   (let [prototype (new react/Component)
         _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
-        constructor (fn ReView [$props]
-                      (this-as this
-                        (init-component this $props)))
+        ^js constructor (fn ReView [$props]
+                          (this-as this
+                            (init-component this $props)))
         _ (gobj/set constructor "prototype" prototype)]
     (doseq [[k v] (seq react-keys)]
       (gobj/set constructor (v-util/camelCase k) v))
-    (doto constructor
-      (gobj/set "re$view$base" (assoc re-view-base :prototype prototype)))))
+    (set! (.-re$view$base constructor)
+          (assoc re-view-base :prototype prototype))
+    constructor))
 
 (defn- ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
@@ -330,8 +335,8 @@
   [re-view-base]
   (factory (class* re-view-base)))
 
-(defn prototype [class]
-  (:prototype (gobj/get class "re$view$base")))
+(defn prototype [^js class]
+  (:prototype (.-re$view$base class)))
 
 (defn render-to-dom
   "Render view to element, which should be a DOM element or id of element on page."
@@ -342,15 +347,18 @@
 
 (defn partial
   "Partially apply props and optional class-keys to base view. Props specified at runtime will overwrite those given here.
-  `re$view$base` property is retained on preserved."
-  ([base props]
-   (-> (fn [& args]
-         (let [[user-props & children] (cond->> args
-                                                (not (map? (first args))) (cons {}))]
-           (apply base (merge props user-props) children)))
-       (doto (gobj/set "re$view$base" (gobj/get base "re$view$base")))))
-  ([base base-overrides props]
-   (partial (view* (merge-with merge (gobj/get base "re$view$base") base-overrides)) props)))
+  `re$view$base` property is retained."
+  ([^js base props]
+   (let [^js partially-applied-view (fn [& args]
+                                      (let [[user-props & children] (cond->> args
+                                                                             (not (map? (first args))) (cons {}))]
+                                        (apply base (merge props user-props) children)))]
+
+     (set! (.-re$view$base partially-applied-view)
+           (.-re$view$base base))
+     partially-applied-view))
+  ([^js base base-overrides props]
+   (partial (view* (merge-with merge (.-re$view$base base) base-overrides)) props)))
 
 (defn pass-props
   "Remove prop keys handled by component, useful for passing down unhandled props to a child component.

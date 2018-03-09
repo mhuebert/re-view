@@ -70,9 +70,10 @@
 (defn render-loop
   [frame-ms]
   (set! frame-count (inc frame-count))
-  (when ^boolean (and (true? count-fps?) (identical? 0 (mod frame-count 29)))
-    (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
-    (set! last-fps-time frame-ms))
+  (when ^boolean (true? count-fps?)
+    (when (identical? 0 (mod frame-count 29))
+      (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
+      (set! last-fps-time frame-ms)))
   (flush!))
 
 (defn request-render []

@@ -33,18 +33,18 @@
 
 (v/defview Checkbox
   "Allow the selection of multiple options from a set. [More](https://material.io/guidelines/components/selection-controls.html#)"
-  {:key               :id
-   :spec/props        {:props/keys [::mdc/disabled
-                                    ::mdc/dense
-                                    ::mdc/value
-                                    ::mdc/rtl
-                                    ::mdc/label
-                                    ::mdc/id]
-                       :checked    :Boolean
-                       :align-end  :Boolean}
-   :view/did-mount    #(mdc/init % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
+  {:key :id
+   :spec/props {:props/keys #{::mdc/disabled
+                              ::mdc/dense
+                              ::mdc/value
+                              ::mdc/rtl
+                              ::mdc/label
+                              ::mdc/id}
+                :checked :Boolean
+                :align-end :Boolean}
+   :view/did-mount #(mdc/init % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
    :view/will-unmount #(mdc/destroy % ripple/RippleAdapter CheckboxAdapter FormFieldAdapter)
-   :view/did-update   (mdc/mdc-style-update :Ripple :root)}
+   :view/did-update (mdc/mdc-style-update :Ripple :root)}
   [{:keys [id name label view/props view/state
            dense
            label-class
