@@ -106,7 +106,7 @@ Examples:
 (d/listen {:e__ [1]} #(println "The entity with id 1 was changed"))
 
 ;; entity-attribute
-(d/listen {:ea [[1 :name]]} #(println "The :name attribute of entity 1 was changed"))
+(d/listen {:ea_ [[1 :name]]} #(println "The :name attribute of entity 1 was changed"))
 
 ;; attribute-value
 (d/listen {:_av [[:name "Matt"]]} #(println "The value 'Matt' has been removed or added to the :name attribute of an entity"))
