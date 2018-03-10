@@ -24,10 +24,9 @@
   (react-dom/render (react/createElement "div" #js {} (str (Math.floor frame-rate)))
                     (fps-element)))
 
-(defn toggle-fps!
+(defn measure-frame-rate!
   [value]
-  (set! count-fps? (if (some? value)
-                     value (not count-fps?))))
+  (set! count-fps? value))
 
 (defonce _raf-polyfill
          (when (js* "typeof window !== 'undefined'")
