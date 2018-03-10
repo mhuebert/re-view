@@ -103,19 +103,19 @@ Examples:
 
 ```clj
 ;; entity
-(d/listen! {:e__ [1]} #(println "The entity with id 1 was changed"))
+(d/listen {:e__ [1]} #(println "The entity with id 1 was changed"))
 
 ;; entity-attribute
-(d/listen! {:ea [[1 :name]]} #(println "The :name attribute of entity 1 was changed"))
+(d/listen {:ea [[1 :name]]} #(println "The :name attribute of entity 1 was changed"))
 
 ;; attribute-value
-(d/listen! {:_av [[:name "Matt"]]} #(println "The value 'Matt' has been removed or added to the :name attribute of an entity"))
+(d/listen {:_av [[:name "Matt"]]} #(println "The value 'Matt' has been removed or added to the :name attribute of an entity"))
 
 ;; attribute
-(d/listen! {:_a_ [:name]} #(println "A :name attribute has been changed"))
+(d/listen {:_a_ [:name]} #(println "A :name attribute has been changed"))
 
 ;; call d/listen! with a single argument (listener function) to be notified on all changes
-(d/listen! #(println "The db has changed"))
+(d/listen #(println "The db has changed"))
 ```
 
 ### Indexes
