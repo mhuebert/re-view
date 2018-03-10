@@ -75,10 +75,10 @@
   "Returns anonymous view, given the same args as `defview`."
   [& args]
   (let [[view-name docstring methods body] (parse-view-args args)
-        methods (-> methods
-                    (merge {:docstring    docstring
-                            :display-name (display-name *ns* view-name)
-                            :view/render  (wrap-body view-name body)})
+        methods (-> {:display-name (display-name *ns* view-name)
+                     :view/render  (wrap-body view-name body)}
+                    (cond-> docstring (assoc :docstring docstring))
+                    (merge methods)
                     (group-methods))]
     `(~'re-view.core/view* ~methods)))
 

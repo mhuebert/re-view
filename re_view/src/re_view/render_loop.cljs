@@ -1,29 +1,42 @@
 (ns re-view.render-loop
-  (:require [goog.object :as gobj]))
+  (:require ["react" :as react]
+            ["react-dom" :as react-dom]))
 
 (set! *warn-on-infer* true)
 (defonce ^:dynamic *immediate-state-update* false)
 
-(defonce ^:private count-fps? false)
+(goog-define count-fps? false)
 (defonce ^:private last-fps-time 1)
 (defonce frame-rate 0)
 (defonce frame-count 0)
 
-(defn count-fps!
-  [enable?]
-  (set! count-fps? enable?))
+(defonce fps-element
+         (memoize (fn []
+                    (-> js/document.body
+                        (.appendChild (doto (js/document.createElement "div")
+                                        (.setAttribute "style"  "padding: 3px 3px 0 0; font-size: 9px;")
+                                        (.setAttribute "class" "fixed top-0 right-0 z-max monospace gray")))))))
+
+(defn render-fps []
+  (react-dom/render (react/createElement "div" #js {} (str (Math.floor frame-rate)))
+                    (fps-element)))
+
+(defn toggle-fps!
+  [value]
+  (set! count-fps? (if (some? value)
+                     value (not count-fps?))))
 
 (defonce _raf-polyfill
          (when (js* "typeof window !== 'undefined'")
            (if-not (.-requestAnimationFrame js/window)
              (set! (.-requestAnimationFrame js/window)
                    (or
-                     (.-webkitRequestAnimationFrame js/window)
-                     (.-mozRequestAnimationFrame js/window)
-                     (.-oRequestAnimationFrame js/window)
-                     (.-msRequestAnimationFrame js/window)
-                     (fn [cb]
-                       (js/setTimeout cb (/ 1000 60))))))))
+                    (.-webkitRequestAnimationFrame js/window)
+                    (.-mozRequestAnimationFrame js/window)
+                    (.-oRequestAnimationFrame js/window)
+                    (.-msRequestAnimationFrame js/window)
+                    (fn [cb]
+                      (js/setTimeout cb (/ 1000 60))))))))
 
 (defonce to-render (volatile! #{}))
 (defonce to-run (volatile! []))
@@ -69,11 +82,12 @@
 
 (defn render-loop
   [frame-ms]
-  (set! frame-count (inc frame-count))
   (when ^boolean (true? count-fps?)
+    (set! frame-count (inc frame-count))
     (when (identical? 0 (mod frame-count 29))
       (set! frame-rate (* 1000 (/ 30 (- frame-ms last-fps-time))))
-      (set! last-fps-time frame-ms)))
+      (set! last-fps-time frame-ms)
+      (render-fps)))
   (flush!))
 
 (defn request-render []

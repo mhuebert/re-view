@@ -312,7 +312,7 @@
           (assoc re-view-base :prototype prototype))
     constructor))
 
-(defn- ^:export view*
+(def ^:export view*
   "Returns a React component factory for supplied lifecycle methods.
    Expects a single map of functions, or any number of key-function pairs,
 
@@ -332,8 +332,7 @@
    Result of :render function is automatically passed through hiccup/element,
    unless it is already a valid React element.
    "
-  [re-view-base]
-  (factory (class* re-view-base)))
+  (comp factory class*))
 
 (defn prototype [^js class]
   (:prototype (.-re$view$base class)))
