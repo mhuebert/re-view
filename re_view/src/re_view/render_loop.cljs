@@ -5,7 +5,10 @@
 (set! *warn-on-infer* true)
 (defonce ^:dynamic *immediate-state-update* false)
 
-(goog-define count-fps? false)
+
+(goog-define count-fps?* false)                             ;; allows setting a default at compile time
+
+(defonce ^:private count-fps? count-fps?*)
 (defonce ^:private last-fps-time 1)
 (defonce frame-rate 0)
 (defonce frame-count 0)
