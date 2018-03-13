@@ -59,8 +59,14 @@
   [k]
   (case k
     :constructor "constructor"
-    :view/initial-state "$initialState"
-    :view/state "$state"
+    
+    ;; re-view class keys
+    :view/props "re$props"
+    :view/state "re$state"
+    :view/children "re$children"
+    :view/initial-state "re$initialState"
+    
+    ;; react class keys
     :view/did-catch "componentDidCatch"
     :view/will-mount "componentWillMount"
     :view/did-mount "componentDidMount"
@@ -71,6 +77,9 @@
     :view/did-update "componentDidUpdate"
     :view/will-unmount "componentWillUnmount"
     :view/render "render"
+    
+    ;; fallback to "re$<name>" 
+    ;; (you can specify class keys in a view's method map by using the :view/.. namespace)
     (str "re$" (v-util/camelCase (name k)))))
 
 (defn compseq
@@ -255,7 +264,7 @@
                         ;;    a function, which will be called w/ the component to return initial state.
                         ;;    the initial value is wrapped in an atom.
 
-                        (when-let [initial-state (gobj/get component "$initialState")]
+                        (when-let [initial-state (.-re$initialState component)]
                           (atom (cond-> initial-state (fn? initial-state) (apply component children))))
 
                         ;; 3. in the component's methods map, can specify :view/state directly. Must be
