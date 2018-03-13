@@ -54,21 +54,24 @@
           (set! (.-re$dbPatterns this) patterns))
         value))))
 
-(def ^:private kmap
+(defn- class-key
   "Mapping of methods-map keys to React lifecycle keys."
-  {:constructor "constructor"
-   :view/initial-state "$initialState"
-   :view/state "$state"
-   :view/did-catch "componentDidCatch"
-   :view/will-mount "componentWillMount"
-   :view/did-mount "componentDidMount"
-   :view/will-receive-props "componentWillReceiveProps"
-   :view/will-receive-state "componentWillReceiveState"
-   :view/should-update "shouldComponentUpdate"
-   :view/will-update "componentWillUpdate"
-   :view/did-update "componentDidUpdate"
-   :view/will-unmount "componentWillUnmount"
-   :view/render "render"})
+  [k]
+  (case k
+    :constructor "constructor"
+    :view/initial-state "$initialState"
+    :view/state "$state"
+    :view/did-catch "componentDidCatch"
+    :view/will-mount "componentWillMount"
+    :view/did-mount "componentDidMount"
+    :view/will-receive-props "componentWillReceiveProps"
+    :view/will-receive-state "componentWillReceiveState"
+    :view/should-update "shouldComponentUpdate"
+    :view/will-update "componentWillUpdate"
+    :view/did-update "componentDidUpdate"
+    :view/will-unmount "componentWillUnmount"
+    :view/render "render"
+    (str "re$" (v-util/camelCase (name k)))))
 
 (defn compseq
   "Compose fns to execute sequentially over the same arguments"
@@ -165,7 +168,7 @@
              (if (keyword-identical? k :view/state)
                (do (ensure-state! this)
                    (.-re$state this))
-               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+               (gobj/get this (class-key k)))
 
              (identical? ns "spec")
              (get (.-re$spec this) k)
@@ -178,7 +181,7 @@
              (if (keyword-identical? k :view/state)
                (do (ensure-state! this)
                    (.-re$state this))
-               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+               (gobj/get this (class-key k)))
 
              (identical? ns "spec")
              (get (.-re$spec this) k)
@@ -213,7 +216,7 @@
                   :view/did-update finish-lifecycle}])
        (reduce-kv (fn [obj method-k method]
                     (doto obj
-                      (gobj/set (get kmap method-k) (wrap-methods method-k method)))) #js {})))
+                      (gobj/set (class-key method-k) (wrap-methods method-k method)))) #js {})))
 
 (defn swap-silently!
   "Swap a component's state atom without forcing an update (render)"
