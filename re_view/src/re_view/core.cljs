@@ -54,21 +54,33 @@
           (set! (.-re$dbPatterns this) patterns))
         value))))
 
-(def ^:private kmap
+(defn- class-key
   "Mapping of methods-map keys to React lifecycle keys."
-  {:constructor "constructor"
-   :view/initial-state "$initialState"
-   :view/state "$state"
-   :view/did-catch "componentDidCatch"
-   :view/will-mount "componentWillMount"
-   :view/did-mount "componentDidMount"
-   :view/will-receive-props "componentWillReceiveProps"
-   :view/will-receive-state "componentWillReceiveState"
-   :view/should-update "shouldComponentUpdate"
-   :view/will-update "componentWillUpdate"
-   :view/did-update "componentDidUpdate"
-   :view/will-unmount "componentWillUnmount"
-   :view/render "render"})
+  [k]
+  (case k
+    :constructor "constructor"
+
+    ;; re-view class keys
+    :view/props "re$props"
+    :view/state "re$state"
+    :view/children "re$children"
+    :view/initial-state "re$initialState"
+
+    ;; react class keys
+    :view/did-catch "componentDidCatch"
+    :view/will-mount "componentWillMount"
+    :view/did-mount "componentDidMount"
+    :view/will-receive-props "componentWillReceiveProps"
+    :view/will-receive-state "componentWillReceiveState"
+    :view/should-update "shouldComponentUpdate"
+    :view/will-update "componentWillUpdate"
+    :view/did-update "componentDidUpdate"
+    :view/will-unmount "componentWillUnmount"
+    :view/render "render"
+
+    ;; fallback to "re$<name>" 
+    ;; (you can specify class keys in a view's method map by using the :view/.. namespace)
+    (str "re$" (v-util/camelCase (name k)))))
 
 (defn compseq
   "Compose fns to execute sequentially over the same arguments"
@@ -165,7 +177,7 @@
              (if (keyword-identical? k :view/state)
                (do (ensure-state! this)
                    (.-re$state this))
-               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+               (gobj/get this (class-key k)))
 
              (identical? ns "spec")
              (get (.-re$spec this) k)
@@ -178,7 +190,7 @@
              (if (keyword-identical? k :view/state)
                (do (ensure-state! this)
                    (.-re$state this))
-               (gobj/get this (str "re$" (v-util/camelCase (name k)))))
+               (gobj/get this (class-key k)))
 
              (identical? ns "spec")
              (get (.-re$spec this) k)
@@ -213,7 +225,7 @@
                   :view/did-update finish-lifecycle}])
        (reduce-kv (fn [obj method-k method]
                     (doto obj
-                      (gobj/set (get kmap method-k) (wrap-methods method-k method)))) #js {})))
+                      (gobj/set (class-key method-k) (wrap-methods method-k method)))) #js {})))
 
 (defn swap-silently!
   "Swap a component's state atom without forcing an update (render)"
@@ -252,7 +264,7 @@
                         ;;    a function, which will be called w/ the component to return initial state.
                         ;;    the initial value is wrapped in an atom.
 
-                        (when-let [initial-state (gobj/get component "$initialState")]
+                        (when-let [initial-state (.-re$initialState component)]
                           (atom (cond-> initial-state (fn? initial-state) (apply component children))))
 
                         ;; 3. in the component's methods map, can specify :view/state directly. Must be
@@ -298,10 +310,9 @@
       (gobj/set "re$view$base" re$view$base))))
 
 (defn- ^:export class*
-  [{:keys [lifecycle-keys
-           react-keys] :as re-view-base}]
+  [{:keys [class-keys react-keys] :as re-view-base}]
   (let [prototype (new react/Component)
-        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+        _ (gobj/extend prototype (lifecycle-methods class-keys))
         ^js constructor (fn ReView [$props]
                           (this-as this
                             (init-component this $props)))
