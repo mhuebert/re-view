@@ -59,13 +59,13 @@
   [k]
   (case k
     :constructor "constructor"
-    
+
     ;; re-view class keys
     :view/props "re$props"
     :view/state "re$state"
     :view/children "re$children"
     :view/initial-state "re$initialState"
-    
+
     ;; react class keys
     :view/did-catch "componentDidCatch"
     :view/will-mount "componentWillMount"
@@ -77,7 +77,7 @@
     :view/did-update "componentDidUpdate"
     :view/will-unmount "componentWillUnmount"
     :view/render "render"
-    
+
     ;; fallback to "re$<name>" 
     ;; (you can specify class keys in a view's method map by using the :view/.. namespace)
     (str "re$" (v-util/camelCase (name k)))))
@@ -310,10 +310,9 @@
       (gobj/set "re$view$base" re$view$base))))
 
 (defn- ^:export class*
-  [{:keys [lifecycle-keys
-           react-keys] :as re-view-base}]
+  [{:keys [class-keys react-keys] :as re-view-base}]
   (let [prototype (new react/Component)
-        _ (gobj/extend prototype (lifecycle-methods lifecycle-keys))
+        _ (gobj/extend prototype (lifecycle-methods class-keys))
         ^js constructor (fn ReView [$props]
                           (this-as this
                             (init-component this $props)))

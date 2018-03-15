@@ -28,7 +28,7 @@
                    (assoc-in m [(case k (:key :display-name :docstring) :react-keys
                                         (case (namespace k)
                                           "spec" :spec-keys
-                                          "view" :lifecycle-keys
+                                          "view" :class-keys
                                           :instance-keys)) k] v)) {} methods)
       ;; instance keys are accessed via dot notation.
       ;; must use set! for the keys, otherwise they will
