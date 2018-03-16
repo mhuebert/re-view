@@ -31,6 +31,13 @@
   [component]
   (not (true? (gobj/get component "unmounted"))))
 
+(defn on-unmount!
+  "Register an unmount callback for `component`."
+  [this key f]
+  (set! (.-re$onUnmount this)
+        (assoc (or (.-re$onUnmount this) {})
+          key f)))
+
 (defn- wrap-props
   "Wraps :on-change handlers of text inputs to apply changes synchronously."
   [props tag]
@@ -48,9 +55,12 @@
 
             prev-patterns (.-re$dbPatterns this)]
         (when-not (= prev-patterns patterns)
-          (when-let [un-sub (.-reactiveUnsubscribe this)] (un-sub))
-          (set! (.-reactiveUnsubscribe this) (when-not (empty? patterns)
-                                               (d/listen patterns #(force-update this))))
+          (some-> (.-re$onUnmount this)
+                  (get :reactive-render)
+                  (.call this this))
+          (on-unmount! this :reactive-render
+                       (when-not (empty? patterns)
+                         (d/listen patterns #(force-update this))))
           (set! (.-re$dbPatterns this) patterns))
         value))))
 
@@ -219,8 +229,9 @@
                                        ;; otherwise our async render loop can't tell if a component is still on the page.
                                        (gobj/set this "unmounted" true)
 
-                                       (when-let [un-sub (.-reactiveUnsubscribe this)]
-                                         (un-sub))
+                                       (doseq [f (some-> (.-re$onUnmount this)
+                                                         (vals))]
+                                         (when f (f this)))
                                        (some-> state (remove-watch this)))
                   :view/did-update finish-lifecycle}])
        (reduce-kv (fn [obj method-k method]
@@ -378,4 +389,3 @@
   (apply dissoc (get this :view/props) (get-in this [:spec/props :props/consumed])))
 
 (def is-react-element? v-util/is-react-element?)
-
