@@ -66,8 +66,8 @@
   "Resolves specs in map"
   [{:keys [props/keys
            props/keys-req] :as prop-specs}]
-  (assert (and (or (nil? keys) (set? keys))
-               (or (nil? keys-req) (set? keys-req))))
+  (assert (and (or (nil? keys) (coll? keys))
+               (or (nil? keys-req) (coll? keys-req))))
   (let [required (set keys-req)]
     (as-> (-> prop-specs
               (dissoc :props/keys :props/keys-req)) prop-specs

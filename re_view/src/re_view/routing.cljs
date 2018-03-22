@@ -1,18 +1,18 @@
 (ns re-view.routing
   (:require [goog.events :as events]
             [goog.dom :as gdom]
-            [clojure.string :as string])
+            [clojure.string :as str])
   (:import
-    [goog History]
-    [goog.history Html5History]
-    [goog Uri]))
+   [goog History]
+   [goog.history Html5History]
+   [goog Uri]))
 
 (defn segments
   "Splits route into segments, ignoring leading and trailing slashes."
   [route]
   (let [segments (-> route
-                     (string/replace #"[#?].*" "")
-                     (string/split \/ -1))
+                     (str/replace #"[#?].*" "")
+                     (str/split \/ -1))
         segments (cond-> segments
                          (= "" (first segments)) (subvec 1))]
     (cond-> segments
@@ -28,16 +28,20 @@
 (defn query
   "Returns query parameters as map."
   [path]
-  (let [data (.getQueryData (Uri. path))]
+  (let [uri (cond-> path
+                    (string? path) (Uri.))
+        data (.getQueryData uri)]
     (reduce (fn [m k]
               (assoc m (keyword k) (.get data k))) {} (.getKeys data))))
 
 (defn parse-path
   "Returns map of parsed location information for path."
   [path]
-  {:path     path
-   :segments (segments path)
-   :query    (query path)})
+  (let [uri (Uri. path)]
+    {:path path
+     :segments (segments path)
+     :query (query uri)
+     :fragment (.getFragment uri)}))
 
 ;; From http://www.lispcast.com/mastering-client-side-routing-with-secretary-and-goog-history
 ;; Replaces this method: https://closure-library.googlecode.com/git-history/docs/local_closure_goog_history_html5history.js.source.html#line237
@@ -56,7 +60,7 @@
   "In a browsing environment, reads the current location."
   []
   (if history-support?
-    (str js/window.location.pathname js/window.location.search)
+    (str js/window.location.pathname js/window.location.search js/window.location.hash)
     (if (= js/window.location.pathname "/")
       (.substring js/window.location.hash 1)
       (str js/window.location.pathname js/window.location.search))))
@@ -72,7 +76,7 @@
                              js/window.location.host))
         (.setUseFragment false))
       (if (not= "/" js/window.location.pathname)
-        (aset js/window "location" (str "/#" (get-route)))
+        (set! (.-location js/window) (str "/#" (get-route)))
         (History.)))))
 
 (defonce history
@@ -81,15 +85,19 @@
 
 (defn nav!
   "Trigger pushstate navigation to token (path)"
-  [token]
-  (.setToken history token))
+  ([route] (nav! route true))
+  ([route add-history-state?]
+   (if add-history-state?
+     (.setToken history route)
+     (.replaceToken history route))))
 
 (defn- remove-empty
   "Remove empty values/strings from map"
   [m]
   (reduce-kv (fn [m k v]
                (cond-> m
-                       (#{nil ""} v) (dissoc k))) m m))
+                       (or (nil? v)
+                           (= "" v)) (dissoc k))) m m))
 
 (defn query-string [m]
   (let [js-query (-> m
@@ -120,10 +128,14 @@
     (gdom/getAncestor el pred)))
 
 (defn click-event-handler
-  "Trigger navigation event for click within a link with a valid pushstate href."
-  [e]
+  "Intercept clicks on links with valid pushstate hrefs. Callback is passed the link."
+  [callback e]
   (when-let [link (closest (.-target e) link?)]
-    (let [location (.-location js/window)
+    (let [location ^js (.-location js/window)
+          ;; in IE/Edge, link elements do not expose an `origin` attribute
+          origin (str (.-protocol location)
+                      "//"
+                      (.-host location))
           ;; check to see if we should let the browser handle the link
           ;; (eg. external link, or valid hash reference to an element on the page)
           handle-natively? (or (not= (.-host location) (.-host link))
@@ -135,17 +147,18 @@
                                     (.getElementById js/document (subs (.-hash link) 1))))]
       (when-not handle-natively?
         (.preventDefault e)
-        (nav! (string/replace (.-href link) (.-origin link) ""))))))
+        (callback (str/replace (.-href link) origin ""))))))
 
 (def intercept-clicks
   "Intercept local links (handle with router instead of reloading page)."
-  (memoize (fn intercept
-             ([]
-              (when browser?
-                (intercept js/document)))
-             ([element]
-              (when browser?
-                (events/listen element "click" click-event-handler))))))
+  (memoize                                                  ;; only do this once per page
+   (fn intercept
+     ([]
+      (when browser?
+        (intercept js/document)))
+     ([element]
+      (when browser?
+        (events/listen element "click" (partial click-event-handler nav!)))))))
 
 (defn listen
   "Set up a listener on route changes. Options:
@@ -157,8 +170,8 @@
   ([listener]
    (listen listener {}))
   ([listener {:keys [fire-now? intercept-clicks?]
-              :or   {fire-now?         true
-                     intercept-clicks? true}}]
+              :or {fire-now? true
+                   intercept-clicks? true}}]
    (when intercept-clicks? (intercept-clicks))
    (when fire-now? (listener (parse-path (get-route))))
    (events/listen history "navigate" #(listener (parse-path (get-route))))))
