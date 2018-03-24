@@ -114,5 +114,3 @@
 
 (def ^:dynamic *create-element* react/createElement)
 (def ^:dynamic *fragment* react/Fragment)
-(js/console.log react/Fragment)
-(aset js/window "react" react)
