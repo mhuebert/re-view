@@ -34,18 +34,16 @@ lein figwheel;
 
 core + utilities
 
-- [/re_view](/re-view/tree/master/re_view), the main thing you will use -- a ClojureScript view library built on top of React
-- [/re_view_routing](/re-view/tree/master/re_view_routing), a small routing library
-- [/re_view_hiccup](/re-view/tree/master/re_view_hiccup), a small hiccup parser
+- [/re_view](https://github.com/braintripping/re-view/tree/master/re_view), the main thing you will use -- a ClojureScript view library built on top of React
 
 reusable components
 
-- [/re_view_material](/re-view/tree/master/re_view_material), implementations of Google's Material Design components
-- [/re_view_prosemirror](/re-view/tree/master/re_view_prosemirror), wrapper around [ProseMirror](http://prosemirror.net/)
+- [/re_view_material](https://github.com/braintripping/re-view/tree/master/material), implementations of Google's Material Design components
+- [/re_view_prosemirror](https://github.com/braintripping/re-view/tree/master/prosemirror), wrapper around [ProseMirror](http://prosemirror.net/)
 
 
-docs & examples
+    docs & examples
 
-- [/website](/re-view/tree/master/website), the source code for https://re-view.io
-- [/docs](/re-view/tree/master/docs), the docs that re-view.io reads from
+- [/website](https://github.com/braintripping/re-view/tree/master/website), the source code for https://re-view.io
+- [/docs](https://github.com/braintripping/re-view/tree/master/docs), the docs that re-view.io reads from
 
