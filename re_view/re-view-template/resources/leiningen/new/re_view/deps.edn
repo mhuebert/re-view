@@ -1,0 +1,5 @@
+{:paths ["src"]
+
+ :deps {re-view {:mvn/version "{{re-view-version}}"}}
+ 
+ :aliases {:devtools {:extra-deps {binaryage/devtools {:mvn/version "0.9.9"}}}}}
