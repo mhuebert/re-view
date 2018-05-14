@@ -12,3 +12,6 @@ re_view/resources
 package-lock.json
 sample
 .cpcache
+.DS_Store
+.shadow-cljs
+.nrepl-port

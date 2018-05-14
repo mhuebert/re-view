@@ -1,0 +1,10 @@
+;; shadow-cljs configuration
+{:deps true
+ :source-paths
+ ["src"]
+
+ :dependencies
+ []
+
+ :builds
+ {:browser {:target :browser}}}
