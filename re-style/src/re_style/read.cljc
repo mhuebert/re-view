@@ -25,20 +25,9 @@
   ;; verify that it has been registered?
   k)
 
-(defn- expand-class-vec [coll]
+(defn expand-class-vec [coll]
   (->> (mapcat expand-class-expr coll)
        (mapv ensure-class-exists)))
-
-(defn stringify-class-vec
-  "Expands a collection of class expressions."
-  [coll]
-  (->> coll
-       (expand-class-vec)
-       (mapv utils/stringify)
-       (str/join " ")))
-
-;; TODO
-;; re-style.registry should keep track of valid keywords
 
 (comment
  (= (expand-class-vec [:a/b.c])

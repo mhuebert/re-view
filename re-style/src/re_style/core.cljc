@@ -2,13 +2,20 @@
   (:refer-clojure :exclude [rem])
   (:require [re-style.utils :as utils]
             [clojure.string :as str]
-            [clojure.test :refer [is are]]))
+            [clojure.test :refer [is are]]
+            [re-style.read :refer [expand-class-vec]]
+            [garden.core :as garden]))
+
+(defn- stringify-negatives [x]
+  (if (and (number? x) (neg? x))
+    (str \n (- x))
+    x))
 
 (defn join-class-vec [x]
-  (->> (mapv utils/stringify x)
+  (->> (mapv (comp utils/stringify stringify-negatives) x)
        (str/join "-")))
 
-(declare join-classes compile-coll)
+(declare compile-coll)
 
 (def pseudo? #{:hover
                :focus
@@ -16,11 +23,7 @@
                :visited
                :focus-within})
 
-(defn prepend-pseudo [pseudo kw]
-  (keyword (str (name pseudo) ":" (namespace kw))
-           (name kw)))
-
-(defn path->keyword
+(defn canonical-kw
   "Returns canonical keyword for css-class path"
   [path]
   (cond
@@ -31,9 +34,12 @@
     (keyword (->> (mapv utils/stringify path)
                   (str/join \-)))
 
-    ;; pseudo classes are prepended to the keyword, eg. :hover:a/b
     (pseudo? (first path))
-    (prepend-pseudo (first path) (path->keyword (rest path)))
+    ;; pseudo classes are prepended to the keyword, eg. :hover:bg/color-black
+    (let [non-pseudo-keyword (canonical-kw (rest path))
+          pseudo-name (name (first path))]
+      (keyword (str pseudo-name ":" (namespace non-pseudo-keyword))
+               (name non-pseudo-keyword)))
 
     :else
 
@@ -41,39 +47,6 @@
       ;; when the 1st keyword in the path is multi-segment, use it as the namespace
       (keyword (namespace (first path)) (join-class-vec (cons (name (first path)) (rest path))))
       (keyword (utils/stringify (first path)) (join-class-vec (rest path))))))
-
-(defn join-classes [coll]
-  (->> coll
-       (mapv (fn [x]
-               (cond (keyword? x) (utils/keyword->dashed-string x)
-                     (string? x) x
-                     (coll? x) (join-class-vec x))))
-       (str/join " ")))
-
-(defn indexed
-  ([coll] (indexed (range 1 999) coll))
-  ([index coll]
-   (let [index (if (fn? index)
-                 (map index coll)
-                 index)]
-     (->> coll
-          (interleave index)
-          (partition 2)))))
-
-(defn postpend-pseudo [s]
-  (if-let [selector (second (re-find #"^(hover|focus\-within|focus|active|visited)-" "focus-within-"))]
-    (str s ":" selector)
-    s))
-
-(def class-selector (comp (partial str ".")
-                          postpend-pseudo
-                          join-classes))
-
-
-(defn map-keys [f m]
-  (reduce-kv (fn [m k v]
-               (assoc m (f k) v)) {} m))
-
 
 (defn rem [n] (str n "rem"))
 (defn px [n] (str n "px"))
@@ -83,10 +56,10 @@
 (defn path-rule
   ([n] (path-rule n (inc n)))
   ([start end]
-   (fn [{:keys [path-rule value]}]
-     {(join-class-vec (->> path-rule
-                           (drop start)
-                           (take (- end start)))) value})))
+   (fn [{:keys [re/path re/value]}]
+     {(->> path
+           (drop start)
+           (take (- end start))) value})))
 
 (defn re? [kw]
   (and (keyword? kw)
@@ -114,7 +87,9 @@
                                        (dissoc m k)))
                        ;; index to be paired with values at current depth in path
                        index
-                       (->> (indexed index k)
+                       (->> k
+                            (interleave index)
+                            (partition 2)
                             (reduce (fn [m [i k]]
                                       (assoc m k (cond-> v
                                                          (map? v) (assoc :re/i i))))
@@ -134,16 +109,16 @@
 
 (defn- find-rules
   ([m] (find-rules [] m))
-  ([path-rule m]
+  ([path m]
    (when (keyword? m)
      (throw (ex-info "Should not be a keyword!" {:data m})))
    (if (contains? m :re/rule)
-     {path-rule m}
+     {path m}
      (->> m
           (reduce-kv (fn [m k v]
                        (cond-> m
                                (not (re? k))
-                               (merge m (find-rules (conj path-rule k) v))))
+                               (merge m (find-rules (conj path k) v))))
                      {})))))
 
 (defn join-if-coll [x]
@@ -171,16 +146,16 @@
 
         ;; expand pseudo-selectors
         (reduce-kv
-         (fn [m path-rule {:keys [re/pseudos] :as v}]
+         (fn [m path {:keys [re/pseudos] :as v}]
            (if pseudos
              (reduce (fn [m pseudo]
-                       (assoc m (into [pseudo] path-rule)
+                       (assoc m (into [pseudo] path)
                                 (assoc v :re/pseudo? true))) m pseudos)
              m)) rules rules)
 
         ;; compile rules
         (reduce-kv
-         (fn [m path-rule {:as info
+         (fn [m path {:as info
                       :keys [re/rule
                              re/i
                              re/pseudo?
@@ -189,31 +164,59 @@
                       replacements :re/replace}]
            (try (let [i (cond-> i
                                 (and i format-index) (format-index))
-                      class-kw (path->keyword (cond-> path-rule
-                                                      i (assoc (dec (count path-rule)) i)))
-                      path-rule (cond->> path-rule
-                                         replacements (replace replacements)
-                                         replacements (keep identity)
-                                         pseudo? (drop 1))
+                      class-path (cond-> path
+                                         i (assoc (dec (count path)) i))
+                      path (cond->> path
+                                    replacements (replace replacements)
+                                    replacements (keep identity)
+                                    pseudo? (drop 1))
                       value (if format-value
-                              (format-value (last path-rule))
-                              (utils/stringify (last path-rule)))
+                              (format-value (last path))
+                              (utils/stringify (last path)))
                       rule (if rule
                              (expand-rule rule (assoc info
-                                                 :re/path path-rule
+                                                 :re/path path
                                                  :re/value value))
                              {(join-class-vec
-                               (cond-> path-rule
+                               (cond-> path
                                        i (butlast))) value})]
-                  (assoc m class-kw (map-keys join-if-coll rule)))
+                  (assoc m class-path (utils/map-keys join-if-coll rule)))
                 (catch Exception e
-                  (throw (ex-info "cannot compile!" (merge {:path path-rule
+                  (throw (ex-info "cannot compile!" (merge {:path path
                                                             :info info
                                                             :error e}))))))
-         (sorted-map)
+         {}
          rules)))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Emit CSS
+
+;; TODO
+;; re-style.registry should keep track of valid keywords
+
+(defn postpend-pseudo [s]
+  (if-let [selector (second (re-find #"^(hover|focus\-within|focus|active|visited)-" s))]
+    (str s ":" selector)
+    s))
+
+(defn class-selector [coll]
+  (->> coll
+       (mapv (comp utils/stringify stringify-negatives))
+       (str/join \-)
+       (postpend-pseudo)
+       (str \.)))
+
+(defn emit-css [compiled-rules]
+  (->> compiled-rules
+       (utils/map-keys class-selector)
+       (garden/css)))
+
+(garden/css {".pad-top-1" {:padding "3px"}})
+
+(defn emit-canonical-kws [compiled-rules]
+  (->> compiled-rules
+       (utils/map-keys canonical-kw)))
 
 (comment
 
@@ -233,15 +236,15 @@
  (= (prepend-pseudo :hover :a/b)
     :hover:a/b)
 
- (= (path->keyword [:a 1])
+ (= (canonical-kw [:a 1])
     :a-1)
- (= (path->keyword [:a :b])
+ (= (canonical-kw [:a :b])
     :a/b)
- (= (path->keyword [:a-b :c :d])
+ (= (canonical-kw [:a-b :c :d])
     :a-b/c-d)
- (= (path->keyword [:a/b :c :d])
+ (= (canonical-kw [:a/b :c :d])
     :a/b-c-d)
- (= (path->keyword [:hover :a :b])
+ (= (canonical-kw [:hover :a :b])
     :hover:a/b)
 
 
@@ -251,7 +254,7 @@
 
  (are [expr keywords]
    (is (= (->> (apply (spacing-fn (first expr)) (rest expr))
-               (mapv path->keyword))
+               (mapv canonical-kw))
           keywords))
 
    [:pad 1 2 nil nil] [:pad/top-1
@@ -267,7 +270,7 @@
 
 
  (are [expr keyword]
-   (is (= (path->keyword expr) keyword))
+   (is (= (canonical-kw expr) keyword))
 
    [:weight 2] :weight-2
    [:cursor :default] :cursor/default

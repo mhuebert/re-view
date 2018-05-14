@@ -29,10 +29,8 @@
                                      :index (rest zero-index)
                                      :format-value (comp re/px (partial * 1.2))}}
 
-            :spacing {[-0.05 0.1 0.25] {:re/rule :letter-spacing
-                                        :re/index (->> zero-index
-                                                       (rest)
-                                                       (cons "n1"))}}
+            :spacing {[-0.05 0 0.1 0.25] {:re/rule :letter-spacing
+                                          :re/index (range -1 999)}}
             :italic :font-style
 
             [:pre
@@ -232,18 +230,14 @@
                                      :format-value re/rem
                                      :index zero-index}
                      (-> (percent-scale [25 50 75 100])
-                         (merge {:third "33.3#%"
+                         (merge {:third "33.3%"
                                  :two-thirds "66.66%"})) #:re {:rule (re/path-rule 1)}}}})
 
 (def transform
-  {:transform {:rotate {(->> [45 90 135 180
-                              -45 -90 -135 -180]
-                             (utils/->map
-                              {:key #(if (neg? %)
-                                       (str \n (- %))
-                                       %)
-                               :value #(str "rotate(" (re/deg %) ")")}))
-                        :transform}}})
+  {:transform {:rotate {[-45 -90 -135 -180
+                         45 90 135 180]
+                        #:re {:rule :transform
+                              :format-value #(str "rotate(" (re/deg %) ")")}}}})
 
 (def rules
   {:text text
@@ -258,8 +252,10 @@
    :size size
    :transform transform})
 
-(do
-  (apply re/compile-rules (vals rules)))
+(comment
+ (-> (apply re/compile-rules (vals rules))
+     (re/emit-css)
+     #_(re/emit-canonical-kws)))
 
 
 (comment

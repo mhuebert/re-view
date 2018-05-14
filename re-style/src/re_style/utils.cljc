@@ -51,3 +51,7 @@
             (assoc m (key item) (value item)))
           {}
           coll))
+
+(defn map-keys [f m]
+  (reduce-kv (fn [m k v]
+               (assoc m (f k) v)) {} m))
