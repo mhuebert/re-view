@@ -113,3 +113,4 @@
 
 
 (def ^:dynamic *create-element* react/createElement)
+(def ^:dynamic *fragment* react/Fragment)

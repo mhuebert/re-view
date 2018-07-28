@@ -1,5 +1,6 @@
 (ns re-view.hiccup.core
-  (:require [re-view.hiccup.hiccup :as hiccup]))
+  (:require [re-view.hiccup.hiccup :as hiccup]
+            ["react" :as react]))
 
 (enable-console-print!)
 (set! *warn-on-infer* true)
@@ -37,10 +38,12 @@
         (satisfies? IEmitHiccup form)
         (-to-element (to-hiccup form))
 
-        (list? form)
-        (reduce (fn [out el]
-                  (doto ^js out (.push (-to-element el)))) #js [] form)
-
+        (seq? form)
+        (.apply hiccup/*create-element* nil
+                (reduce (fn [^js arr el]
+                          (doto arr
+                            (.push (-to-element el))))
+                        #js [hiccup/*fragment* nil] form))
         :else form))
 
 (defn element
