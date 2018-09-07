@@ -9,14 +9,13 @@
       [name]
       (let [data {:name            name
                   :munged-name     (munge name)
-                  :re-view-version "0.4.6"
-                  :port            5300
+                  :re-view-version "0.4.15"
                   :sanitized       (name-to-path name)}]
            (main/info "Generating fresh 'lein new' re-view project.")
            (->files data
                     ["src/{{sanitized}}/core.cljs" (render "core.cljs" data)]
                     ["src/{{sanitized}}/examples.cljs" (render "examples.cljs" data)]
-                    ["project.clj" (render "project.clj" data)]
+                    ["deps.edn" (render "deps.edn" data)]
                     ["shadow-cljs.edn" (render "shadow-cljs.edn" data)]
                     ["package.json" (render "package.json" data)]
                     ["resources/public/index.html" (render "index.html" data)]
