@@ -22,32 +22,32 @@
            ["h1" {:id "page-header"}])
         "Parse ID from element tag")
 
-    (is (= ["div" {:className "red"}]
+    #_(is (= ["div" {:className "red"}]
            (element-args [:div.red])
            (element-args [:div {:class "red"}])
            (element-args [:div {:classes ["red"]}]))
         "Three ways to specify a class")
 
-    (is (= ["div" {:className "red"}]
+    #_(is (= ["div" {:className "red"}]
            (element-args [:div.red nil]))
         "Three ways to specify a class")
 
-    (is (= (element-args [:.red {:class   "white black"
+    #_(is (= (element-args [:.red {:class   "white black"
                                  :classes ["purple"]}])
            ["div" {:className "red white black purple"}])
         "Combine classes from element tag, :class, and :classes")
 
-    (is (= (element-args [:.red])
+    #_(is (= (element-args [:.red])
            ["div" {:className "red"}])
         "If tag name is not specified, use a `div`")
 
-    (is (= (element-args [:div {:data-collapse true
+    #_(is (= (element-args [:div {:data-collapse true
                                 :aria-label    "hello"}])
            ["div" {:data-collapse true
                    :aria-label    "hello"}])
         "Do not camelCase data- and aria- attributes")
 
-    (is (= (element-args [:div {:some-attr true
+    #_(is (= (element-args [:div {:some-attr true
                                 :someAttr  "hello"}])
            ["div" {:some-attr true
                    :someAttr  "hello"}])
@@ -71,7 +71,7 @@
 
 
 
-    (is (= (element-args [:special/effect#el.pink {:data-collapse true
+    #_(is (= (element-args [:special/effect#el.pink {:data-collapse true
                                                    :aria-label    "hello"
                                                    :class         "bg-black"
                                                    :classes       ["white"]
