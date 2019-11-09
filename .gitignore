@@ -4,10 +4,7 @@ target
 pom.xml*
 *.log
 *.iml
-*/resources/public/js/compiled
-doo*.html
 */checkouts
-docs/marginalia
 re_view/resources
 package-lock.json
 sample

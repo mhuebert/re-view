@@ -1,0 +1,65 @@
+name: clojure
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-18.04
+
+    steps:
+
+      - name: checkout
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+
+      - name: cache yarn
+        id: cache-yarn
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: v0-yarn-${{ hashFiles('**/yarn.lock')}}
+
+      - name: cache classpath
+        uses: actions/cache@v1
+        with:
+          path: .cpcache
+          key: v0-deps-${{ hashFiles('**/deps.edn')}}
+          restore-keys: |
+            v0-deps
+
+      - name: cache maven
+        uses: actions/cache@v1
+        with:
+          path: /home/runner/.m2
+          key: v0-maven-${{ hashFiles('**/deps.edn')}}
+          restore-keys: |
+            v0-maven
+
+      - name: cache shadow-cljs
+        uses: actions/cache@v1
+        with:
+          path: .shadow-cljs
+          key: v0-shadow-cljs-${{github.sha}}
+          restore-keys: |
+            v0-shadow-cljs
+
+      - name: Install java
+        uses: actions/setup-java@v1
+        with:
+          java-version: '13.0.1'
+
+      - name: Install clojure
+        uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          tools-deps: '1.10.1.483'
+
+      - name: Yarn
+        if: steps.cache-yarn.outputs.cache-hit != 'true'
+        run: yarn
+
+      - name: Compile
+        run: yarn shadow-cljs -A:test compile ci
+
+      - name: Karma
+        run: yarn karma start --single-run

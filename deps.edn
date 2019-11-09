@@ -1,0 +1,7 @@
+{:deps  {org.clojure/clojurescript {:mvn/version "1.10.520"}
+         re-view                   {:local/root "re_view"}
+         thheller/shadow-cljs {:mvn/version "2.8.69"}}
+ :aliases
+        {:test
+         {:extra-paths ["re_view/test"
+                        "re_db/test"]}}}

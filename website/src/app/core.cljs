@@ -101,12 +101,10 @@
 
            :else [:div "not found"])))
 
-(defn render []
+(defn ^:dev/after-load render []
   (v/render-to-dom (root) "app"))
 
 (defn init []
   (r/listen
     (fn [route] (d/transact! [(assoc route :db/id :router/location)])))
   (render))
-
-(defonce _ (init))
