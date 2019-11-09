@@ -40,7 +40,7 @@
             :spec-name :Function}))
 
 
-    (is (= (s/normalize-props-map {:x ::color
+    #_(is (= (s/normalize-props-map {:x ::color
                                    :y {:spec         :Function
                                        :required     true
                                        :pass-through true
