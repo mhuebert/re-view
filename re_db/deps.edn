@@ -1,2 +1,0 @@
-{:paths ["src"]
- :deps {com.lucasbradstreet/cljs-uuid-utils {:mvn/version "1.0.2"}}}

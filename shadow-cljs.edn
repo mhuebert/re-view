@@ -1,10 +1,10 @@
-{:deps   true
+{:deps       true
  :cache-root ".shadow-cljs"
- :builds {:browser {:target     :browser
-                    :modules    {:base {:init-fn re-view.core/init}}
-                    :output-dir "public/js"
-                    :asset-path "/js"
-                    :devtools   {:http-root "public"
-                                 :http-port 8706}}
-          :ci      {:target    :karma
-                    :output-to "target/ci.js"}}}
+ :builds     {:browser {:target     :browser
+                        :modules    {:base {:init-fn re-view.core/init}}
+                        :output-dir "public/js"
+                        :asset-path "/js"
+                        :devtools   {:http-root "public"
+                                     :http-port 8706}}
+              :test    {:target    :karma
+                        :output-to "target/test.js"}}}
