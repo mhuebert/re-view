@@ -1,4 +1,4 @@
-{:deps       true
+{:deps       {:aliases [:test]}
  :cache-root ".shadow-cljs"
  :builds     {:browser {:target     :browser
                         :modules    {:base {:init-fn re-view.core/init}}
@@ -7,4 +7,7 @@
                         :devtools   {:http-root "public"
                                      :http-port 8706}}
               :test    {:target    :karma
-                        :output-to "target/test.js"}}}
+                        :output-to "target/test.js"}
+              :bench {:target :node-test
+                      :output-to "target/bench.js"
+                      :autorun true}}}

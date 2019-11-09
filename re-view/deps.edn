@@ -1,3 +1,4 @@
 {:paths ["src"]
  :deps  {org.clojure/clojurescript {:mvn/version "1.10.520"}
-         appliedscience/js-interop {:mvn/version "0.1.21"}}}
+         appliedscience/js-interop {:mvn/version "0.1.21"}
+         net.cgrand/macrovich      {:mvn/version "0.2.1"}}}

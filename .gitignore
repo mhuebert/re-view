@@ -5,3 +5,4 @@
 **/target
 **/.cpcache
 **/.shadow-cljs
+**/.nrepl-port
