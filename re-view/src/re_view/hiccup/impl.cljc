@@ -55,4 +55,3 @@
 
 ;; TODO
 ;; a "compiled props" object that can speedily merge other props onto itself
-
