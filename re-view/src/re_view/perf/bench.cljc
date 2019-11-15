@@ -2,16 +2,33 @@
   #?(:cljs (:require-macros re-view.perf.bench)))
 
 #?(:cljs
-   (defn pad-right
-     "Returns string `s` with minimum length `n`, adding spaces to the right to
-      fill. At least one space is always added."
-     [^string s n]
-     (str s (.repeat " " (Math/max 1 (- n (count s)))))))
+   (do
+     (defn pad-right
+       "Returns string `s` with minimum length `n`, adding spaces to the right to
+        fill. At least one space is always added."
+       [^string s n]
+       (str s (.repeat " " (Math/max 1 (- n (count s))))))
+
+     (defn rounded
+       "Returns number rounded to n digits"
+       [n digits]
+       (let [multiplier (Math/pow 10 digits)]
+         (-> n
+             (* multiplier)
+             (Math/round)
+             (/ multiplier))))
+
+     (defn normalize [m]
+       (let [slowest (apply Math/max (vals m))]
+         (reduce-kv (fn [m k v] (assoc m k (/ slowest v))) {} m)))
+
+     ))
 
 #?(:clj
    (def now '(js/Date.now)))
 
 #?(:clj
+
    (defmacro measure [title runs & kvs]
      (let [[title runs] (if (string? title) [title runs] [nil title])
            [runs kvs] (if (number? runs) [runs kvs] [nil (cons runs kvs)])]
@@ -30,7 +47,11 @@
                 (dotimes [_# ~each-round] (f#))
                 (swap! results# update k# (fnil + 0) (- ~now start#))))
             ~(when title `(println (str "\nMeasured: " ~title)))
-            (doseq [k# ~ks]
-              (println (str ";; " (~'re-view.perf.bench/pad-right (str k#) 15) " " (@results# k#) "ms")))
-            #_(when-not (apply = (map #(%) (vals fns#)))
+            (doseq [k# ~ks
+                    :let [res# (@results# k#)]]
+              (println (str ";; "
+                            (~'re-view.perf.bench/pad-right (str k#) 15) " "
+                            (~'re-view.perf.bench/rounded res# 1)
+                            "ms")))
+            (when-not (apply = (map (comp cljs.core/js->clj #(%)) (vals fns#)))
                 (print (map #(%) (vals fns#)))))))))
