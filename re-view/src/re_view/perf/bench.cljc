@@ -29,29 +29,31 @@
 
 #?(:clj
 
-   (defmacro measure [title runs & kvs]
-     (let [[title runs] (if (string? title) [title runs] [nil title])
-           [runs kvs] (if (number? runs) [runs kvs] [nil (cons runs kvs)])]
+   (defmacro measure [title repetitions & kvs]
+     (let [[title repetitions] (if (string? title) [title repetitions] [nil title])
+           [repetitions kvs] (if (number? repetitions) [repetitions kvs] [nil (cons repetitions kvs)])]
        (assert (even? (count kvs)))
-       (let [runs (or runs 1000)
+       (let [repetitions (or repetitions 1000)
+             per-round (max 1 (Math/floor (/ repetitions 100)))
+             rounds (/ repetitions per-round)
              variants (apply hash-map kvs)
-             ks (mapv first (partition 2 kvs))
-             rounds 6
-             each-round (max 1 (Math/floor (/ runs rounds)))]
-         `(let [fns# ~(reduce-kv (fn [out k v] (assoc out k `(fn [] ~v))) {} variants)
+             ks (mapv first (partition 2 kvs))]
+         `(let [ks# ~ks
+                fns# ~(reduce-kv (fn [out k v] (assoc out k `(fn [] ~v))) {} variants)
                 results# (atom {})]
             (dotimes [_# ~rounds]
-              (doseq [k# (shuffle (keys fns#))
+              (doseq [k# (shuffle ks#)
                       :let [f# (fns# k#)
                             start# ~now]]
-                (dotimes [_# ~each-round] (f#))
+                (dotimes [_# ~per-round] (f#))
                 (swap! results# update k# (fnil + 0) (- ~now start#))))
             ~(when title `(println (str "\nMeasured: " ~title)))
-            (doseq [k# ~ks
+            (println (str ~repetitions " repetitions, " ~rounds " rounds, " ~per-round " per round."))
+            (doseq [k# ks#
                     :let [res# (@results# k#)]]
               (println (str ";; "
                             (~'re-view.perf.bench/pad-right (str k#) 15) " "
                             (~'re-view.perf.bench/rounded res# 1)
                             "ms")))
             (when-not (apply = (map (comp cljs.core/js->clj #(%)) (vals fns#)))
-                (print (map #(%) (vals fns#)))))))))
+                (print (map #(%) ((apply juxt ks#) fns#)))))))))
