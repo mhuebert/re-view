@@ -1,5 +1,5 @@
 (ns re-view.macros
-  (:refer-clojure :exclude [defmacro])
+  (:refer-clojure :exclude [defmacro time])
   (:require [clojure.core :as c]
             [cljs.env :as env]
             [cljs.analyzer :as ana]
@@ -30,6 +30,9 @@
   [& body]
   (when &env
     `(do ~@body)))
+
+(c/defmacro time [& {:keys [deftime runtime]}]
+  (if &env runtime deftime))
 
 (c/defmacro target-lang [& args]
   `(mv/case ~@args))

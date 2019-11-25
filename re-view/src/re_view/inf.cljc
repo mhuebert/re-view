@@ -27,10 +27,11 @@
   ([expr]
    (infer-tags *&env* expr))
   ([env expr]
-   (->> (ana/analyze env expr)
-        ana/no-warn
-        (ana/infer-tag env)
-        (normalize-tag))))
+   (when env
+     (->> (ana/analyze env expr)
+          ana/no-warn
+          (ana/infer-tag env)
+          (normalize-tag)))))
 
 (defn is-map? [tags]
   (some-> (ignore-nil tags)
