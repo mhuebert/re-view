@@ -4,10 +4,10 @@
             [re-view.perf.util :as perf]
             [applied-science.js-interop :as j]
             [re-view.staged :refer [defstaged]]
+            [re-view.perf.util :as perf]
             #?@(:clj [[net.cgrand.macrovich :as macros]
                       [re-view.inf :as inf]])
-            #?@(:cljs [[re-view.perf.bench :as bench]
-                       [re-view.perf.util :as perf]])
+            #?@(:cljs [[re-view.perf.bench :as bench]])
             [clojure.set :as set])
   #?(:cljs (:require-macros [net.cgrand.macrovich :as macros])))
 
