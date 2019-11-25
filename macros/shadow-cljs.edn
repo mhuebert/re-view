@@ -1,0 +1,5 @@
+{:deps true
+ :cache-root ".shadow-cljs"
+ :builds {:test {:target :node-test
+                 :output-to "target/test.js"
+                 :autorun true}}}

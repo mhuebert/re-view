@@ -15,6 +15,8 @@
 
 (defn as-set [x] (if (set? x) x #{x}))
 
+(defn superset? [x y] (set/superset? (as-set x) (as-set y)))
+
 (defn ignore-nil [tags]
   (-> (as-set tags)
       (disj 'clj-nil)

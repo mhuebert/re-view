@@ -9,5 +9,6 @@
               :test    {:target    :karma
                         :output-to "target/test.js"}
               :bench {:target :node-test
+                      :ns-regexp "staged-test$"
                       :output-to "target/bench.js"
                       :autorun true}}}

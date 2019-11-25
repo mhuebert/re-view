@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [let])
   (:require [cljs.test :refer [deftest is are testing]]
             [re-view.perf.bench :as bench]
-            [re-view.hiccup.impl :as hiccup]
+            [re-view.hiccup :as hiccup]
             [applied-science.js-interop :refer [let]]
             [clojure.string :as str]
             [applied-science.js-interop :as j]
@@ -13,7 +13,7 @@
   (testing "benchmarks"
 
     (let [s "a-cat-is-here"]
-      (bench/measure "camel-case" 1000
+      (bench/measure "camel-case"
         :perf (.replace s (js/RegExp. "-(.)" "g")
                         (fn [match group index]
                           (str/upper-case group)))
@@ -25,7 +25,7 @@
 
 
     (let [s (name :div#hi.a.b)]
-      (bench/measure "parse-hiccup-keys" 10000
+      (bench/measure "parse-hiccup-keys"
         :perf (let [^js [_ tag id classes] (.exec hiccup/tag-pattern s)]
                 #js{:tag (or tag "div")
                     :id id
@@ -39,7 +39,7 @@
 
 
     (let [s "dwhatever"]
-      (bench/measure "react-key" 100000
+      (bench/measure "react-key"
         ;; no difference
         :perf (.startsWith s "data-")
         :idiomatic (str/starts-with? s "data-")))
@@ -48,13 +48,13 @@
 
     (let [f identity
           v ["a" "b" "c" "d"]]
-      (bench/measure "str/join with map or mapv" 10000
+      (bench/measure "str/join with map or mapv"
         :mapv (str/join " " (mapv f v))
         :map (str/join " " (map f v))))
     ;; :mapv           19ms
     ;; :map            31ms
 
-    (bench/measure "str/replace vs .replace" 100000
+    (bench/measure "str/replace vs .replace"
       :str/replace (str/replace "hello.there.my.friend" "." " ")
       :replace (.replace "hello.there.my.friend" (js/RegExp. "\\." "g") " "))
     ;; :str/replace    106ms
@@ -64,7 +64,7 @@
           hmap (hash-map :a 1 :b 2 :c 3 :abcdef 1)
           beaned (bean/->clj obj)]
       (hmap :a 1)
-      (bench/measure "cljs-bean" 1000000
+      (bench/measure "cljs-bean"
         ;:to-clj/kw (:abcdef (js->clj obj))
         ;:to-clj/get (get (js->clj obj) :abcdef)
         :j/get (j/get obj :abcdef)

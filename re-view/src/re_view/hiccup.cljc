@@ -9,17 +9,33 @@
             #?@(:cljs [[re-view.perf.bench :as bench]
                        [re-view.perf.util :as perf]])
             [clojure.set :as set])
-  #?(:cljs (:require-macros re-view.hiccup
-                            [net.cgrand.macrovich :as macros])))
+  #?(:cljs (:require-macros [net.cgrand.macrovich :as macros])))
 
 ;; (def parse-key (util/cljs-> parse-key* (perf/js-memo-1)))
 
-
 (defstaged dots->classes
+  {:macrotime (constantly "compiled")
+   :runtime (constantly "interpreted")}
   (fn [s] (perf/replace-pattern s "\\." " ")))
 
 (comment
-  (= (dots->classes "a.b") "a b"))
+  (macroexpand
+    '(defstaged dots->classes
+       {:macrotime (constantly "compiled")
+        :runtime (constantly "interpreted")}
+       (fn [s] (perf/replace-pattern s "\\." " ")))))
+
+(comment
+  (apply dots->classes ["x.a"])
+  (macroexpand '(dots->classes "x.a"))
+
+  (let [a "x.a"] (dots->classes a))
+  (macroexpand '(re-view.hiccup/dots->classes a)))
+;(re-view.hiccup/dots->classes-impl a)
+
+(comment
+  (= (h/dots->classes "a.b") "a b")
+  (macroexpand '(dots->classes "a.b")))
 
 (def ^:private tag-pattern #"([^#.]+)?(?:#([^.]+))?(?:\.(.*))?")
 

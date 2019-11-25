@@ -3,4 +3,5 @@
         appliedscience/js-interop {:git/url "https://github.com/appliedsciencestudio/js-interop"
                                    :sha "9927230e238cd3dd044f8a9f00059ab9e92f19a7"}
         net.cgrand/macrovich {:mvn/version "0.2.1"}
+        chivorcam {:mvn/version "1.0.0"}
         cljs-bean {:mvn/version "1.5.0"}}}
