@@ -57,7 +57,6 @@
         form (gensym "form")
         impl (symbol (str name "-impl"))
         util-fn (symbol (str name "-fn"))]
-
     `(do
        (stage
          :runtime

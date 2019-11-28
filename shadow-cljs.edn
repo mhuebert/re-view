@@ -1,14 +1,18 @@
-{:deps       {:aliases [:test]}
+{:deps {:aliases [:test]}
  :cache-root ".shadow-cljs"
- :builds     {:browser {:target     :browser
-                        :modules    {:base {:init-fn re-view.core/init}}
-                        :output-dir "public/js"
-                        :asset-path "/js"
-                        :devtools   {:http-root "public"
-                                     :http-port 8706}}
-              :test    {:target    :karma
-                        :output-to "target/test.js"}
-              :bench {:target :node-test
-                      :ns-regexp "staged-test$"
-                      :output-to "target/bench.js"
-                      :autorun true}}}
+ :builds {:browser {:target :browser
+                    :modules {:base {:init-fn re-view.core/init}}
+                    :output-dir "public/js"
+                    :asset-path "/js"
+                    :devtools {:http-root "public"
+                               :http-port 8706}}
+          :test {:target :karma
+                 :output-to "target/test.js"}
+          :dev {:target :node-test
+                :ns-regexp "hiccup-test$"
+                :output-to "target/dev.js"
+                :autorun true}
+          :bench {:target :node-test
+                  :ns-regexp "staged-test$"
+                  :output-to "target/bench.js"
+                  :autorun true}}}

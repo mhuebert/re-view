@@ -24,7 +24,9 @@
 
 
 (defn replace-pattern [s pattern replacement]
-  #?(:clj (str/replace s (re-pattern pattern) replacement)
+  #?(:clj (str/replace s (re-pattern pattern) (if (fn? replacement)
+                                                (fn [& args] (apply replacement args))
+                                                replacement))
      :cljs (.replace s (js/RegExp. pattern "g") replacement)))
 
 #?(:cljs
