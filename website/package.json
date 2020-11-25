@@ -13,7 +13,7 @@
     "css-loader": "^0.28.1",
     "extract-text-webpack-plugin": "^2.1.0",
     "global": "^4.3.2",
-    "highlight.js": "^9.12.0",
+    "highlight.js": "^10.1.2",
     "material-components-web": "^0.23.0",
     "module-deps": "^4.1.1",
     "node-sass": "^4.5.2",
